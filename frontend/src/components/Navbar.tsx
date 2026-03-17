@@ -70,7 +70,7 @@ export function Navbar() {
               </Link>
             ))}
             <div className="pt-2">
-              <ConnectButton showBalance={false} />
+              <ConnectButton showBalance={false} label="Connect Wallet" />
             </div>
           </div>
         )}
