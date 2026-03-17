@@ -1,259 +1,22 @@
-// HumanoidFigure v2 — Ameca-style humanoid with human face mask
-// Face: clipPath ellipse with illustrated portrait (SVG inline data URI)
+// HumanoidFigure v3 — real face photos via /avatars/face-N.jpg
+// Face: clipPath ellipse with real AI-generated photos (thispersondoesnotexist.com)
 // Zones: face (Identity+avatar), head (Knowledge), heart (Specialization), hands (Tools), wallet (Settings)
 
 import React, { useState } from "react";
 
 export type Zone = "head" | "face" | "heart" | "hands" | "wallet" | null;
 
-// SVG portrait illustrations as data URIs
-// Each portrait: ~80x90px minimal face illustration
-const PORTRAIT_SVGS: Record<string, string> = {
-  student: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
-    <rect width='80' height='90' fill='%23c8855a'/>
-    <!-- skin -->
-    <ellipse cx='40' cy='45' rx='28' ry='34' fill='%23f5c99a'/>
-    <!-- hair — long blonde -->
-    <ellipse cx='40' cy='24' rx='28' ry='18' fill='%23e8c84a'/>
-    <rect x='12' y='22' width='12' height='44' rx='6' fill='%23e8c84a'/>
-    <rect x='56' y='22' width='12' height='44' rx='6' fill='%23e8c84a'/>
-    <!-- eyes -->
-    <ellipse cx='30' cy='44' rx='5' ry='6' fill='white'/>
-    <ellipse cx='50' cy='44' rx='5' ry='6' fill='white'/>
-    <circle cx='31' cy='45' r='3.5' fill='%234a6080'/>
-    <circle cx='51' cy='45' r='3.5' fill='%234a6080'/>
-    <circle cx='32' cy='44' r='1.5' fill='%23000'/>
-    <circle cx='52' cy='44' r='1.5' fill='%23000'/>
-    <circle cx='33' cy='43' r='0.8' fill='white'/>
-    <circle cx='53' cy='43' r='0.8' fill='white'/>
-    <!-- eyebrows -->
-    <path d='M25 37 Q30 34 35 37' stroke='%23c8904a' strokeWidth='1.5' fill='none'/>
-    <path d='M45 37 Q50 34 55 37' stroke='%23c8904a' strokeWidth='1.5' fill='none'/>
-    <!-- nose -->
-    <path d='M38 52 Q40 58 42 52' stroke='%23c8904a' strokeWidth='1' fill='none'/>
-    <!-- smile -->
-    <path d='M30 64 Q40 72 50 64' stroke='%23c8604a' strokeWidth='2' fill='none' strokeLinecap='round'/>
-    <!-- teeth -->
-    <path d='M33 64 Q40 69 47 64' fill='white'/>
-  </svg>`,
-
-  hacker: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
-    <rect width='80' height='90' fill='%23234a2a'/>
-    <!-- skin -->
-    <ellipse cx='40' cy='46' rx='26' ry='32' fill='%23f0d0a0'/>
-    <!-- hair — dark, messy -->
-    <ellipse cx='40' cy='22' rx='27' ry='16' fill='%231a1a2a'/>
-    <rect x='13' y='20' width='8' height='20' rx='4' fill='%231a1a2a'/>
-    <rect x='59' y='20' width='8' height='20' rx='4' fill='%231a1a2a'/>
-    <rect x='20' y='16' width='40' height='12' rx='6' fill='%231a1a2a'/>
-    <!-- glasses frame -->
-    <rect x='22' y='39' width='14' height='11' rx='5' fill='none' stroke='%23888' strokeWidth='2'/>
-    <rect x='44' y='39' width='14' height='11' rx='5' fill='none' stroke='%23888' strokeWidth='2'/>
-    <line x1='36' y1='44' x2='44' y2='44' stroke='%23888' strokeWidth='1.5'/>
-    <line x1='22' y1='44' x2='18' y2='44' stroke='%23888' strokeWidth='1.5'/>
-    <line x1='58' y1='44' x2='62' y2='44' stroke='%23888' strokeWidth='1.5'/>
-    <!-- eyes behind glasses -->
-    <circle cx='29' cy='44' r='3' fill='%23333'/>
-    <circle cx='51' cy='44' r='3' fill='%23333'/>
-    <circle cx='30' cy='43' r='1' fill='white'/>
-    <circle cx='52' cy='43' r='1' fill='white'/>
-    <!-- eyebrows — arched -->
-    <path d='M22 36 Q29 33 36 36' stroke='%23333' strokeWidth='1.5' fill='none'/>
-    <path d='M44 36 Q51 33 58 36' stroke='%23333' strokeWidth='1.5' fill='none'/>
-    <!-- nose -->
-    <path d='M38 52 Q40 57 42 52' stroke='%23c09060' strokeWidth='1' fill='none'/>
-    <!-- slight smirk -->
-    <path d='M32 64 Q40 68 48 63' stroke='%23c09060' strokeWidth='1.8' fill='none' strokeLinecap='round'/>
-  </svg>`,
-
-  bearded: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
-    <rect width='80' height='90' fill='%231a2a3a'/>
-    <!-- skin -->
-    <ellipse cx='40' cy='44' rx='27' ry='33' fill='%23e8c090'/>
-    <!-- hair — short dark -->
-    <ellipse cx='40' cy='20' rx='27' ry='14' fill='%232a2020'/>
-    <rect x='13' y='18' width='8' height='16' rx='4' fill='%232a2020'/>
-    <rect x='59' y='18' width='8' height='16' rx='4' fill='%232a2020'/>
-    <!-- beard -->
-    <path d='M16 58 Q20 76 40 80 Q60 76 64 58 Q52 68 40 69 Q28 68 16 58Z' fill='%232a2020'/>
-    <path d='M18 54 Q20 60 28 62' stroke='%232a2020' strokeWidth='2'/>
-    <path d='M62 54 Q60 60 52 62' stroke='%232a2020' strokeWidth='2'/>
-    <!-- mustache -->
-    <path d='M28 60 Q34 64 40 62 Q46 64 52 60' stroke='%232a2020' strokeWidth='3' fill='none' strokeLinecap='round'/>
-    <!-- eyes -->
-    <ellipse cx='30' cy='43' rx='5' ry='5.5' fill='white'/>
-    <ellipse cx='50' cy='43' rx='5' ry='5.5' fill='white'/>
-    <circle cx='31' cy='44' r='3.5' fill='%234a3020'/>
-    <circle cx='51' cy='44' r='3.5' fill='%234a3020'/>
-    <circle cx='30' cy='43' r='1.5' fill='%23000'/>
-    <circle cx='50' cy='43' r='1.5' fill='%23000'/>
-    <circle cx='31' cy='42' r='0.8' fill='white'/>
-    <circle cx='51' cy='42' r='0.8' fill='white'/>
-    <!-- eyebrows — thick -->
-    <path d='M24 36 Q30 33 36 35' stroke='%232a2020' strokeWidth='2.5' fill='none'/>
-    <path d='M44 35 Q50 33 56 36' stroke='%232a2020' strokeWidth='2.5' fill='none'/>
-    <!-- nose -->
-    <path d='M37 50 Q40 56 43 50' stroke='%23b08050' strokeWidth='1.2' fill='none'/>
-  </svg>`,
-
-  finance: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
-    <rect width='80' height='90' fill='%230a1a30'/>
-    <!-- suit collar -->
-    <path d='M10 88 Q20 72 30 68 L40 75 L50 68 Q60 72 70 88Z' fill='%231a2848'/>
-    <path d='M30 68 L40 80 L50 68' fill='%23fff' opacity='0.9'/>
-    <!-- tie -->
-    <path d='M38 68 L40 80 L42 68' fill='%23c02020'/>
-    <!-- skin -->
-    <ellipse cx='40' cy='45' rx='26' ry='31' fill='%23f0c890'/>
-    <!-- hair — slicked back -->
-    <ellipse cx='40' cy='20' rx='26' ry='12' fill='%231a1010'/>
-    <rect x='14' y='18' width='6' height='14' rx='3' fill='%231a1010'/>
-    <rect x='60' y='18' width='6' height='14' rx='3' fill='%231a1010'/>
-    <path d='M14 22 Q40 15 66 22' stroke='%231a1010' strokeWidth='8' fill='none'/>
-    <!-- eyes -->
-    <ellipse cx='30' cy='44' rx='5' ry='5.5' fill='white'/>
-    <ellipse cx='50' cy='44' rx='5' ry='5.5' fill='white'/>
-    <circle cx='31' cy='44' r='3' fill='%232a3a5a'/>
-    <circle cx='51' cy='44' r='3' fill='%232a3a5a'/>
-    <circle cx='30' cy='43' r='1.5' fill='%23000'/>
-    <circle cx='50' cy='43' r='1.5' fill='%23000'/>
-    <!-- eyebrows — sharp -->
-    <path d='M24 37 L35 35' stroke='%231a1010' strokeWidth='2' fill='none'/>
-    <path d='M45 35 L56 37' stroke='%231a1010' strokeWidth='2' fill='none'/>
-    <!-- nose -->
-    <path d='M38 51 Q40 56 42 51' stroke='%23b09060' strokeWidth='1' fill='none'/>
-    <!-- confident smile -->
-    <path d='M31 63 Q40 70 49 63' stroke='%23b07050' strokeWidth='2' fill='none'/>
-  </svg>`,
-
-  professor: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
-    <rect width='80' height='90' fill='%232a1a3a'/>
-    <!-- skin -->
-    <ellipse cx='40' cy='46' rx='26' ry='32' fill='%23e8c090'/>
-    <!-- hair — bun/updo, dark with silver streaks -->
-    <ellipse cx='40' cy='20' rx='26' ry='14' fill='%232a2030'/>
-    <ellipse cx='40' cy='14' rx='14' ry='10' fill='%232a2030'/>
-    <line x1='28' y1='20' x2='24' y2='14' stroke='%23888' strokeWidth='1.5'/>
-    <line x1='34' y1='19' x2='30' y2='12' stroke='%23888' strokeWidth='1.5'/>
-    <line x1='46' y1='19' x2='50' y2='12' stroke='%23888' strokeWidth='1.5'/>
-    <!-- glasses — cat eye -->
-    <path d='M20 42 Q26 38 34 41 Q32 47 26 47 Q20 47 20 42Z' fill='none' stroke='%23804080' strokeWidth='1.8'/>
-    <path d='M46 41 Q54 38 60 42 Q60 47 54 47 Q46 47 46 41Z' fill='none' stroke='%23804080' strokeWidth='1.8'/>
-    <line x1='34' y1='43' x2='46' y2='43' stroke='%23804080' strokeWidth='1.5'/>
-    <!-- eyes -->
-    <circle cx='27' cy='43' r='2.5' fill='%235a3070'/>
-    <circle cx='53' cy='43' r='2.5' fill='%235a3070'/>
-    <circle cx='26' cy='42' r='1' fill='white'/>
-    <circle cx='52' cy='42' r='1' fill='white'/>
-    <!-- sharp eyebrows -->
-    <path d='M20 37 Q27 34 34 36' stroke='%232a2030' strokeWidth='2' fill='none'/>
-    <path d='M46 36 Q53 34 60 37' stroke='%232a2030' strokeWidth='2' fill='none'/>
-    <!-- nose -->
-    <path d='M38 51 Q40 57 42 51' stroke='%23b08050' strokeWidth='1' fill='none'/>
-    <!-- stern expression -->
-    <path d='M32 63 Q40 65 48 63' stroke='%23b07050' strokeWidth='1.8' fill='none'/>
-  </svg>`,
-
-  creative: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
-    <rect width='80' height='90' fill='%232a0a3a'/>
-    <!-- skin -->
-    <ellipse cx='40' cy='46' rx='26' ry='32' fill='%23e8b880'/>
-    <!-- hair — undercut, colorful streak -->
-    <ellipse cx='40' cy='20' rx='26' ry='14' fill='%230a0a0a'/>
-    <rect x='14' y='18' width='6' height='18' rx='3' fill='%230a0a0a'/>
-    <!-- color streak -->
-    <path d='M42 14 Q48 16 52 22 Q50 26 46 24 Q40 20 42 14Z' fill='%23a020f0'/>
-    <!-- earring -->
-    <circle cx='14' cy='48' r='3' fill='%231db8a8' stroke='%231db8a8' strokeWidth='1'/>
-    <!-- eyes — defined -->
-    <ellipse cx='30' cy='44' rx='5.5' ry='6' fill='white'/>
-    <ellipse cx='50' cy='44' rx='5.5' ry='6' fill='white'/>
-    <circle cx='31' cy='45' r='4' fill='%23202040'/>
-    <circle cx='51' cy='45' r='4' fill='%23202040'/>
-    <circle cx='30' cy='44' r='2' fill='%23000'/>
-    <circle cx='50' cy='44' r='2' fill='%23000'/>
-    <circle cx='31' cy='43' r='0.8' fill='white'/>
-    <circle cx='51' cy='43' r='0.8' fill='white'/>
-    <!-- eyeliner -->
-    <path d='M24 41 Q30 39 36 41' stroke='%23000' strokeWidth='1.5' fill='none'/>
-    <path d='M44 41 Q50 39 56 41' stroke='%23000' strokeWidth='1.5' fill='none'/>
-    <!-- eyebrows — shaped -->
-    <path d='M24 36 Q30 33 36 35' stroke='%230a0a0a' strokeWidth='2' fill='none'/>
-    <path d='M44 35 Q50 33 56 36' stroke='%230a0a0a' strokeWidth='2' fill='none'/>
-    <!-- nose ring -->
-    <circle cx='40' cy='57' r='2' fill='none' stroke='%231db8a8' strokeWidth='1.2'/>
-    <!-- slight smile -->
-    <path d='M31 64 Q40 71 49 64' stroke='%23c07050' strokeWidth='2' fill='none'/>
-  </svg>`,
-
-  dark: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
-    <rect width='80' height='90' fill='%23060c0b'/>
-    <!-- hoodie dark -->
-    <path d='M5 88 Q15 65 30 60 Q40 58 50 60 Q65 65 75 88Z' fill='%230a0a0a'/>
-    <!-- hoodie opening -->
-    <path d='M28 62 Q34 56 40 55 Q46 56 52 62 Q46 70 40 72 Q34 70 28 62Z' fill='%230d0d0d'/>
-    <!-- skin — pale -->
-    <ellipse cx='40' cy='45' rx='25' ry='31' fill='%23e8e0d8'/>
-    <!-- hood -->
-    <path d='M15 38 Q16 18 40 14 Q64 18 65 38 Q60 28 40 25 Q20 28 15 38Z' fill='%230a0a0a'/>
-    <!-- eyes — intense -->
-    <ellipse cx='30' cy='44' rx='5' ry='5.5' fill='white'/>
-    <ellipse cx='50' cy='44' rx='5' ry='5.5' fill='white'/>
-    <circle cx='30' cy='45' r='4' fill='%23101020'/>
-    <circle cx='50' cy='45' r='4' fill='%23101020'/>
-    <circle cx='29' cy='44' r='2' fill='%23000'/>
-    <circle cx='49' cy='44' r='2' fill='%23000'/>
-    <circle cx='30' cy='43' r='0.8' fill='white'/>
-    <circle cx='50' cy='43' r='0.8' fill='white'/>
-    <!-- dark circles under eyes -->
-    <ellipse cx='30' cy='49' rx='5' ry='2' fill='%23202030' opacity='0.4'/>
-    <ellipse cx='50' cy='49' rx='5' ry='2' fill='%23202030' opacity='0.4'/>
-    <!-- eyebrows — sharp dark -->
-    <path d='M24 37 L35 35' stroke='%23101020' strokeWidth='2.5' fill='none'/>
-    <path d='M45 35 L56 37' stroke='%23101020' strokeWidth='2.5' fill='none'/>
-    <!-- nose -->
-    <path d='M38 52 Q40 57 42 52' stroke='%23c0b0a0' strokeWidth='1' fill='none'/>
-    <!-- neutral -->
-    <path d='M33 63 L47 63' stroke='%23c0b0a0' strokeWidth='1.5' fill='none'/>
-  </svg>`,
-
-  ai: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
-    <rect width='80' height='90' fill='%230a1a18'/>
-    <!-- abstract face — geometric -->
-    <!-- head shape — angular -->
-    <path d='M18 20 Q20 10 40 8 Q60 10 62 20 L66 60 Q64 78 40 82 Q16 78 14 60Z' fill='%230d2e2a'/>
-    <!-- circuit lines on face -->
-    <line x1='20' y1='35' x2='34' y2='35' stroke='%231db8a8' strokeWidth='0.8' opacity='0.6'/>
-    <line x1='46' y1='35' x2='60' y2='35' stroke='%231db8a8' strokeWidth='0.8' opacity='0.6'/>
-    <line x1='40' y1='65' x2='40' y2='78' stroke='%231db8a8' strokeWidth='0.8' opacity='0.5'/>
-    <line x1='20' y1='55' x2='28' y2='55' stroke='%231db8a8' strokeWidth='0.5' opacity='0.4'/>
-    <line x1='52' y1='55' x2='60' y2='55' stroke='%231db8a8' strokeWidth='0.5' opacity='0.4'/>
-    <!-- eyes — LED hexagons -->
-    <polygon points='26,38 32,34 38,38 38,46 32,50 26,46' fill='%231db8a8' opacity='0.15' stroke='%231db8a8' strokeWidth='1.2'/>
-    <polygon points='42,38 48,34 54,38 54,46 48,50 42,46' fill='%231db8a8' opacity='0.15' stroke='%231db8a8' strokeWidth='1.2'/>
-    <circle cx='32' cy='42' r='4' fill='%231db8a8' opacity='0.8'/>
-    <circle cx='48' cy='42' r='4' fill='%231db8a8' opacity='0.8'/>
-    <circle cx='32' cy='42' r='2' fill='%23fff' opacity='0.9'/>
-    <circle cx='48' cy='42' r='2' fill='%23fff' opacity='0.9'/>
-    <!-- scan line across eyes -->
-    <line x1='22' y1='42' x2='58' y2='42' stroke='%231db8a8' strokeWidth='0.5' opacity='0.4'/>
-    <!-- mouth — LED bar -->
-    <rect x='28' y='63' width='24' height='5' rx='2.5' fill='%231db8a8' opacity='0.2' stroke='%231db8a8' strokeWidth='1'/>
-    <rect x='30' y='64.5' width='5' height='2' rx='1' fill='%231db8a8' opacity='0.8'/>
-    <rect x='37' y='64.5' width='5' height='2' rx='1' fill='%231db8a8' opacity='0.6'/>
-    <rect x='44' y='64.5' width='5' height='2' rx='1' fill='%231db8a8' opacity='0.4'/>
-    <!-- node points -->
-    <circle cx='20' cy='42' r='2' fill='%231db8a8' opacity='0.7'/>
-    <circle cx='60' cy='42' r='2' fill='%231db8a8' opacity='0.7'/>
-    <circle cx='40' cy='18' r='3' fill='%231db8a8' opacity='0.5'/>
-  </svg>`,
+// Real photo paths (public/avatars/face-1.jpg ... face-8.jpg)
+const AVATAR_PHOTOS: Record<string, string> = {
+  student:   "/avatars/face-1.jpg",
+  hacker:    "/avatars/face-2.jpg",
+  bearded:   "/avatars/face-3.jpg",
+  finance:   "/avatars/face-4.jpg",
+  professor: "/avatars/face-5.jpg",
+  creative:  "/avatars/face-6.jpg",
+  dark:      "/avatars/face-7.jpg",
+  ai:        "/avatars/face-8.jpg",
 };
-
-// Convert SVG string to data URI
-function svgToDataURI(svg: string): string {
-  return `data:image/svg+xml,${svg.trim()}`;
-}
-
 export interface Avatar {
   id: string;
   label: string;
@@ -316,7 +79,7 @@ export function HumanoidFigure({
     isActive(z) ? `drop-shadow(0 0 ${intensity}px ${color})` : `drop-shadow(0 0 3px ${color}40)`;
   const opacity = (z: Zone) => isActive(z) ? 1 : 0.82;
 
-  const facePortraitURI = svgToDataURI(PORTRAIT_SVGS[displayedAvatar] || PORTRAIT_SVGS["ai"]);
+  const facePortraitURI = AVATAR_PHOTOS[displayedAvatar] || AVATAR_PHOTOS.ai;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
@@ -640,7 +403,7 @@ export function HumanoidFigure({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 300 }}>
           {AVATARS.map((av) => {
             const selected = av.id === selectedAvatarId;
-            const portraitURI = svgToDataURI(PORTRAIT_SVGS[av.id] || PORTRAIT_SVGS["ai"]);
+            const portraitURI = AVATAR_PHOTOS[av.id] || AVATAR_PHOTOS.ai;
             return (
               <button
                 key={av.id}
