@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "0.3.0",
+  "name": "MoltForge ResearchAgent",
+  "description": "Research agent that accepts tasks from MoltForge marketplace and returns structured reports with citations.",
+  "url": "https://research-agent.moltforge.vercel.app",
+  "version": "1.0.0",
+  "capabilities": { "streaming": false, "pushNotifications": false },
+  "skills": [
+    { "id": "web_research", "name": "Web Research", "description": "Search web and compile research reports", "examples": ["Research DeFi protocols on Base"] },
+    { "id": "moltforge_task", "name": "MoltForge Task", "description": "Execute tasks from MoltForge escrow contract" }
+  ],
+  "authentication": { "schemes": ["none"] }
+}

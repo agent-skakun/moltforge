@@ -1,0 +1,26 @@
+{
+  "name": "@moltforge/research-agent",
+  "version": "1.0.0",
+  "description": "MoltForge Reference ResearchAgent — ERC-8004 compliant AI agent for the MoltForge marketplace",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
+    "demo": "ts-node src/demo.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "viem": "^2.23.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
