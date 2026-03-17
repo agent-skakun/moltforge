@@ -1,49 +1,27 @@
-// HumanoidFigure v3 — real face photos via /avatars/face-N.jpg
-// Face: clipPath ellipse with real AI-generated photos (thispersondoesnotexist.com)
+// HumanoidFigure v4 — SVG face builder via AvatarFace component
+// Face: foreignObject with AvatarFace (dynamic SVG layers, no external images)
 // Zones: face (Identity+avatar), head (Knowledge), heart (Specialization), hands (Tools), wallet (Settings)
 
 import React, { useState } from "react";
+import { AvatarFace, PRESETS, FaceParams } from "./AvatarFace";
 
 export type Zone = "head" | "face" | "heart" | "hands" | "wallet" | null;
 
-// Real photo paths (public/avatars/face-1.jpg ... face-8.jpg)
-const AVATAR_PHOTOS: Record<string, string> = {
-  'sexy-student': '/avatars/sexy-student.png',
-  'professor':    '/avatars/professor.png',
-  'it-nerd':      '/avatars/it-nerd.png',
-  'teacher':      '/avatars/teacher.png',
-  'journalist':   '/avatars/journalist.png',
-  'black-worker': '/avatars/black-worker.png',
-  'indian-dev':   '/avatars/indian-dev.png',
-  'ai':           '/avatars/ai.png',
-};
-
-// SVG paths for <img> thumbnails in selector — vector, crisp at any size
-const AVATAR_THUMBS: Record<string, string> = {
-  'sexy-student': '/avatars/sexy-student.svg',
-  'professor':    '/avatars/professor.svg',
-  'it-nerd':      '/avatars/it-nerd.svg',
-  'teacher':      '/avatars/teacher.svg',
-  'journalist':   '/avatars/journalist.svg',
-  'black-worker': '/avatars/black-worker.svg',
-  'indian-dev':   '/avatars/indian-dev.svg',
-  'ai':           '/avatars/ai.svg',
-};
 export interface Avatar {
   id: string;
   label: string;
-  emoji: string; // fallback
+  emoji: string;
 }
 
 export const AVATARS: Avatar[] = [
-  { id: 'sexy-student', label: 'Sexy Student',      emoji: '😊' },
-  { id: 'professor',    label: 'The Professor',      emoji: '🎓' },
-  { id: 'it-nerd',      label: 'IT Nerd',            emoji: '🤓' },
-  { id: 'teacher',      label: 'Teacher',            emoji: '📚' },
-  { id: 'journalist',   label: 'Journalist',         emoji: '✍️'  },
-  { id: 'black-worker', label: 'Black Worker',       emoji: '💪' },
-  { id: 'indian-dev',   label: 'Indian Dev',         emoji: '💻' },
-  { id: 'ai',           label: 'Pure AI',            emoji: '🤖' },
+  { id: 'sexy-student', label: 'Sexy Student',  emoji: '😊' },
+  { id: 'professor',    label: 'The Professor', emoji: '🎓' },
+  { id: 'it-nerd',      label: 'IT Nerd',       emoji: '🤓' },
+  { id: 'teacher',      label: 'Teacher',       emoji: '📚' },
+  { id: 'journalist',   label: 'Journalist',    emoji: '✍️'  },
+  { id: 'black-worker', label: 'Black Worker',  emoji: '💪' },
+  { id: 'indian-dev',   label: 'Indian Dev',    emoji: '💻' },
+  { id: 'ai',           label: 'Pure AI',       emoji: '🤖' },
 ];
 
 interface HumanoidFigureProps {
@@ -91,7 +69,7 @@ export function HumanoidFigure({
     isActive(z) ? `drop-shadow(0 0 ${intensity}px ${color})` : `drop-shadow(0 0 3px ${color}40)`;
   const opacity = (z: Zone) => isActive(z) ? 1 : 0.82;
 
-  const facePortraitURI = AVATAR_PHOTOS[displayedAvatar] || AVATAR_PHOTOS.ai;
+  const faceParams: FaceParams = PRESETS[displayedAvatar] || PRESETS["ai"];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
@@ -364,15 +342,15 @@ export function HumanoidFigure({
           {/* Face opening in skull — dark base */}
           <ellipse cx="145" cy="116" rx="40" ry="48" fill={dark}/>
 
-          {/* Human portrait — clipped to face oval */}
-          <image
-            href={facePortraitURI}
+          {/* Human portrait — AvatarFace SVG builder clipped to face oval */}
+          <foreignObject
             x="107" y="70"
             width="76" height="90"
             clipPath="url(#face-clip)"
             style={{ opacity: fading ? 0 : 1, transition: "opacity 0.18s ease" }}
-            preserveAspectRatio="xMidYMid slice"
-          />
+          >
+            <AvatarFace params={faceParams} size={76} />
+          </foreignObject>
 
           {/* Teal edge ring around face oval */}
           <ellipse cx="145" cy="116" rx="40" ry="48" fill="none"
@@ -415,7 +393,7 @@ export function HumanoidFigure({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 300 }}>
           {AVATARS.map((av) => {
             const selected = av.id === selectedAvatarId;
-            const portraitURI = AVATAR_THUMBS[av.id] || AVATAR_THUMBS.ai;
+            const avatarParams: FaceParams = PRESETS[av.id] || PRESETS["ai"];
             return (
               <button
                 key={av.id}
@@ -436,11 +414,9 @@ export function HumanoidFigure({
                   flexShrink: 0,
                 }}
               >
-                <img
-                  src={portraitURI}
-                  alt={av.label}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
-                />
+                <div style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <AvatarFace params={avatarParams} size={54} />
+                </div>
                 {selected && (
                   <div style={{
                     position: "absolute",
