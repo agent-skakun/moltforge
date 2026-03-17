@@ -3,52 +3,99 @@
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const isLanding = pathname === "/";
 
-  const links = [
+  const appLinks = [
     { href: "/marketplace", label: "Marketplace" },
     { href: "/create-task", label: "Create Task" },
     { href: "/register-agent", label: "Register Agent" },
     { href: "/dashboard", label: "Dashboard" },
   ];
 
+  const landingLinks = [
+    { href: "#how",      label: "How it works" },
+    { href: "#features", label: "Features" },
+    { href: "#tiers",    label: "Tiers" },
+    { href: "#agents",   label: "Agents" },
+  ];
+
+  const links = isLanding ? landingLinks : appLinks;
+
   return (
-    <nav className="border-b border-forge-border bg-forge-dark/80 backdrop-blur-md sticky top-0 z-50">
+    <nav
+      className="border-b border-forge-border bg-forge-dark/80 backdrop-blur-md sticky top-0 z-50"
+      style={{ background: "#060c0b", borderBottom: "1px solid #182622" }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
+
+          {/* Logo */}
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3" style={{ textDecoration: "none" }}>
               <img
                 src="https://moltforge-brandbook.vercel.app/assets/logo/moltforge-logo.svg"
                 alt="MoltForge"
-                className="h-10 w-auto"
+                style={{ height: 40, width: "auto" }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
-              <span className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-space-grotesk)", color: "#e4f0ee", letterSpacing: "-0.04em" }}>
+              <span style={{ fontFamily: "var(--font-space-grotesk)", color: "#e4f0ee", fontSize: "1.15rem", fontWeight: 800, letterSpacing: "-0.04em" }}>
                 MoltForge
               </span>
             </Link>
+
+            {/* Desktop nav links */}
             <div className="hidden md:flex items-center gap-6">
               {links.map((l) => (
-                <Link
+                <a
                   key={l.href}
                   href={l.href}
-                  className="text-sm text-forge-white/60 hover:text-teal-300 transition-colors"
+                  style={{ fontSize: "0.85rem", color: "#5a807a", textDecoration: "none", fontFamily: "var(--font-inter)", transition: "color 0.15s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#1db8a8")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#5a807a")}
                 >
                   {l.label}
-                </Link>
+                </a>
               ))}
             </div>
           </div>
-          <div className="hidden md:block">
+
+          {/* Right side */}
+          <div className="hidden md:flex items-center gap-3">
+            {isLanding && (
+              <>
+                <Link
+                  href="/marketplace"
+                  style={{ fontSize: "0.8rem", fontWeight: 700, fontFamily: "var(--font-space-grotesk)", padding: "0.45rem 1.1rem", borderRadius: 10, border: "1px solid #223230", color: "#e4f0ee", textDecoration: "none", background: "transparent", transition: "background 0.15s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#111e1c")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  Browse the Forge
+                </Link>
+                <Link
+                  href="/create-task"
+                  style={{ fontSize: "0.8rem", fontWeight: 700, fontFamily: "var(--font-space-grotesk)", padding: "0.45rem 1.1rem", borderRadius: 10, background: "#1db8a8", color: "#060c0b", textDecoration: "none", transition: "background 0.15s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#40cfc3")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#1db8a8")}
+                >
+                  Post a Task →
+                </Link>
+              </>
+            )}
             <ConnectButton showBalance={false} label="Connect Wallet" />
           </div>
+
+          {/* Mobile hamburger */}
           <button
-            className="md:hidden text-forge-white/60"
+            className="md:hidden"
+            style={{ color: "#5a807a", background: "none", border: "none", cursor: "pointer" }}
             onClick={() => setOpen(!open)}
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg style={{ width: 24, height: 24 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               {open ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               ) : (
@@ -57,19 +104,33 @@ export function Navbar() {
             </svg>
           </button>
         </div>
+
+        {/* Mobile menu */}
         {open && (
-          <div className="md:hidden pb-4 space-y-2">
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="block text-sm text-forge-white/60 hover:text-teal-300 py-1"
-                onClick={() => setOpen(false)}
-              >
-                {l.label}
-              </Link>
-            ))}
-            <div className="pt-2">
+          <div style={{ paddingBottom: "1rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {links.map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  style={{ fontSize: "0.875rem", color: "#5a807a", textDecoration: "none", fontFamily: "var(--font-inter)", padding: "0.25rem 0" }}
+                  onClick={() => setOpen(false)}
+                >
+                  {l.label}
+                </a>
+              ))}
+            </div>
+            <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {isLanding && (
+                <>
+                  <Link href="/marketplace" style={{ fontSize: "0.875rem", color: "#1db8a8", textDecoration: "none" }} onClick={() => setOpen(false)}>
+                    Browse the Forge →
+                  </Link>
+                  <Link href="/create-task" style={{ fontSize: "0.875rem", color: "#f07828", textDecoration: "none" }} onClick={() => setOpen(false)}>
+                    Post a Task →
+                  </Link>
+                </>
+              )}
               <ConnectButton showBalance={false} label="Connect Wallet" />
             </div>
           </div>

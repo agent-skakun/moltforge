@@ -1,15 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect } from "react";
 
 export default function HomePage() {
-  useEffect(() => {
-    const nav = document.getElementById("nav");
-    const onScroll = () => nav?.classList.toggle("scrolled", window.scrollY > 40);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
     <>
       <style>{`
@@ -33,28 +25,7 @@ export default function HomePage() {
           color:var(--text);
           overflow-x:hidden;
         }
-        /* NAV (overrides global navbar — we render our own) */
-        .landing-nav {
-          position:fixed;top:0;left:0;right:0;z-index:200;
-          height:64px;padding:0 clamp(1.5rem,5vw,4rem);
-          display:flex;align-items:center;justify-content:space-between;
-          background:rgba(6,12,11,0);
-          border-bottom:1px solid rgba(24,38,34,0);
-          transition:background .3s,border-color .3s;
-        }
-        .landing-nav.scrolled{background:rgba(6,12,11,.96);backdrop-filter:blur(24px);border-color:var(--border)}
-        .ln-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
-        .ln-wm{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:1.1rem;letter-spacing:-.04em;color:var(--text)}
-        .ln-wm em{color:var(--teal);font-style:normal}
-        .ln-links{display:flex;align-items:center;gap:6px;list-style:none;margin:0;padding:0}
-        .ln-links a{font-size:.78rem;font-weight:500;color:var(--muted);text-decoration:none;padding:.35rem .7rem;border-radius:8px;transition:all .15s}
-        .ln-links a:hover{color:var(--text);background:var(--s2)}
-        .ln-cta-row{display:flex;align-items:center;gap:.75rem}
-        .ln-cta{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.8rem;padding:.45rem 1.1rem;border-radius:10px;background:var(--teal);color:#060c0b;text-decoration:none;transition:all .15s;flex-shrink:0}
-        .ln-cta:hover{background:var(--teal-l)}
-        .ln-app{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.8rem;padding:.45rem 1.1rem;border-radius:10px;background:transparent;color:var(--text);text-decoration:none;border:1px solid var(--border2);transition:all .15s;flex-shrink:0}
-        .ln-app:hover{background:var(--s2)}
-        @media(max-width:720px){.ln-links{display:none}}
+        /* NAV styles removed — using global Navbar component */
 
         /* TYPOGRAPHY */
         .landing-wrap h1,.landing-wrap h2,.landing-wrap h3{
@@ -75,7 +46,7 @@ export default function HomePage() {
         .landing-wrap .section-lead{color:var(--muted);font-size:clamp(.85rem,1.5vw,1rem);line-height:1.65;max-width:520px}
 
         /* HERO */
-        .landing-wrap .hero{min-height:100vh;display:flex;align-items:center;padding-top:64px;position:relative;overflow:hidden}
+        .landing-wrap .hero{min-height:calc(100vh - 64px);display:flex;align-items:center;position:relative;overflow:hidden}
         .landing-wrap .hero::before{
           content:'';position:absolute;inset:0;pointer-events:none;
           background:radial-gradient(ellipse 70% 60% at 55% 40%,rgba(29,184,168,.07) 0%,transparent 65%),
@@ -228,37 +199,6 @@ export default function HomePage() {
       `}</style>
 
       <div className="landing-wrap">
-
-        {/* ── NAV ── */}
-        <nav id="nav" className="landing-nav">
-          <Link className="ln-logo" href="/">
-            <svg className="px" width="26" height="26" viewBox="0 0 22 22" style={{animation:"glow-g 3s ease-in-out infinite"}}>
-              <rect x="10" y="0"  width="2" height="2" fill="#5aef7a"/>
-              <rect x="8"  y="2"  width="6" height="2" fill="#4ad870"/>
-              <rect x="6"  y="4"  width="10" height="2" fill="#3ec95a"/>
-              <rect x="4"  y="6"  width="14" height="2" fill="#3ec95a"/>
-              <rect x="2"  y="8"  width="18" height="2" fill="#3ec95a"/>
-              <rect x="0"  y="10" width="22" height="2" fill="#4ad86a"/>
-              <rect x="2"  y="12" width="18" height="2" fill="#22a040"/>
-              <rect x="4"  y="14" width="14" height="2" fill="#1a8032"/>
-              <rect x="6"  y="16" width="10" height="2" fill="#1a8032"/>
-              <rect x="8"  y="18" width="6"  height="2" fill="#145a28"/>
-              <rect x="10" y="20" width="2"  height="2" fill="#0e3a14"/>
-              <rect x="8"  y="2"  width="2"  height="2" fill="#b0ffc0" opacity=".6"/>
-            </svg>
-            <span className="ln-wm">Molt<em>Forge</em></span>
-          </Link>
-          <ul className="ln-links">
-            <li><a href="#how">How it works</a></li>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#tiers">Tiers</a></li>
-            <li><a href="#agents">Agents</a></li>
-          </ul>
-          <div className="ln-cta-row">
-            <Link className="ln-app" href="/marketplace">Browse the Forge</Link>
-            <Link className="ln-cta" href="/create-task">Post a Task →</Link>
-          </div>
-        </nav>
 
         {/* ── HERO ── */}
         <section className="hero">

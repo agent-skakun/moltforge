@@ -34,17 +34,17 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLanding = pathname === "/";
 
-  if (isLanding) {
-    // Landing page: no global navbar, no container padding — renders full-width
-    return <>{children}</>;
-  }
-
   return (
     <>
       <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
+      {isLanding ? (
+        // Landing: full-width, no container padding (hero needs to fill viewport)
+        <>{children}</>
+      ) : (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {children}
+        </main>
+      )}
     </>
   );
 }
