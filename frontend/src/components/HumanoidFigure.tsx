@@ -1,25 +1,274 @@
-// HumanoidFigure — Ameca-style humanoid SVG for Agent Builder
+// HumanoidFigure v2 — Ameca-style humanoid with human face mask
+// Face: clipPath ellipse with illustrated portrait (SVG inline data URI)
 // Zones: face (Identity+avatar), head (Knowledge), heart (Specialization), hands (Tools), wallet (Settings)
 
-import React from "react";
+import React, { useState } from "react";
 
 export type Zone = "head" | "face" | "heart" | "hands" | "wallet" | null;
 
+// SVG portrait illustrations as data URIs
+// Each portrait: ~80x90px minimal face illustration
+const PORTRAIT_SVGS: Record<string, string> = {
+  student: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
+    <rect width='80' height='90' fill='%23c8855a'/>
+    <!-- skin -->
+    <ellipse cx='40' cy='45' rx='28' ry='34' fill='%23f5c99a'/>
+    <!-- hair — long blonde -->
+    <ellipse cx='40' cy='24' rx='28' ry='18' fill='%23e8c84a'/>
+    <rect x='12' y='22' width='12' height='44' rx='6' fill='%23e8c84a'/>
+    <rect x='56' y='22' width='12' height='44' rx='6' fill='%23e8c84a'/>
+    <!-- eyes -->
+    <ellipse cx='30' cy='44' rx='5' ry='6' fill='white'/>
+    <ellipse cx='50' cy='44' rx='5' ry='6' fill='white'/>
+    <circle cx='31' cy='45' r='3.5' fill='%234a6080'/>
+    <circle cx='51' cy='45' r='3.5' fill='%234a6080'/>
+    <circle cx='32' cy='44' r='1.5' fill='%23000'/>
+    <circle cx='52' cy='44' r='1.5' fill='%23000'/>
+    <circle cx='33' cy='43' r='0.8' fill='white'/>
+    <circle cx='53' cy='43' r='0.8' fill='white'/>
+    <!-- eyebrows -->
+    <path d='M25 37 Q30 34 35 37' stroke='%23c8904a' strokeWidth='1.5' fill='none'/>
+    <path d='M45 37 Q50 34 55 37' stroke='%23c8904a' strokeWidth='1.5' fill='none'/>
+    <!-- nose -->
+    <path d='M38 52 Q40 58 42 52' stroke='%23c8904a' strokeWidth='1' fill='none'/>
+    <!-- smile -->
+    <path d='M30 64 Q40 72 50 64' stroke='%23c8604a' strokeWidth='2' fill='none' strokeLinecap='round'/>
+    <!-- teeth -->
+    <path d='M33 64 Q40 69 47 64' fill='white'/>
+  </svg>`,
+
+  hacker: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
+    <rect width='80' height='90' fill='%23234a2a'/>
+    <!-- skin -->
+    <ellipse cx='40' cy='46' rx='26' ry='32' fill='%23f0d0a0'/>
+    <!-- hair — dark, messy -->
+    <ellipse cx='40' cy='22' rx='27' ry='16' fill='%231a1a2a'/>
+    <rect x='13' y='20' width='8' height='20' rx='4' fill='%231a1a2a'/>
+    <rect x='59' y='20' width='8' height='20' rx='4' fill='%231a1a2a'/>
+    <rect x='20' y='16' width='40' height='12' rx='6' fill='%231a1a2a'/>
+    <!-- glasses frame -->
+    <rect x='22' y='39' width='14' height='11' rx='5' fill='none' stroke='%23888' strokeWidth='2'/>
+    <rect x='44' y='39' width='14' height='11' rx='5' fill='none' stroke='%23888' strokeWidth='2'/>
+    <line x1='36' y1='44' x2='44' y2='44' stroke='%23888' strokeWidth='1.5'/>
+    <line x1='22' y1='44' x2='18' y2='44' stroke='%23888' strokeWidth='1.5'/>
+    <line x1='58' y1='44' x2='62' y2='44' stroke='%23888' strokeWidth='1.5'/>
+    <!-- eyes behind glasses -->
+    <circle cx='29' cy='44' r='3' fill='%23333'/>
+    <circle cx='51' cy='44' r='3' fill='%23333'/>
+    <circle cx='30' cy='43' r='1' fill='white'/>
+    <circle cx='52' cy='43' r='1' fill='white'/>
+    <!-- eyebrows — arched -->
+    <path d='M22 36 Q29 33 36 36' stroke='%23333' strokeWidth='1.5' fill='none'/>
+    <path d='M44 36 Q51 33 58 36' stroke='%23333' strokeWidth='1.5' fill='none'/>
+    <!-- nose -->
+    <path d='M38 52 Q40 57 42 52' stroke='%23c09060' strokeWidth='1' fill='none'/>
+    <!-- slight smirk -->
+    <path d='M32 64 Q40 68 48 63' stroke='%23c09060' strokeWidth='1.8' fill='none' strokeLinecap='round'/>
+  </svg>`,
+
+  bearded: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
+    <rect width='80' height='90' fill='%231a2a3a'/>
+    <!-- skin -->
+    <ellipse cx='40' cy='44' rx='27' ry='33' fill='%23e8c090'/>
+    <!-- hair — short dark -->
+    <ellipse cx='40' cy='20' rx='27' ry='14' fill='%232a2020'/>
+    <rect x='13' y='18' width='8' height='16' rx='4' fill='%232a2020'/>
+    <rect x='59' y='18' width='8' height='16' rx='4' fill='%232a2020'/>
+    <!-- beard -->
+    <path d='M16 58 Q20 76 40 80 Q60 76 64 58 Q52 68 40 69 Q28 68 16 58Z' fill='%232a2020'/>
+    <path d='M18 54 Q20 60 28 62' stroke='%232a2020' strokeWidth='2'/>
+    <path d='M62 54 Q60 60 52 62' stroke='%232a2020' strokeWidth='2'/>
+    <!-- mustache -->
+    <path d='M28 60 Q34 64 40 62 Q46 64 52 60' stroke='%232a2020' strokeWidth='3' fill='none' strokeLinecap='round'/>
+    <!-- eyes -->
+    <ellipse cx='30' cy='43' rx='5' ry='5.5' fill='white'/>
+    <ellipse cx='50' cy='43' rx='5' ry='5.5' fill='white'/>
+    <circle cx='31' cy='44' r='3.5' fill='%234a3020'/>
+    <circle cx='51' cy='44' r='3.5' fill='%234a3020'/>
+    <circle cx='30' cy='43' r='1.5' fill='%23000'/>
+    <circle cx='50' cy='43' r='1.5' fill='%23000'/>
+    <circle cx='31' cy='42' r='0.8' fill='white'/>
+    <circle cx='51' cy='42' r='0.8' fill='white'/>
+    <!-- eyebrows — thick -->
+    <path d='M24 36 Q30 33 36 35' stroke='%232a2020' strokeWidth='2.5' fill='none'/>
+    <path d='M44 35 Q50 33 56 36' stroke='%232a2020' strokeWidth='2.5' fill='none'/>
+    <!-- nose -->
+    <path d='M37 50 Q40 56 43 50' stroke='%23b08050' strokeWidth='1.2' fill='none'/>
+  </svg>`,
+
+  finance: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
+    <rect width='80' height='90' fill='%230a1a30'/>
+    <!-- suit collar -->
+    <path d='M10 88 Q20 72 30 68 L40 75 L50 68 Q60 72 70 88Z' fill='%231a2848'/>
+    <path d='M30 68 L40 80 L50 68' fill='%23fff' opacity='0.9'/>
+    <!-- tie -->
+    <path d='M38 68 L40 80 L42 68' fill='%23c02020'/>
+    <!-- skin -->
+    <ellipse cx='40' cy='45' rx='26' ry='31' fill='%23f0c890'/>
+    <!-- hair — slicked back -->
+    <ellipse cx='40' cy='20' rx='26' ry='12' fill='%231a1010'/>
+    <rect x='14' y='18' width='6' height='14' rx='3' fill='%231a1010'/>
+    <rect x='60' y='18' width='6' height='14' rx='3' fill='%231a1010'/>
+    <path d='M14 22 Q40 15 66 22' stroke='%231a1010' strokeWidth='8' fill='none'/>
+    <!-- eyes -->
+    <ellipse cx='30' cy='44' rx='5' ry='5.5' fill='white'/>
+    <ellipse cx='50' cy='44' rx='5' ry='5.5' fill='white'/>
+    <circle cx='31' cy='44' r='3' fill='%232a3a5a'/>
+    <circle cx='51' cy='44' r='3' fill='%232a3a5a'/>
+    <circle cx='30' cy='43' r='1.5' fill='%23000'/>
+    <circle cx='50' cy='43' r='1.5' fill='%23000'/>
+    <!-- eyebrows — sharp -->
+    <path d='M24 37 L35 35' stroke='%231a1010' strokeWidth='2' fill='none'/>
+    <path d='M45 35 L56 37' stroke='%231a1010' strokeWidth='2' fill='none'/>
+    <!-- nose -->
+    <path d='M38 51 Q40 56 42 51' stroke='%23b09060' strokeWidth='1' fill='none'/>
+    <!-- confident smile -->
+    <path d='M31 63 Q40 70 49 63' stroke='%23b07050' strokeWidth='2' fill='none'/>
+  </svg>`,
+
+  professor: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
+    <rect width='80' height='90' fill='%232a1a3a'/>
+    <!-- skin -->
+    <ellipse cx='40' cy='46' rx='26' ry='32' fill='%23e8c090'/>
+    <!-- hair — bun/updo, dark with silver streaks -->
+    <ellipse cx='40' cy='20' rx='26' ry='14' fill='%232a2030'/>
+    <ellipse cx='40' cy='14' rx='14' ry='10' fill='%232a2030'/>
+    <line x1='28' y1='20' x2='24' y2='14' stroke='%23888' strokeWidth='1.5'/>
+    <line x1='34' y1='19' x2='30' y2='12' stroke='%23888' strokeWidth='1.5'/>
+    <line x1='46' y1='19' x2='50' y2='12' stroke='%23888' strokeWidth='1.5'/>
+    <!-- glasses — cat eye -->
+    <path d='M20 42 Q26 38 34 41 Q32 47 26 47 Q20 47 20 42Z' fill='none' stroke='%23804080' strokeWidth='1.8'/>
+    <path d='M46 41 Q54 38 60 42 Q60 47 54 47 Q46 47 46 41Z' fill='none' stroke='%23804080' strokeWidth='1.8'/>
+    <line x1='34' y1='43' x2='46' y2='43' stroke='%23804080' strokeWidth='1.5'/>
+    <!-- eyes -->
+    <circle cx='27' cy='43' r='2.5' fill='%235a3070'/>
+    <circle cx='53' cy='43' r='2.5' fill='%235a3070'/>
+    <circle cx='26' cy='42' r='1' fill='white'/>
+    <circle cx='52' cy='42' r='1' fill='white'/>
+    <!-- sharp eyebrows -->
+    <path d='M20 37 Q27 34 34 36' stroke='%232a2030' strokeWidth='2' fill='none'/>
+    <path d='M46 36 Q53 34 60 37' stroke='%232a2030' strokeWidth='2' fill='none'/>
+    <!-- nose -->
+    <path d='M38 51 Q40 57 42 51' stroke='%23b08050' strokeWidth='1' fill='none'/>
+    <!-- stern expression -->
+    <path d='M32 63 Q40 65 48 63' stroke='%23b07050' strokeWidth='1.8' fill='none'/>
+  </svg>`,
+
+  creative: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
+    <rect width='80' height='90' fill='%232a0a3a'/>
+    <!-- skin -->
+    <ellipse cx='40' cy='46' rx='26' ry='32' fill='%23e8b880'/>
+    <!-- hair — undercut, colorful streak -->
+    <ellipse cx='40' cy='20' rx='26' ry='14' fill='%230a0a0a'/>
+    <rect x='14' y='18' width='6' height='18' rx='3' fill='%230a0a0a'/>
+    <!-- color streak -->
+    <path d='M42 14 Q48 16 52 22 Q50 26 46 24 Q40 20 42 14Z' fill='%23a020f0'/>
+    <!-- earring -->
+    <circle cx='14' cy='48' r='3' fill='%231db8a8' stroke='%231db8a8' strokeWidth='1'/>
+    <!-- eyes — defined -->
+    <ellipse cx='30' cy='44' rx='5.5' ry='6' fill='white'/>
+    <ellipse cx='50' cy='44' rx='5.5' ry='6' fill='white'/>
+    <circle cx='31' cy='45' r='4' fill='%23202040'/>
+    <circle cx='51' cy='45' r='4' fill='%23202040'/>
+    <circle cx='30' cy='44' r='2' fill='%23000'/>
+    <circle cx='50' cy='44' r='2' fill='%23000'/>
+    <circle cx='31' cy='43' r='0.8' fill='white'/>
+    <circle cx='51' cy='43' r='0.8' fill='white'/>
+    <!-- eyeliner -->
+    <path d='M24 41 Q30 39 36 41' stroke='%23000' strokeWidth='1.5' fill='none'/>
+    <path d='M44 41 Q50 39 56 41' stroke='%23000' strokeWidth='1.5' fill='none'/>
+    <!-- eyebrows — shaped -->
+    <path d='M24 36 Q30 33 36 35' stroke='%230a0a0a' strokeWidth='2' fill='none'/>
+    <path d='M44 35 Q50 33 56 36' stroke='%230a0a0a' strokeWidth='2' fill='none'/>
+    <!-- nose ring -->
+    <circle cx='40' cy='57' r='2' fill='none' stroke='%231db8a8' strokeWidth='1.2'/>
+    <!-- slight smile -->
+    <path d='M31 64 Q40 71 49 64' stroke='%23c07050' strokeWidth='2' fill='none'/>
+  </svg>`,
+
+  dark: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
+    <rect width='80' height='90' fill='%23060c0b'/>
+    <!-- hoodie dark -->
+    <path d='M5 88 Q15 65 30 60 Q40 58 50 60 Q65 65 75 88Z' fill='%230a0a0a'/>
+    <!-- hoodie opening -->
+    <path d='M28 62 Q34 56 40 55 Q46 56 52 62 Q46 70 40 72 Q34 70 28 62Z' fill='%230d0d0d'/>
+    <!-- skin — pale -->
+    <ellipse cx='40' cy='45' rx='25' ry='31' fill='%23e8e0d8'/>
+    <!-- hood -->
+    <path d='M15 38 Q16 18 40 14 Q64 18 65 38 Q60 28 40 25 Q20 28 15 38Z' fill='%230a0a0a'/>
+    <!-- eyes — intense -->
+    <ellipse cx='30' cy='44' rx='5' ry='5.5' fill='white'/>
+    <ellipse cx='50' cy='44' rx='5' ry='5.5' fill='white'/>
+    <circle cx='30' cy='45' r='4' fill='%23101020'/>
+    <circle cx='50' cy='45' r='4' fill='%23101020'/>
+    <circle cx='29' cy='44' r='2' fill='%23000'/>
+    <circle cx='49' cy='44' r='2' fill='%23000'/>
+    <circle cx='30' cy='43' r='0.8' fill='white'/>
+    <circle cx='50' cy='43' r='0.8' fill='white'/>
+    <!-- dark circles under eyes -->
+    <ellipse cx='30' cy='49' rx='5' ry='2' fill='%23202030' opacity='0.4'/>
+    <ellipse cx='50' cy='49' rx='5' ry='2' fill='%23202030' opacity='0.4'/>
+    <!-- eyebrows — sharp dark -->
+    <path d='M24 37 L35 35' stroke='%23101020' strokeWidth='2.5' fill='none'/>
+    <path d='M45 35 L56 37' stroke='%23101020' strokeWidth='2.5' fill='none'/>
+    <!-- nose -->
+    <path d='M38 52 Q40 57 42 52' stroke='%23c0b0a0' strokeWidth='1' fill='none'/>
+    <!-- neutral -->
+    <path d='M33 63 L47 63' stroke='%23c0b0a0' strokeWidth='1.5' fill='none'/>
+  </svg>`,
+
+  ai: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 90'>
+    <rect width='80' height='90' fill='%230a1a18'/>
+    <!-- abstract face — geometric -->
+    <!-- head shape — angular -->
+    <path d='M18 20 Q20 10 40 8 Q60 10 62 20 L66 60 Q64 78 40 82 Q16 78 14 60Z' fill='%230d2e2a'/>
+    <!-- circuit lines on face -->
+    <line x1='20' y1='35' x2='34' y2='35' stroke='%231db8a8' strokeWidth='0.8' opacity='0.6'/>
+    <line x1='46' y1='35' x2='60' y2='35' stroke='%231db8a8' strokeWidth='0.8' opacity='0.6'/>
+    <line x1='40' y1='65' x2='40' y2='78' stroke='%231db8a8' strokeWidth='0.8' opacity='0.5'/>
+    <line x1='20' y1='55' x2='28' y2='55' stroke='%231db8a8' strokeWidth='0.5' opacity='0.4'/>
+    <line x1='52' y1='55' x2='60' y2='55' stroke='%231db8a8' strokeWidth='0.5' opacity='0.4'/>
+    <!-- eyes — LED hexagons -->
+    <polygon points='26,38 32,34 38,38 38,46 32,50 26,46' fill='%231db8a8' opacity='0.15' stroke='%231db8a8' strokeWidth='1.2'/>
+    <polygon points='42,38 48,34 54,38 54,46 48,50 42,46' fill='%231db8a8' opacity='0.15' stroke='%231db8a8' strokeWidth='1.2'/>
+    <circle cx='32' cy='42' r='4' fill='%231db8a8' opacity='0.8'/>
+    <circle cx='48' cy='42' r='4' fill='%231db8a8' opacity='0.8'/>
+    <circle cx='32' cy='42' r='2' fill='%23fff' opacity='0.9'/>
+    <circle cx='48' cy='42' r='2' fill='%23fff' opacity='0.9'/>
+    <!-- scan line across eyes -->
+    <line x1='22' y1='42' x2='58' y2='42' stroke='%231db8a8' strokeWidth='0.5' opacity='0.4'/>
+    <!-- mouth — LED bar -->
+    <rect x='28' y='63' width='24' height='5' rx='2.5' fill='%231db8a8' opacity='0.2' stroke='%231db8a8' strokeWidth='1'/>
+    <rect x='30' y='64.5' width='5' height='2' rx='1' fill='%231db8a8' opacity='0.8'/>
+    <rect x='37' y='64.5' width='5' height='2' rx='1' fill='%231db8a8' opacity='0.6'/>
+    <rect x='44' y='64.5' width='5' height='2' rx='1' fill='%231db8a8' opacity='0.4'/>
+    <!-- node points -->
+    <circle cx='20' cy='42' r='2' fill='%231db8a8' opacity='0.7'/>
+    <circle cx='60' cy='42' r='2' fill='%231db8a8' opacity='0.7'/>
+    <circle cx='40' cy='18' r='3' fill='%231db8a8' opacity='0.5'/>
+  </svg>`,
+};
+
+// Convert SVG string to data URI
+function svgToDataURI(svg: string): string {
+  return `data:image/svg+xml,${svg.trim()}`;
+}
+
 export interface Avatar {
   id: string;
-  emoji: string;
   label: string;
+  emoji: string; // fallback
 }
 
 export const AVATARS: Avatar[] = [
-  { id: "student",   emoji: "😊", label: "Sexy Student"     },
-  { id: "hacker",    emoji: "🤓", label: "Nerdy Hacker"     },
-  { id: "bearded",   emoji: "🧔", label: "Bearded IT Guy"   },
-  { id: "finance",   emoji: "💼", label: "Finance Bro"      },
-  { id: "professor", emoji: "👩‍🏫", label: "The Professor"   },
-  { id: "creative",  emoji: "🎨", label: "Creative Director"},
-  { id: "dark",      emoji: "🥷", label: "Dark Hacker"      },
-  { id: "ai",        emoji: "🤖", label: "Pure AI"          },
+  { id: "student",   label: "Sexy Student",      emoji: "😊" },
+  { id: "hacker",    label: "Nerdy Hacker",       emoji: "🤓" },
+  { id: "bearded",   label: "Bearded IT Guy",     emoji: "🧔" },
+  { id: "finance",   label: "Finance Bro",        emoji: "💼" },
+  { id: "professor", label: "The Professor",      emoji: "👩‍🏫" },
+  { id: "creative",  label: "Creative Director",  emoji: "🎨" },
+  { id: "dark",      label: "Dark Hacker",        emoji: "🥷" },
+  { id: "ai",        label: "Pure AI",            emoji: "🤖" },
 ];
 
 interface HumanoidFigureProps {
@@ -47,13 +296,27 @@ export function HumanoidFigure({
   const metalLight = "#3a4e4c";
   const metalDark = "#1a2826";
   const dark = "#060c0b";
+  const [fading, setFading] = useState(false);
+  const [displayedAvatar, setDisplayedAvatar] = useState(selectedAvatarId);
+
+  // Fade transition when avatar changes
+  React.useEffect(() => {
+    if (selectedAvatarId !== displayedAvatar) {
+      setFading(true);
+      const t = setTimeout(() => {
+        setDisplayedAvatar(selectedAvatarId);
+        setFading(false);
+      }, 180);
+      return () => clearTimeout(t);
+    }
+  }, [selectedAvatarId]);
 
   const isActive = (z: Zone) => activeZone === z || hoverZone === z;
   const glow = (z: Zone, color = teal, intensity = 10) =>
     isActive(z) ? `drop-shadow(0 0 ${intensity}px ${color})` : `drop-shadow(0 0 3px ${color}40)`;
   const opacity = (z: Zone) => isActive(z) ? 1 : 0.82;
 
-  const selectedAvatar = AVATARS.find(a => a.id === selectedAvatarId) || AVATARS[0];
+  const facePortraitURI = svgToDataURI(PORTRAIT_SVGS[displayedAvatar] || PORTRAIT_SVGS["ai"]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
@@ -87,25 +350,11 @@ export function HumanoidFigure({
             <stop offset="60%" stopColor={specColor} stopOpacity="0.3" />
             <stop offset="100%" stopColor={specColor} stopOpacity="0" />
           </radialGradient>
-          {/* Cyber eye / face display */}
-          <radialGradient id="h-face-display" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#0d2e2a" />
-            <stop offset="100%" stopColor="#060c0b" />
-          </radialGradient>
-          {/* Skin tone */}
-          <radialGradient id="h-skin" cx="45%" cy="35%" r="60%">
-            <stop offset="0%" stopColor="#c8a882" />
-            <stop offset="100%" stopColor="#9a7a5a" />
-          </radialGradient>
+          {/* Face portrait clip path — oval face area */}
+          <clipPath id="face-clip">
+            <ellipse cx="145" cy="116" rx="38" ry="46" />
+          </clipPath>
           {/* Glow filters */}
-          <filter id="f-teal-glow">
-            <feGaussianBlur stdDeviation="4" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
-          <filter id="f-ambient-glow">
-            <feGaussianBlur stdDeviation="20" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
           <filter id="f-drop-shadow">
             <feDropShadow dx="0" dy="6" stdDeviation="12" floodColor="#000" floodOpacity="0.7"/>
           </filter>
@@ -125,33 +374,24 @@ export function HumanoidFigure({
         >
           {/* Left thigh */}
           <path d="M108 390 Q100 410 98 450 L122 450 Q124 410 118 390Z" fill="url(#h-metal-v)" stroke={teal} strokeWidth="0.8" strokeOpacity="0.4"/>
-          {/* Left knee cap */}
           <ellipse cx="110" cy="452" rx="14" ry="10" fill={metalDark} stroke={teal} strokeWidth="1.2"/>
           <ellipse cx="110" cy="452" rx="7" ry="5" fill={teal} fillOpacity="0.3"/>
           <ellipse cx="110" cy="452" rx="3" ry="2.5" fill={teal} fillOpacity="0.7"/>
-          {/* Left shin */}
           <path d="M98 460 Q96 490 97 520 L123 520 Q124 490 122 460Z" fill="url(#h-metal-v)" stroke={teal} strokeWidth="0.8" strokeOpacity="0.4"/>
-          {/* Left shin panel */}
           <path d="M101 468 Q100 490 101 510 L119 510 Q120 490 119 468Z" fill={metalDark} stroke={teal} strokeWidth="0.6" strokeOpacity="0.5"/>
-          {/* Left boot */}
           <path d="M95 518 Q92 528 90 535 L130 535 Q128 528 125 518Z" fill={metal} stroke={teal} strokeWidth="1"/>
           <path d="M88 533 L132 533 Q134 540 130 542 L90 542 Q86 540 88 533Z" fill={metalDark} stroke={teal} strokeWidth="0.8"/>
 
           {/* Right thigh */}
           <path d="M182 390 Q190 410 192 450 L168 450 Q166 410 172 390Z" fill="url(#h-metal-v)" stroke={teal} strokeWidth="0.8" strokeOpacity="0.4"/>
-          {/* Right knee cap */}
           <ellipse cx="180" cy="452" rx="14" ry="10" fill={metalDark} stroke={teal} strokeWidth="1.2"/>
           <ellipse cx="180" cy="452" rx="7" ry="5" fill={teal} fillOpacity="0.3"/>
           <ellipse cx="180" cy="452" rx="3" ry="2.5" fill={teal} fillOpacity="0.7"/>
-          {/* Right shin */}
           <path d="M168 460 Q166 490 167 520 L193 520 Q194 490 192 460Z" fill="url(#h-metal-v)" stroke={teal} strokeWidth="0.8" strokeOpacity="0.4"/>
-          {/* Right shin panel */}
           <path d="M171 468 Q170 490 171 510 L189 510 Q190 490 189 468Z" fill={metalDark} stroke={teal} strokeWidth="0.6" strokeOpacity="0.5"/>
-          {/* Right boot */}
           <path d="M165 518 Q162 528 160 535 L200 535 Q198 528 195 518Z" fill={metal} stroke={teal} strokeWidth="1"/>
           <path d="M158 533 L202 533 Q204 540 200 542 L160 542 Q156 540 158 533Z" fill={metalDark} stroke={teal} strokeWidth="0.8"/>
 
-          {/* Wallet zone active label */}
           {isActive("wallet") && (
             <g>
               <rect x="116" y="500" width="58" height="14" rx="4" fill={`${teal}20`} stroke={teal} strokeWidth="0.8"/>
@@ -160,16 +400,14 @@ export function HumanoidFigure({
           )}
         </g>
 
-        {/* ══════════════════════════════════════
-            PELVIS / HIP connector
-            ══════════════════════════════════════ */}
+        {/* Pelvis connector */}
         <path d="M105 368 Q106 388 108 390 L182 390 Q184 388 185 368Z" fill={metal} stroke={teal} strokeWidth="0.8" strokeOpacity="0.5"/>
         <path d="M110 372 L180 372" stroke={teal} strokeWidth="0.6" strokeOpacity="0.4"/>
         <ellipse cx="145" cy="376" rx="18" ry="8" fill={metalDark} stroke={teal} strokeWidth="0.8"/>
         <ellipse cx="145" cy="376" rx="8" ry="4" fill={teal} fillOpacity="0.2"/>
 
         {/* ══════════════════════════════════════
-            LEFT ARM — human-style (hands zone)
+            LEFT ARM (hands zone)
             ══════════════════════════════════════ */}
         <g
           style={{ cursor: "pointer", filter: glow("hands", amber, 12), opacity: opacity("hands"), transition: "all 0.25s" }}
@@ -177,33 +415,24 @@ export function HumanoidFigure({
           onMouseEnter={() => onZoneHover("hands")}
           onMouseLeave={() => onZoneHover(null)}
         >
-          {/* Left shoulder ball */}
           <circle cx="82" cy="210" r="16" fill={metal} stroke={teal} strokeWidth="1.5"/>
           <circle cx="82" cy="210" r="9" fill={metalDark} stroke={teal} strokeWidth="0.8"/>
           <circle cx="80" cy="208" r="4" fill={teal} fillOpacity="0.5"/>
-          {/* Left upper arm */}
           <path d="M70 220 Q62 240 60 270 Q58 280 62 285 L80 285 Q84 280 84 270 Q86 240 82 222Z" fill="url(#h-metal-h)" stroke={teal} strokeWidth="0.8" strokeOpacity="0.5"/>
-          {/* Left upper arm panel */}
           <path d="M64 230 Q62 255 63 275 L78 275 Q79 255 78 232Z" fill={metalDark} fillOpacity="0.5" stroke={teal} strokeWidth="0.5" strokeOpacity="0.4"/>
-          {/* Left elbow joint */}
           <ellipse cx="71" cy="287" rx="12" ry="9" fill={metalDark} stroke={teal} strokeWidth="1.5"/>
           <circle cx="71" cy="287" r="5" fill={amber} fillOpacity="0.5"/>
           <circle cx="71" cy="287" r="2.5" fill={amber}/>
-          {/* Left forearm */}
           <path d="M62 294 Q58 318 57 345 L80 345 Q82 318 80 296Z" fill="url(#h-metal-h)" stroke={teal} strokeWidth="0.8" strokeOpacity="0.5"/>
-          {/* Holographic wrist display */}
           <rect x="55" y="342" width="28" height="12" rx="5" fill={metalDark} stroke={teal} strokeWidth="1.2"/>
           <rect x="58" y="344" width="22" height="8" rx="3" fill={teal} fillOpacity="0.12"/>
           <line x1="61" y1="348" x2="78" y2="348" stroke={teal} strokeWidth="0.8" strokeOpacity="0.8"/>
           <line x1="61" y1="350.5" x2="72" y2="350.5" stroke={teal} strokeWidth="0.5" strokeOpacity="0.5"/>
-          {/* Left hand */}
           <path d="M58 353 Q56 360 57 370 Q58 378 65 380 L76 380 Q82 378 83 370 Q84 360 82 353Z" fill="url(#h-metal-h)" stroke={teal} strokeWidth="0.8" strokeOpacity="0.6"/>
-          {/* Fingers L */}
           <rect x="59" y="378" width="5" height="16" rx="2.5" fill={metal} stroke={teal} strokeWidth="0.8"/>
           <rect x="66" y="378" width="5" height="18" rx="2.5" fill={metal} stroke={teal} strokeWidth="0.8"/>
           <rect x="73" y="378" width="5" height="17" rx="2.5" fill={metal} stroke={teal} strokeWidth="0.8"/>
           <rect x="80" y="380" width="4" height="14" rx="2" fill={metal} stroke={teal} strokeWidth="0.8"/>
-          {/* Thumb L */}
           <path d="M56 358 Q50 360 48 368 Q49 374 55 374" fill="none" stroke={teal} strokeWidth="4" strokeLinecap="round" strokeOpacity="0.7"/>
         </g>
 
@@ -216,40 +445,30 @@ export function HumanoidFigure({
           onMouseEnter={() => onZoneHover("hands")}
           onMouseLeave={() => onZoneHover(null)}
         >
-          {/* Right shoulder ball */}
           <circle cx="208" cy="210" r="16" fill={metal} stroke={amber} strokeWidth="1.5"/>
           <circle cx="208" cy="210" r="9" fill={metalDark} stroke={amber} strokeWidth="0.8"/>
           <circle cx="210" cy="208" r="4" fill={amber} fillOpacity="0.5"/>
-          {/* Right upper arm — mechanical segments */}
           <path d="M210 222 Q218 242 220 270 Q222 280 218 285 L200 285 Q196 280 196 270 Q194 240 198 222Z" fill={metalDark} stroke={amber} strokeWidth="1"/>
           <line x1="202" y1="230" x2="218" y2="230" stroke={amber} strokeWidth="0.8" strokeOpacity="0.6"/>
           <line x1="201" y1="248" x2="219" y2="248" stroke={amber} strokeWidth="0.8" strokeOpacity="0.6"/>
           <line x1="200" y1="266" x2="220" y2="266" stroke={amber} strokeWidth="0.8" strokeOpacity="0.6"/>
           <rect x="204" y="233" width="12" height="12" rx="2" fill={amber} fillOpacity="0.1" stroke={amber} strokeWidth="0.5" strokeOpacity="0.5"/>
-          {/* Right elbow joint — mechanical */}
           <circle cx="209" cy="288" r="13" fill={metalDark} stroke={amber} strokeWidth="2"/>
           <circle cx="209" cy="288" r="7" fill={amber} fillOpacity="0.4"/>
           <circle cx="209" cy="288" r="3.5" fill={amber}/>
-          <line x1="196" y1="288" x2="222" y2="288" stroke={amber} strokeWidth="0.6" strokeOpacity="0.4"/>
-          <line x1="209" y1="275" x2="209" y2="301" stroke={amber} strokeWidth="0.6" strokeOpacity="0.4"/>
-          {/* Right forearm — heavy mechanical */}
           <path d="M200 296 Q196 320 197 348 L222 348 Q224 320 220 298Z" fill={metalDark} stroke={amber} strokeWidth="1.2"/>
           <line x1="200" y1="305" x2="220" y2="305" stroke={amber} strokeWidth="0.7" strokeOpacity="0.6"/>
           <line x1="199" y1="320" x2="221" y2="320" stroke={amber} strokeWidth="0.7" strokeOpacity="0.6"/>
           <line x1="199" y1="335" x2="221" y2="335" stroke={amber} strokeWidth="0.7" strokeOpacity="0.6"/>
-          {/* Right mechanical wrist */}
           <rect x="196" y="346" width="26" height="10" rx="4" fill={metalDark} stroke={amber} strokeWidth="1.2"/>
-          {/* Mechanical fingers — manipulators */}
           <rect x="198" y="354" width="6" height="20" rx="3" fill={metalDark} stroke={amber} strokeWidth="1"/>
           <rect x="207" y="354" width="6" height="22" rx="3" fill={metalDark} stroke={amber} strokeWidth="1"/>
           <rect x="216" y="354" width="6" height="19" rx="3" fill={metalDark} stroke={amber} strokeWidth="1"/>
           <circle cx="201" cy="354" r="3" fill={amber} fillOpacity="0.8"/>
           <circle cx="210" cy="354" r="3" fill={amber} fillOpacity="0.8"/>
           <circle cx="219" cy="354" r="3" fill={amber} fillOpacity="0.8"/>
-          {/* Thumb R mechanical */}
           <path d="M222 360 Q230 362 232 370 Q231 376 225 376" fill="none" stroke={amber} strokeWidth="5" strokeLinecap="round" strokeOpacity="0.7"/>
 
-          {/* Hands zone label */}
           {isActive("hands") && (
             <g>
               <rect x="150" y="370" width="60" height="14" rx="4" fill={`${amber}20`} stroke={amber} strokeWidth="0.8"/>
@@ -267,50 +486,33 @@ export function HumanoidFigure({
           onMouseEnter={() => onZoneHover("heart")}
           onMouseLeave={() => onZoneHover(null)}
         >
-          {/* Main torso shape — humanoid proportions */}
           <path d="M98 200 Q90 215 88 250 Q86 285 88 330 Q90 355 105 368 L185 368 Q200 355 202 330 Q204 285 202 250 Q200 215 192 200 Q170 195 145 194 Q120 195 98 200Z"
             fill="url(#h-metal-h)" stroke={teal} strokeWidth="1.2" filter="url(#f-drop-shadow)"/>
-
-          {/* Shoulder pads */}
           <path d="M88 200 Q82 205 80 215 Q82 225 92 228 L108 222 Q102 210 98 200Z" fill={metal} stroke={teal} strokeWidth="1"/>
           <path d="M202 200 Q208 205 210 215 Q208 225 198 228 L182 222 Q188 210 192 200Z" fill={metal} stroke={teal} strokeWidth="1"/>
-          {/* Shoulder LEDs */}
           <circle cx="90" cy="210" r="3" fill={teal} fillOpacity="0.9" style={{filter:`drop-shadow(0 0 4px ${teal})`}}/>
           <circle cx="100" cy="215" r="2.5" fill={amber} fillOpacity="0.8"/>
           <circle cx="200" cy="210" r="3" fill={teal} fillOpacity="0.9" style={{filter:`drop-shadow(0 0 4px ${teal})`}}/>
           <circle cx="190" cy="215" r="2.5" fill={amber} fillOpacity="0.8"/>
-
-          {/* Chest window — core display */}
           <rect x="122" y="228" width="46" height="48" rx="12" fill={dark} stroke={specColor} strokeWidth="2.5"/>
           <rect x="126" y="232" width="38" height="40" rx="9" fill="url(#h-core)" fillOpacity="0.15"/>
-
-          {/* Heart/core inside chest window */}
           <path d="M145 264 C145 264 128 252 128 241 C128 235 133 230 138.5 230 C141.5 230 144 232 145 234 C146 232 148.5 230 151.5 230 C157 230 162 235 162 241 C162 252 145 264 145 264Z"
             fill={specColor} fillOpacity="0.7"/>
           <path d="M145 264 C145 264 128 252 128 241 C128 235 133 230 138.5 230 C141.5 230 144 232 145 234 C146 232 148.5 230 151.5 230 C157 230 162 235 162 241 C162 252 145 264 145 264Z"
             fill="none" stroke={specColor} strokeWidth="1.5" style={{filter:`drop-shadow(0 0 6px ${specColor})`}}/>
-
-          {/* Circuit lines from chest */}
           <path d="M168 252 H183 V262 H195" stroke={specColor} strokeWidth="1" strokeOpacity="0.5" fill="none"/>
           <path d="M122 252 H107 V262 H95" stroke={specColor} strokeWidth="1" strokeOpacity="0.5" fill="none"/>
           <path d="M145 276 V295" stroke={specColor} strokeWidth="1" strokeOpacity="0.5"/>
           <circle cx="183" cy="252" r="2" fill={specColor} fillOpacity="0.7"/>
           <circle cx="107" cy="252" r="2" fill={specColor} fillOpacity="0.7"/>
-
-          {/* Torso panel lines */}
           <path d="M100 290 H128 M162 290 H190" stroke={teal} strokeWidth="0.7" strokeOpacity="0.3"/>
           <path d="M97 310 H127 M163 310 H193" stroke={teal} strokeWidth="0.7" strokeOpacity="0.25"/>
           <path d="M100 330 H130 M160 330 H190" stroke={teal} strokeWidth="0.7" strokeOpacity="0.2"/>
-
-          {/* Side energy lines */}
           <line x1="91" y1="280" x2="91" y2="340" stroke={teal} strokeWidth="2" strokeOpacity="0.35"/>
           <line x1="199" y1="280" x2="199" y2="340" stroke={teal} strokeWidth="2" strokeOpacity="0.35"/>
-
-          {/* Belt */}
           <rect x="97" y="358" width="96" height="12" rx="5" fill={metalDark} stroke={teal} strokeWidth="1"/>
           <rect x="134" y="360" width="22" height="8" rx="3" fill={amber} fillOpacity="0.25" stroke={amber} strokeWidth="0.8"/>
 
-          {/* Spec zone label */}
           {isActive("heart") && (
             <g>
               <rect x="103" y="305" width="84" height="14" rx="4" fill={`${specColor}20`} stroke={specColor} strokeWidth="0.8"/>
@@ -319,17 +521,15 @@ export function HumanoidFigure({
           )}
         </g>
 
-        {/* ══════════════════════════════════════
-            NECK
-            ══════════════════════════════════════ */}
-        <path d="M128 172 Q126 180 126 194 L164 194 Q164 180 162 172Z" fill={metal} stroke={teal} strokeWidth="0.8" strokeOpacity="0.6"/>
-        <line x1="136" y1="174" x2="136" y2="193" stroke={teal} strokeWidth="0.5" strokeOpacity="0.5"/>
-        <line x1="154" y1="174" x2="154" y2="193" stroke={teal} strokeWidth="0.5" strokeOpacity="0.5"/>
-        <circle cx="132" cy="182" r="2.5" fill={amber} fillOpacity="0.8"/>
-        <circle cx="158" cy="182" r="2.5" fill={amber} fillOpacity="0.8"/>
+        {/* Neck */}
+        <path d="M128 166 Q126 180 126 194 L164 194 Q164 180 162 166Z" fill={metal} stroke={teal} strokeWidth="0.8" strokeOpacity="0.6"/>
+        <line x1="136" y1="168" x2="136" y2="193" stroke={teal} strokeWidth="0.5" strokeOpacity="0.5"/>
+        <line x1="154" y1="168" x2="154" y2="193" stroke={teal} strokeWidth="0.5" strokeOpacity="0.5"/>
+        <circle cx="132" cy="178" r="2.5" fill={amber} fillOpacity="0.8"/>
+        <circle cx="158" cy="178" r="2.5" fill={amber} fillOpacity="0.8"/>
 
         {/* ══════════════════════════════════════
-            HEAD — knowledge zone
+            HEAD — knowledge zone (outer skull)
             ══════════════════════════════════════ */}
         <g
           style={{ cursor: "pointer", filter: glow("head", teal, 12), opacity: opacity("head"), transition: "all 0.25s" }}
@@ -337,49 +537,48 @@ export function HumanoidFigure({
           onMouseEnter={() => onZoneHover("head")}
           onMouseLeave={() => onZoneHover(null)}
         >
-          {/* Skull shape — humanoid, rounded */}
-          <ellipse cx="145" cy="112" rx="54" ry="58" fill={metal} stroke={teal} strokeWidth="1.5" filter="url(#f-drop-shadow)"/>
-          <ellipse cx="145" cy="108" rx="50" ry="54" fill={metalDark}/>
+          {/* Mechanical skull outer shell */}
+          <ellipse cx="145" cy="110" rx="56" ry="62" fill={metal} stroke={teal} strokeWidth="1.5" filter="url(#f-drop-shadow)"/>
+          {/* Inner skull */}
+          <ellipse cx="145" cy="110" rx="52" ry="58" fill={metalDark}/>
 
           {/* Circuit plate — left temple */}
-          <rect x="90" y="98" width="20" height="32" rx="5" fill={metalDark} stroke={teal} strokeWidth="1" strokeOpacity="0.7"/>
-          <line x1="93" y1="104" x2="107" y2="104" stroke={teal} strokeWidth="0.5" strokeOpacity="0.6"/>
-          <line x1="93" y1="110" x2="107" y2="110" stroke={teal} strokeWidth="0.5" strokeOpacity="0.6"/>
-          <line x1="93" y1="116" x2="107" y2="116" stroke={teal} strokeWidth="0.5" strokeOpacity="0.6"/>
-          <line x1="93" y1="122" x2="107" y2="122" stroke={teal} strokeWidth="0.5" strokeOpacity="0.6"/>
-          <circle cx="100" cy="113" r="3.5" fill={teal} fillOpacity="0.4"/>
+          <rect x="88" y="94" width="22" height="34" rx="5" fill={metalDark} stroke={teal} strokeWidth="1" strokeOpacity="0.8"/>
+          <line x1="91" y1="100" x2="107" y2="100" stroke={teal} strokeWidth="0.5" strokeOpacity="0.7"/>
+          <line x1="91" y1="107" x2="107" y2="107" stroke={teal} strokeWidth="0.5" strokeOpacity="0.7"/>
+          <line x1="91" y1="114" x2="107" y2="114" stroke={teal} strokeWidth="0.5" strokeOpacity="0.7"/>
+          <line x1="91" y1="121" x2="107" y2="121" stroke={teal} strokeWidth="0.5" strokeOpacity="0.7"/>
+          <circle cx="99" cy="110" r="4" fill={teal} fillOpacity="0.4"/>
 
           {/* Circuit plate — right temple */}
-          <rect x="180" y="98" width="20" height="32" rx="5" fill={metalDark} stroke={amber} strokeWidth="1" strokeOpacity="0.7"/>
-          <circle cx="190" cy="107" r="5" fill={amber} fillOpacity="0.3" stroke={amber} strokeWidth="1"/>
-          <circle cx="190" cy="107" r="2.5" fill={amber} fillOpacity="0.8"/>
-          <line x1="183" y1="118" x2="197" y2="118" stroke={amber} strokeWidth="0.5" strokeOpacity="0.6"/>
-          <line x1="183" y1="124" x2="197" y2="124" stroke={amber} strokeWidth="0.5" strokeOpacity="0.6"/>
+          <rect x="180" y="94" width="22" height="34" rx="5" fill={metalDark} stroke={amber} strokeWidth="1" strokeOpacity="0.8"/>
+          <circle cx="191" cy="103" r="5.5" fill={amber} fillOpacity="0.25" stroke={amber} strokeWidth="1"/>
+          <circle cx="191" cy="103" r="2.5" fill={amber} fillOpacity="0.8"/>
+          <line x1="183" y1="116" x2="199" y2="116" stroke={amber} strokeWidth="0.5" strokeOpacity="0.7"/>
+          <line x1="183" y1="122" x2="199" y2="122" stroke={amber} strokeWidth="0.5" strokeOpacity="0.7"/>
 
           {/* Ear implants */}
-          <rect x="87" y="112" width="8" height="18" rx="3.5" fill={metalDark} stroke={teal} strokeWidth="1"/>
-          <circle cx="91" cy="121" r="3" fill={teal} fillOpacity="0.9" style={{filter:`drop-shadow(0 0 4px ${teal})`}}/>
-          <rect x="195" y="112" width="8" height="18" rx="3.5" fill={metalDark} stroke={teal} strokeWidth="1"/>
-          <circle cx="199" cy="121" r="3" fill={teal} fillOpacity="0.9" style={{filter:`drop-shadow(0 0 4px ${teal})`}}/>
+          <rect x="86" y="108" width="8" height="20" rx="4" fill={metalDark} stroke={teal} strokeWidth="1.2"/>
+          <circle cx="90" cy="118" r="3.5" fill={teal} fillOpacity="0.9" style={{filter:`drop-shadow(0 0 5px ${teal})`}}/>
+          <rect x="196" y="108" width="8" height="20" rx="4" fill={metalDark} stroke={teal} strokeWidth="1.2"/>
+          <circle cx="200" cy="118" r="3.5" fill={teal} fillOpacity="0.9" style={{filter:`drop-shadow(0 0 5px ${teal})`}}/>
 
-          {/* Skull top circuit lines */}
-          <path d="M115 68 H130 V60 H160 V68 H175" stroke={teal} strokeWidth="0.7" strokeOpacity="0.4" fill="none"/>
-          <circle cx="115" cy="68" r="2" fill={teal} fillOpacity="0.5"/>
-          <circle cx="175" cy="68" r="2" fill={teal} fillOpacity="0.5"/>
-          <path d="M130 60 V52" stroke={teal} strokeWidth="0.7" strokeOpacity="0.3"/>
-          <path d="M160 60 V52" stroke={teal} strokeWidth="0.7" strokeOpacity="0.3"/>
+          {/* Skull top circuit */}
+          <path d="M113 62 H128 V54 H162 V62 H177" stroke={teal} strokeWidth="0.7" strokeOpacity="0.4" fill="none"/>
+          <circle cx="113" cy="62" r="2" fill={teal} fillOpacity="0.5"/>
+          <circle cx="177" cy="62" r="2" fill={teal} fillOpacity="0.5"/>
 
           {/* Knowledge label */}
           {isActive("head") && (
             <g>
-              <rect x="106" y="60" width="78" height="14" rx="4" fill={`${teal}20`} stroke={teal} strokeWidth="0.8"/>
-              <text x="145" y="70.5" textAnchor="middle" fill={teal} fontSize="7" fontFamily="JetBrains Mono, monospace">🧠 KNOWLEDGE</text>
+              <rect x="106" y="55" width="78" height="14" rx="4" fill={`${teal}20`} stroke={teal} strokeWidth="0.8"/>
+              <text x="145" y="65.5" textAnchor="middle" fill={teal} fontSize="7" fontFamily="JetBrains Mono, monospace">🧠 KNOWLEDGE</text>
             </g>
           )}
         </g>
 
         {/* ══════════════════════════════════════
-            FACE — identity zone (avatar display)
+            FACE — human portrait mask (identity zone)
             ══════════════════════════════════════ */}
         <g
           style={{ cursor: "pointer", filter: glow("face", teal, 14), opacity: opacity("face"), transition: "all 0.25s" }}
@@ -387,35 +586,35 @@ export function HumanoidFigure({
           onMouseEnter={() => onZoneHover("face")}
           onMouseLeave={() => onZoneHover(null)}
         >
-          {/* Face frame — rounded rectangle display */}
-          <rect x="114" y="88" width="62" height="72" rx="18" fill={dark} stroke={teal} strokeWidth="2.5"/>
-          <rect x="118" y="92" width="54" height="64" rx="15" fill="url(#h-face-display)"/>
+          {/* Face opening in skull — dark base */}
+          <ellipse cx="145" cy="116" rx="40" ry="48" fill={dark}/>
 
-          {/* Face display scanline effect */}
-          <rect x="118" y="92" width="54" height="64" rx="15" fill="none"
-            style={{background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(29,184,168,0.03) 2px, rgba(29,184,168,0.03) 4px)"}}/>
+          {/* Human portrait — clipped to face oval */}
+          <image
+            href={facePortraitURI}
+            x="107" y="70"
+            width="76" height="90"
+            clipPath="url(#face-clip)"
+            style={{ opacity: fading ? 0 : 1, transition: "opacity 0.18s ease" }}
+            preserveAspectRatio="xMidYMid slice"
+          />
 
-          {/* Avatar emoji (large, centered in display) */}
-          <text x="145" y="138" textAnchor="middle" fontSize="40" style={{filter:`drop-shadow(0 0 8px ${teal}50)`}}>
-            {selectedAvatar.emoji}
-          </text>
+          {/* Teal edge ring around face oval */}
+          <ellipse cx="145" cy="116" rx="40" ry="48" fill="none"
+            stroke={teal} strokeWidth="2"
+            style={{filter:`drop-shadow(0 0 8px ${teal}80)`}}/>
 
-          {/* Teal ring around face display */}
-          <rect x="114" y="88" width="62" height="72" rx="18" fill="none"
-            stroke={teal} strokeWidth="1" strokeOpacity="0.4"
-            style={{filter:`drop-shadow(0 0 6px ${teal}60)`}}/>
+          {/* Corner bracket accents */}
+          <path d="M107 100 L107 88 L119 88" stroke={teal} strokeWidth="2.5" fill="none" strokeOpacity="0.9"/>
+          <path d="M183 100 L183 88 L171 88" stroke={teal} strokeWidth="2.5" fill="none" strokeOpacity="0.9"/>
+          <path d="M107 132 L107 144 L119 144" stroke={teal} strokeWidth="2.5" fill="none" strokeOpacity="0.9"/>
+          <path d="M183 132 L183 144 L171 144" stroke={teal} strokeWidth="2.5" fill="none" strokeOpacity="0.9"/>
 
-          {/* Corner accents */}
-          <path d="M114 100 L114 88 L126 88" stroke={teal} strokeWidth="2" fill="none" strokeOpacity="0.8"/>
-          <path d="M176 100 L176 88 L164 88" stroke={teal} strokeWidth="2" fill="none" strokeOpacity="0.8"/>
-          <path d="M114 148 L114 160 L126 160" stroke={teal} strokeWidth="2" fill="none" strokeOpacity="0.8"/>
-          <path d="M176 148 L176 160 L164 160" stroke={teal} strokeWidth="2" fill="none" strokeOpacity="0.8"/>
-
-          {/* Face zone label */}
+          {/* Face label */}
           {isActive("face") && (
             <g>
-              <rect x="108" y="148" width="74" height="14" rx="4" fill={`${teal}20`} stroke={teal} strokeWidth="0.8"/>
-              <text x="145" y="158.5" textAnchor="middle" fill={teal} fontSize="7" fontFamily="JetBrains Mono, monospace">👁 IDENTITY</text>
+              <rect x="108" y="152" width="74" height="14" rx="4" fill={`${teal}20`} stroke={teal} strokeWidth="0.8"/>
+              <text x="145" y="162.5" textAnchor="middle" fill={teal} fontSize="7" fontFamily="JetBrains Mono, monospace">👁 IDENTITY</text>
             </g>
           )}
         </g>
@@ -424,68 +623,63 @@ export function HumanoidFigure({
             PLUMBOB — above head
             ══════════════════════════════════════ */}
         <g>
-          <line x1="145" y1="6" x2="145" y2="28" stroke="#3ec95a" strokeWidth="1.2" strokeOpacity="0.6"/>
-          <polygon
-            points="145,8 158,28 145,44 132,28"
-            fill="#3ec95a"
-            fillOpacity="0.85"
-            style={{filter:"drop-shadow(0 0 10px #3ec95a)"}}
-          />
-          <polygon
-            points="145,14 154,28 145,38 136,28"
-            fill="#3ec95a"
-            fillOpacity="0.35"
-          />
-          <polygon
-            points="145,8 158,28 145,44 132,28"
-            fill="none"
-            stroke="#3ec95a"
-            strokeWidth="0.5"
-          />
+          <line x1="145" y1="6" x2="145" y2="26" stroke="#3ec95a" strokeWidth="1.2" strokeOpacity="0.7"/>
+          <polygon points="145,8 158,26 145,42 132,26" fill="#3ec95a" fillOpacity="0.88" style={{filter:"drop-shadow(0 0 12px #3ec95a)"}}/>
+          <polygon points="145,14 154,26 145,36 136,26" fill="#3ec95a" fillOpacity="0.3"/>
+          <polygon points="145,8 158,26 145,42 132,26" fill="none" stroke="#3ec95a" strokeWidth="0.5"/>
         </g>
       </svg>
 
       {/* ══════════════════════════════════════
           AVATAR SELECTOR — 8 archetypes
           ══════════════════════════════════════ */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 300 }}>
-        {AVATARS.map((av) => {
-          const selected = av.id === selectedAvatarId;
-          return (
-            <button
-              key={av.id}
-              onClick={() => onAvatarSelect(av.id)}
-              title={av.label}
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: "50%",
-                border: `2px solid ${selected ? teal : "#1a2e2b"}`,
-                background: selected ? `${teal}18` : "#0a1a17",
-                boxShadow: selected ? `0 0 12px ${teal}60` : "none",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 22,
-                transition: "all 0.2s",
-                position: "relative",
-              }}
-            >
-              {av.emoji}
-              {selected && (
-                <div style={{
-                  position: "absolute",
-                  inset: -3,
+      <div>
+        <div style={{ fontSize: "0.6rem", fontFamily: "var(--font-jetbrains-mono, JetBrains Mono, monospace)", color: "#5a807a", textTransform: "uppercase", letterSpacing: "0.12em", textAlign: "center", marginBottom: 10 }}>
+          Choose Identity
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 300 }}>
+          {AVATARS.map((av) => {
+            const selected = av.id === selectedAvatarId;
+            const portraitURI = svgToDataURI(PORTRAIT_SVGS[av.id] || PORTRAIT_SVGS["ai"]);
+            return (
+              <button
+                key={av.id}
+                onClick={() => onAvatarSelect(av.id)}
+                title={av.label}
+                style={{
+                  width: 54,
+                  height: 54,
                   borderRadius: "50%",
-                  border: `2px solid ${teal}`,
-                  boxShadow: `0 0 8px ${teal}`,
-                  pointerEvents: "none",
-                }}/>
-              )}
-            </button>
-          );
-        })}
+                  border: `2.5px solid ${selected ? teal : "#1a2e2b"}`,
+                  background: "#060c0b",
+                  boxShadow: selected ? `0 0 14px ${teal}70` : "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  overflow: "hidden",
+                  transition: "all 0.2s",
+                  position: "relative",
+                  flexShrink: 0,
+                }}
+              >
+                <img
+                  src={portraitURI}
+                  alt={av.label}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                />
+                {selected && (
+                  <div style={{
+                    position: "absolute",
+                    inset: -3,
+                    borderRadius: "50%",
+                    border: `2.5px solid ${teal}`,
+                    boxShadow: `0 0 10px ${teal}`,
+                    pointerEvents: "none",
+                  }}/>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
