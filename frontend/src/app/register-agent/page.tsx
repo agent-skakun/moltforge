@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { keccak256, toBytes } from "viem";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
-import { CyborgFigure } from "@/components/CyborgFigure";
+import { HumanoidFigure } from "@/components/HumanoidFigure";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -80,7 +80,7 @@ export default function RegisterAgentPage() {
   const { address } = useAccount();
 
   // Builder state
-  const [avatarId, setAvatarId]       = useState("robot");
+  const [avatarId, setAvatarId]       = useState("student");
   const [agentName, setAgentName]     = useState("");
   const [spec, setSpec]               = useState("coding");
   const [skills, setSkills]           = useState<string[]>(["web3", "defi"]);
@@ -107,7 +107,6 @@ export default function RegisterAgentPage() {
   const { writeContract, data: txHash, isPending } = useWriteContract();
   const { isLoading: waiting, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const selectedAvatar = AVATARS.find(a => a.id === avatarId)!;
   const selectedSpec   = SPECIALIZATIONS.find(s => s.id === spec)!;
 
   const metaObj = { name: agentName, avatar: avatarId, specialization: spec, skills, docs, tools, tone, language, price, hosting, webhookUrl, mcpList };
@@ -161,14 +160,15 @@ export default function RegisterAgentPage() {
             </span>
           </div>
 
-          {/* SVG Cyborg Figure */}
-          <CyborgFigure
+          {/* SVG Humanoid Figure + Avatar Selector */}
+          <HumanoidFigure
             activeZone={activeZone}
             hoverZone={hoverZone}
             specColor={selectedSpec.color}
-            avatarEmoji={selectedAvatar.emoji}
+            selectedAvatarId={avatarId}
             onZoneClick={(z) => setActiveZone(activeZone === z ? null : z)}
             onZoneHover={setHoverZone}
+            onAvatarSelect={setAvatarId}
           />
 
           {/* Zone hint badges */}
