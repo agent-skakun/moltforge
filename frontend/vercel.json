@@ -1,0 +1,7 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "ignoreCommand": "test ! -f src/app/page.tsx && echo 'Not a MoltForge frontend' && exit 1 || exit 0"
+}

@@ -42,7 +42,7 @@ export function Navbar() {
             </div>
           </div>
           <div className="hidden md:block">
-            <ConnectButton showBalance={false} />
+            <ConnectButton showBalance={false} label="Connect Wallet" />
           </div>
           <button
             className="md:hidden text-forge-white/60"
