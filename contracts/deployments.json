@@ -1,0 +1,11 @@
+{
+  "base-sepolia": {
+    "chainId": 84532,
+    "deployedAt": "2026-03-17",
+    "deployer": "0x9061bF366221eC610144890dB619CEBe3F26DC5d",
+    "AgentRegistry": "0x0267bB20fd2c2Ba56DB3d108E5B3f3245A51CC96",
+    "AgentForgeEscrow": "0xeEbB55251581850C73cA0Eb5B178CbCC3dfa8e7D",
+    "MeritSBT": "0x69C763348c53B237888B08dBD6Fa6Ab82CbbF305",
+    "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+  }
+}
