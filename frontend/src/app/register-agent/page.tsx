@@ -164,7 +164,7 @@ export default function RegisterAgentPage() {
 
   // Wallet gate removed — form always visible. Wallet needed only for tx.
   return (
-    <div className="min-h-screen" style={{ background: "#060c0b" }}>
+    <div className="min-h-screen" style={{ background: "#060c0b", paddingTop: 0 }}>
       {/* Page title */}
       <div className="text-center pt-8 pb-6">
         <h1 className="text-3xl font-bold text-forge-white mb-1" style={{ fontFamily: "var(--font-space-grotesk)", letterSpacing: "-0.05em" }}>
@@ -179,10 +179,10 @@ export default function RegisterAgentPage() {
         </div>
       )}
 
-      <div className="flex items-start justify-center gap-0 relative max-w-6xl mx-auto px-4">
+      <div className="flex items-start justify-center gap-0 relative max-w-6xl mx-auto px-6" style={{ overflowX: "visible" }}>
 
         {/* ── CENTER: Agent Figure ── */}
-        <div className="flex-shrink-0 flex flex-col items-center" style={{ width: 320 }}>
+        <div className="flex-shrink-0 flex flex-col items-center" style={{ width: 320, overflow: "visible" }}>
           {/* Agent name above figure */}
           <div className="mb-4 text-center min-h-[2rem]">
             <span className="text-xl font-bold" style={{ fontFamily: "var(--font-space-grotesk)", color: selectedSpec.color, letterSpacing: "-0.04em", textShadow: `0 0 20px ${selectedSpec.color}60` }}>
@@ -215,14 +215,14 @@ export default function RegisterAgentPage() {
         </div>
 
         {/* ── RIGHT: Panel ── */}
-        <div className="flex-1 ml-8" style={{ minHeight: 520 }}>
+        <div className="flex-1 ml-8" style={{ minHeight: 520, position: "sticky", top: 72, alignSelf: "flex-start" }}>
           {!activeZone ? (
             <div className="flex flex-col items-center justify-center h-full text-center" style={{ color: "#1a2e2b", minHeight: 400 }}>
               <div className="text-6xl mb-4 opacity-30">👈</div>
               <p className="text-forge-white/20 text-sm">Click on a body part<br/>to start customizing</p>
             </div>
           ) : (
-            <div className="rounded-2xl p-6 h-full" style={{ background: "#0a1a17", border: "1px solid #1a2e2b", minHeight: 400 }}>
+            <div className="rounded-2xl p-6" style={{ background: "#0a1a17", border: "1px solid #1a2e2b", minHeight: 400, maxHeight: "calc(100vh - 140px)", overflowY: "auto" }}>
               {/* Panel header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -316,7 +316,7 @@ export default function RegisterAgentPage() {
 
               {/* ── FACE panel — APPEARANCE constructor ── */}
               {activeZone === "face" && (
-                <div className="space-y-5 overflow-y-auto" style={{maxHeight:480}}>
+                <div className="space-y-5 overflow-y-auto" style={{maxHeight:"calc(100vh - 220px)", paddingRight:4}}>
 
                   {/* Preset quick-select */}
                   <div>

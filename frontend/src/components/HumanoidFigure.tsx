@@ -14,14 +14,14 @@ export interface Avatar {
 }
 
 export const AVATARS: Avatar[] = [
-  { id: 'sexy-student', label: 'Sexy Student',  emoji: '😊' },
-  { id: 'professor',    label: 'The Professor', emoji: '🎓' },
-  { id: 'it-nerd',      label: 'IT Nerd',       emoji: '🤓' },
-  { id: 'teacher',      label: 'Teacher',       emoji: '📚' },
-  { id: 'journalist',   label: 'Journalist',    emoji: '✍️'  },
-  { id: 'black-worker', label: 'Black Worker',  emoji: '💪' },
-  { id: 'indian-dev',   label: 'Indian Dev',    emoji: '💻' },
-  { id: 'ai',           label: 'Pure AI',       emoji: '🤖' },
+  { id: 'ai',         label: 'AI',         emoji: '🤖' },
+  { id: 'worker',     label: 'Worker',     emoji: '💪' },
+  { id: 'developer',  label: 'Developer',  emoji: '🤓' },
+  { id: 'journalist', label: 'Journalist', emoji: '✍️'  },
+  { id: 'creative',   label: 'Creative',   emoji: '🎨' },
+  { id: 'trader',     label: 'Trader',     emoji: '📈' },
+  { id: 'finance',    label: 'Finance',    emoji: '💰' },
+  { id: 'teacher',    label: 'Teacher',    emoji: '📚' },
 ];
 
 interface HumanoidFigureProps {
@@ -29,6 +29,7 @@ interface HumanoidFigureProps {
   hoverZone: Zone;
   specColor: string;
   selectedAvatarId: string;
+  faceParams?: FaceParams;   // optional override — if provided, overrides preset lookup
   onZoneClick: (z: Zone) => void;
   onZoneHover: (z: Zone) => void;
   onAvatarSelect: (id: string) => void;
@@ -39,6 +40,7 @@ export function HumanoidFigure({
   hoverZone,
   specColor,
   selectedAvatarId,
+  faceParams: faceParamsProp,
   onZoneClick,
   onZoneHover,
   onAvatarSelect,
@@ -69,7 +71,7 @@ export function HumanoidFigure({
     isActive(z) ? `drop-shadow(0 0 ${intensity}px ${color})` : `drop-shadow(0 0 3px ${color}40)`;
   const opacity = (z: Zone) => isActive(z) ? 1 : 0.82;
 
-  const faceParams: FaceParams = PRESETS[displayedAvatar] || PRESETS["ai"];
+  const faceParams: FaceParams = faceParamsProp ?? (PRESETS[displayedAvatar] || PRESETS["ai"]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
@@ -343,13 +345,15 @@ export function HumanoidFigure({
           <ellipse cx="145" cy="116" rx="40" ry="48" fill={dark}/>
 
           {/* Human portrait — AvatarFace SVG builder clipped to face oval */}
+          {/* foreignObject covers full oval area: cx=145,cy=116, rx=40,ry=48 */}
+          {/* so x=105, y=68, w=80, h=96 — matches clip ellipse exactly */}
           <foreignObject
-            x="107" y="70"
-            width="76" height="90"
+            x="105" y="68"
+            width="80" height="96"
             clipPath="url(#face-clip)"
             style={{ opacity: fading ? 0 : 1, transition: "opacity 0.18s ease" }}
           >
-            <AvatarFace params={faceParams} size={76} />
+            <AvatarFace params={faceParams} size={80} />
           </foreignObject>
 
           {/* Teal edge ring around face oval */}
