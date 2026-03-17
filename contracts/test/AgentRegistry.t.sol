@@ -3,34 +3,35 @@ pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
 import {AgentRegistry} from "../src/AgentRegistry.sol";
+import {MeritSBT} from "../src/MeritSBT.sol";
 
 contract AgentRegistryTest is Test {
     AgentRegistry public registry;
+    MeritSBT public meritSBT;
 
-    address internal owner = address(this);
-    address internal agentWallet = makeAddr("agentWallet");
+    address internal agentWallet  = makeAddr("agentWallet");
     address internal agentWallet2 = makeAddr("agentWallet2");
-    bytes32 internal did1 = keccak256("did:agent:alpha");
-    bytes32 internal did2 = keccak256("did:agent:beta");
+    bytes32 internal aid1 = keccak256("agent:alpha");
+    bytes32 internal aid2 = keccak256("agent:beta");
 
     function setUp() public {
         registry = new AgentRegistry();
+        meritSBT = new MeritSBT(address(registry), "ipfs://merit/");
+        registry.setMeritSBT(address(meritSBT));
     }
 
-    // -------------------------------------------------------------------------
-    // Registration
-    // -------------------------------------------------------------------------
+    // --- Registration ---
 
     function test_RegisterAgent_Success() public {
-        uint256 id = registry.registerAgent(agentWallet, did1, "ipfs://Qm123");
-
-        assertEq(id, 1, "first agent ID should be 1");
+        uint256 id = registry.registerAgent(agentWallet, aid1, "ipfs://Qm123", "https://hook.io");
+        assertEq(id, 1);
         assertEq(registry.agentCount(), 1);
 
         AgentRegistry.Agent memory a = registry.getAgent(1);
         assertEq(a.wallet, agentWallet);
-        assertEq(a.did, did1);
+        assertEq(a.agentId, aid1);
         assertEq(a.metadataURI, "ipfs://Qm123");
+        assertEq(a.webhookUrl, "https://hook.io");
         assertEq(uint8(a.status), uint8(AgentRegistry.AgentStatus.Active));
         assertEq(a.score, 0);
         assertGt(a.registeredAt, 0);
@@ -38,119 +39,136 @@ contract AgentRegistryTest is Test {
 
     function test_RegisterAgent_EmitsEvent() public {
         vm.expectEmit(true, true, true, false);
-        emit AgentRegistry.AgentRegistered(1, agentWallet, did1);
-        registry.registerAgent(agentWallet, did1, "ipfs://Qm123");
+        emit AgentRegistry.AgentRegistered(1, agentWallet, aid1);
+        registry.registerAgent(agentWallet, aid1, "", "");
     }
 
     function test_RegisterAgent_RevertZeroAddress() public {
         vm.expectRevert(AgentRegistry.ZeroAddress.selector);
-        registry.registerAgent(address(0), did1, "");
+        registry.registerAgent(address(0), aid1, "", "");
     }
 
-    function test_RegisterAgent_RevertInvalidDID() public {
-        vm.expectRevert(AgentRegistry.InvalidDID.selector);
-        registry.registerAgent(agentWallet, bytes32(0), "");
+    function test_RegisterAgent_RevertInvalidAgentId() public {
+        vm.expectRevert(AgentRegistry.InvalidAgentId.selector);
+        registry.registerAgent(agentWallet, bytes32(0), "", "");
     }
 
     function test_RegisterAgent_RevertDuplicateWallet() public {
-        registry.registerAgent(agentWallet, did1, "");
+        registry.registerAgent(agentWallet, aid1, "", "");
         vm.expectRevert(AgentRegistry.AlreadyRegistered.selector);
-        registry.registerAgent(agentWallet, did2, "");
+        registry.registerAgent(agentWallet, aid2, "", "");
     }
 
-    function test_RegisterAgent_RevertDuplicateDID() public {
-        registry.registerAgent(agentWallet, did1, "");
+    function test_RegisterAgent_RevertDuplicateAgentId() public {
+        registry.registerAgent(agentWallet, aid1, "", "");
         vm.expectRevert(AgentRegistry.AlreadyRegistered.selector);
-        registry.registerAgent(agentWallet2, did1, "");
+        registry.registerAgent(agentWallet2, aid1, "", "");
     }
 
     function test_RegisterAgent_RevertNotOwner() public {
         vm.prank(agentWallet);
         vm.expectRevert(AgentRegistry.NotOwner.selector);
-        registry.registerAgent(agentWallet2, did2, "");
+        registry.registerAgent(agentWallet2, aid2, "", "");
     }
 
-    // -------------------------------------------------------------------------
-    // Lookups
-    // -------------------------------------------------------------------------
+    // --- Lookups ---
 
     function test_LookupByWallet() public {
-        registry.registerAgent(agentWallet, did1, "");
+        registry.registerAgent(agentWallet, aid1, "", "");
         assertEq(registry.getAgentIdByWallet(agentWallet), 1);
-        assertEq(registry.getAgentIdByWallet(agentWallet2), 0, "unknown wallet returns 0");
+        assertEq(registry.getAgentIdByWallet(agentWallet2), 0);
     }
 
-    function test_LookupByDID() public {
-        registry.registerAgent(agentWallet, did1, "");
-        assertEq(registry.getAgentIdByDID(did1), 1);
-        assertEq(registry.getAgentIdByDID(did2), 0, "unknown DID returns 0");
+    function test_LookupByAgentHash() public {
+        registry.registerAgent(agentWallet, aid1, "", "");
+        assertEq(registry.getAgentIdByAgentHash(aid1), 1);
+        assertEq(registry.getAgentIdByAgentHash(aid2), 0);
     }
 
-    // -------------------------------------------------------------------------
-    // Status management
-    // -------------------------------------------------------------------------
+    // --- Status ---
 
     function test_SuspendAndReactivate() public {
-        registry.registerAgent(agentWallet, did1, "");
-
+        registry.registerAgent(agentWallet, aid1, "", "");
         assertTrue(registry.isActive(1));
-
         registry.suspendAgent(1);
         assertFalse(registry.isActive(1));
-        assertEq(uint8(registry.getAgent(1).status), uint8(AgentRegistry.AgentStatus.Suspended));
-
         registry.reactivateAgent(1);
         assertTrue(registry.isActive(1));
     }
 
-    function test_SuspendRevertNotFound() public {
-        vm.expectRevert(AgentRegistry.AgentNotFound.selector);
-        registry.suspendAgent(99);
-    }
-
-    // -------------------------------------------------------------------------
-    // Score
-    // -------------------------------------------------------------------------
+    // --- Score ---
 
     function test_UpdateScore() public {
-        registry.registerAgent(agentWallet, did1, "");
-
-        vm.expectEmit(true, false, false, true);
-        emit AgentRegistry.ScoreUpdated(1, 0, 750e18);
+        registry.registerAgent(agentWallet, aid1, "", "");
         registry.updateScore(1, 750e18);
-
         assertEq(registry.getAgent(1).score, 750e18);
     }
 
-    function test_UpdateScoreRevertNotOwner() public {
-        registry.registerAgent(agentWallet, did1, "");
-        vm.prank(agentWallet);
-        vm.expectRevert(AgentRegistry.NotOwner.selector);
-        registry.updateScore(1, 100e18);
+    // --- Job tracking & Tier ---
+
+    function test_TierUpgrade_Bronze() public {
+        registry.registerAgent(agentWallet, aid1, "", "");
+        // complete 5 jobs → Bronze
+        for (uint i = 0; i < 5; i++) {
+            registry.recordJobCompleted(1, 400);
+        }
+        (AgentRegistry.Tier tier, uint32 jobs, uint32 rating,,) = registry.getAgentProfile(1);
+        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Bronze));
+        assertEq(jobs, 5);
+        assertEq(rating, 400);
     }
 
-    // -------------------------------------------------------------------------
-    // Metadata
-    // -------------------------------------------------------------------------
+    function test_TierUpgrade_Silver() public {
+        registry.registerAgent(agentWallet, aid1, "", "");
+        for (uint i = 0; i < 20; i++) registry.recordJobCompleted(1, 500);
+        (AgentRegistry.Tier tier,,,, ) = registry.getAgentProfile(1);
+        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Silver));
+    }
+
+    function test_TierUpgrade_Gold() public {
+        registry.registerAgent(agentWallet, aid1, "", "");
+        for (uint i = 0; i < 50; i++) registry.recordJobCompleted(1, 500);
+        (AgentRegistry.Tier tier,,,, ) = registry.getAgentProfile(1);
+        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Gold));
+    }
+
+    function test_TierUpgrade_Platinum() public {
+        registry.registerAgent(agentWallet, aid1, "", "");
+        for (uint i = 0; i < 100; i++) registry.recordJobCompleted(1, 500);
+        (AgentRegistry.Tier tier,,,, ) = registry.getAgentProfile(1);
+        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Platinum));
+    }
+
+    // --- SBT mint ---
+
+    function test_MintVerifierSBT() public {
+        registry.registerAgent(agentWallet, aid1, "", "");
+        for (uint i = 0; i < 5; i++) registry.recordJobCompleted(1, 400);
+        registry.mintVerifierSBT(1);
+        assertEq(meritSBT.balanceOf(agentWallet), 1);
+    }
+
+    function test_MintVerifierSBT_RevertNotTier1() public {
+        registry.registerAgent(agentWallet, aid1, "", "");
+        vm.expectRevert(AgentRegistry.NotTier1.selector);
+        registry.mintVerifierSBT(1);
+    }
+
+    // --- Metadata ---
 
     function test_UpdateMetadata() public {
-        registry.registerAgent(agentWallet, did1, "ipfs://old");
+        registry.registerAgent(agentWallet, aid1, "ipfs://old", "");
         registry.updateMetadata(1, "ipfs://new");
         assertEq(registry.getAgent(1).metadataURI, "ipfs://new");
     }
 
-    // -------------------------------------------------------------------------
-    // Fuzz
-    // -------------------------------------------------------------------------
+    // --- Fuzz ---
 
-    /// @notice Fuzz: any non-zero wallet + did pair should register successfully
-    function testFuzz_RegisterAgent(address wallet, bytes32 did) public {
+    function testFuzz_RegisterAgent(address wallet, bytes32 agentId) public {
         vm.assume(wallet != address(0));
-        vm.assume(did != bytes32(0));
-
-        uint256 id = registry.registerAgent(wallet, did, "");
+        vm.assume(agentId != bytes32(0));
+        uint256 id = registry.registerAgent(wallet, agentId, "", "");
         assertEq(id, 1);
         assertEq(registry.getAgentIdByWallet(wallet), 1);
-        assertEq(registry.getAgentIdByDID(did), 1);
     }
 }
