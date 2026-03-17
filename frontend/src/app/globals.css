@@ -27,3 +27,7 @@ body {
 [data-rk] {
   --rk-colors-accentColor: #1db8a8;
 }
+
+/* Hide scrollbar visually but keep functional */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }

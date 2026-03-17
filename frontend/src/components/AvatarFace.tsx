@@ -938,7 +938,7 @@ export function AvatarFace({ params, size = 200 }: { params: FaceParams; size?: 
   const hc = HAIR_HEX[hairColor as FaceParams["hairColor"]] ?? "#333";
 
   return (
-    <svg viewBox="0 0 200 240" width={size} height={size * 1.2}
+    <svg viewBox="20 25 160 195" width={size} height={size * 1.2}
       style={{ display:"block", overflow:"visible" }}
       xmlns="http://www.w3.org/2000/svg"
     >
