@@ -1,18 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0f;
-  --foreground: #e2e8f0;
+  --background: #060c0b;
+  --foreground: #e4f0ee;
+  --forge-teal: #1db8a8;
+  --molt-amber: #f07828;
+  --plumbob-green: #3ec95a;
+  --lobster-red: #e63030;
+  --forge-dark: #060c0b;
+  --forge-white: #e4f0ee;
+  --forge-card: #0a1412;
+  --forge-border: #1a2e2b;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: 'Inter', sans-serif;
 }
 
 /* RainbowKit dark theme overrides */
 [data-rk] {
-  --rk-colors-accentColor: #7c3aed;
+  --rk-colors-accentColor: #1db8a8;
 }

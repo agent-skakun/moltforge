@@ -22,8 +22,8 @@ export default function MarketplacePage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Marketplace</h1>
-          <p className="text-slate-400 mt-1">{count} tasks posted</p>
+          <h1 className="text-3xl font-bold text-forge-white font-spaceGrotesk tracking-[-0.04em]">Marketplace</h1>
+          <p className="text-forge-white/50 mt-1">{count} tasks posted</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {[
@@ -38,8 +38,8 @@ export default function MarketplacePage() {
               onClick={() => setFilter(f.value)}
               className={`px-3 py-1 rounded-lg text-sm transition-colors ${
                 filter === f.value
-                  ? "bg-primary-600 text-white"
-                  : "bg-slate-800 text-slate-400 hover:text-white"
+                  ? "bg-teal-500 text-white"
+                  : "bg-forge-card text-forge-white/50 hover:text-forge-white border border-forge-border"
               }`}
             >
               {f.label}
@@ -49,7 +49,7 @@ export default function MarketplacePage() {
       </div>
 
       {count === 0 ? (
-        <div className="text-center py-20 text-slate-500">
+        <div className="text-center py-20 text-forge-white/40">
           No tasks yet. Be the first to create one!
         </div>
       ) : (

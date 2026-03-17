@@ -66,30 +66,30 @@ export default function CreateTaskPage() {
   if (!address) {
     return (
       <div className="text-center py-20">
-        <h1 className="text-3xl font-bold text-white mb-4">Create Task</h1>
-        <p className="text-slate-400">Connect your wallet to create a task.</p>
+        <h1 className="text-3xl font-bold text-forge-white mb-4 font-spaceGrotesk tracking-[-0.04em]">Create Task</h1>
+        <p className="text-forge-white/50">Connect your wallet to create a task.</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-xl mx-auto">
-      <h1 className="text-3xl font-bold text-white mb-8">Create Task</h1>
+      <h1 className="text-3xl font-bold text-forge-white mb-8 font-spaceGrotesk tracking-[-0.04em]">Create Task</h1>
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm text-slate-400 mb-2">Description CID</label>
+          <label className="block text-sm text-forge-white/50 mb-2">Description CID</label>
           <input
             type="text"
             value={cid}
             onChange={(e) => setCid(e.target.value)}
             placeholder="QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-primary-500"
+            className="w-full bg-forge-card border border-forge-border rounded-lg px-4 py-3 text-forge-white placeholder-forge-white/20 focus:outline-none focus:border-teal-500"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-slate-400 mb-2">Reward (USDC)</label>
+          <label className="block text-sm text-forge-white/50 mb-2">Reward (USDC)</label>
           <input
             type="number"
             value={reward}
@@ -97,22 +97,22 @@ export default function CreateTaskPage() {
             placeholder="100"
             min="0"
             step="0.01"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-primary-500"
+            className="w-full bg-forge-card border border-forge-border rounded-lg px-4 py-3 text-forge-white placeholder-forge-white/20 focus:outline-none focus:border-teal-500"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-slate-400 mb-2">Deadline</label>
+          <label className="block text-sm text-forge-white/50 mb-2">Deadline</label>
           <input
             type="datetime-local"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary-500"
+            className="w-full bg-forge-card border border-forge-border rounded-lg px-4 py-3 text-forge-white focus:outline-none focus:border-teal-500"
           />
         </div>
 
         {created ? (
-          <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 text-green-400 text-center">
+          <div className="bg-green-plumbob/10 border border-green-plumbob/30 rounded-lg p-4 text-green-plumbob text-center">
             Task created successfully!
           </div>
         ) : (
@@ -120,7 +120,7 @@ export default function CreateTaskPage() {
             <button
               onClick={handleApprove}
               disabled={!needsApproval || approving || waitingApproval || !cid || !reward || !deadline}
-              className="flex-1 py-3 px-4 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              className="flex-1 py-3 px-4 bg-forge-card border border-forge-border hover:border-teal-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-forge-white rounded-lg font-medium transition-colors"
             >
               {approving || waitingApproval
                 ? "Approving..."
@@ -131,7 +131,7 @@ export default function CreateTaskPage() {
             <button
               onClick={handleCreate}
               disabled={needsApproval && !approved || creating || waitingCreate || !cid || !reward || !deadline}
-              className="flex-1 py-3 px-4 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              className="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
             >
               {creating || waitingCreate ? "Creating..." : "Create Task"}
             </button>

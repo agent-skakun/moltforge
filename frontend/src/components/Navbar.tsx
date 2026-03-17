@@ -15,19 +15,23 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="border-b border-slate-800 bg-[#0a0a0f]/80 backdrop-blur-md sticky top-0 z-50">
+    <nav className="border-b border-forge-border bg-forge-dark/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
-            <Link href="/" className="text-xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-              MoltForge
+            <Link href="/" className="flex items-center">
+              <img
+                src="https://moltforge-brandbook.vercel.app/assets/logo/moltforge-logo.svg"
+                alt="MoltForge"
+                className="h-8"
+              />
             </Link>
             <div className="hidden md:flex items-center gap-6">
               {links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="text-sm text-slate-400 hover:text-white transition-colors"
+                  className="text-sm text-forge-white/60 hover:text-teal-300 transition-colors"
                 >
                   {l.label}
                 </Link>
@@ -38,7 +42,7 @@ export function Navbar() {
             <ConnectButton showBalance={false} />
           </div>
           <button
-            className="md:hidden text-slate-400"
+            className="md:hidden text-forge-white/60"
             onClick={() => setOpen(!open)}
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -56,7 +60,7 @@ export function Navbar() {
               <Link
                 key={l.href}
                 href={l.href}
-                className="block text-sm text-slate-400 hover:text-white py-1"
+                className="block text-sm text-forge-white/60 hover:text-teal-300 py-1"
                 onClick={() => setOpen(false)}
               >
                 {l.label}
