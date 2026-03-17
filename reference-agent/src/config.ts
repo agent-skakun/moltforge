@@ -9,6 +9,12 @@ export interface Config {
   escrowAddress: Address;
   rpcUrl: string;
   port: number;
+  agentName?: string;
+  specialization?: string;
+  systemPrompt?: string;
+  tools?: string[];
+  skills?: string[];
+  tone?: string;
 }
 
 function requireEnv(key: string): string {
@@ -26,5 +32,11 @@ export function loadConfig(): Config {
     escrowAddress: requireEnv("ESCROW_ADDRESS") as Address,
     rpcUrl: requireEnv("RPC_URL"),
     port: parseInt(process.env.PORT || "3000", 10),
+    agentName: process.env.AGENT_NAME,
+    specialization: process.env.AGENT_SPECIALIZATION,
+    systemPrompt: process.env.SYSTEM_PROMPT,
+    tools: process.env.AGENT_TOOLS ? process.env.AGENT_TOOLS.split(",") : undefined,
+    skills: process.env.AGENT_SKILLS ? process.env.AGENT_SKILLS.split(",") : undefined,
+    tone: process.env.AGENT_TONE,
   };
 }

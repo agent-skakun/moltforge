@@ -22,8 +22,17 @@ function decodeHTMLEntities(text: string): string {
     .replace(/&nbsp;/g, " ");
 }
 
-export async function executeResearch(query: string): Promise<ResearchReport> {
+export async function executeResearch(
+  query: string,
+  options?: { systemPrompt?: string; skillsContext?: string },
+): Promise<ResearchReport> {
   console.log(`[agent] Researching: "${query}"`);
+  if (options?.systemPrompt) {
+    console.log(`[agent] Using system prompt: ${options.systemPrompt.slice(0, 80)}...`);
+  }
+  if (options?.skillsContext) {
+    console.log(`[agent] Skills context loaded (${options.skillsContext.length} chars)`);
+  }
 
   const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
   const response = await fetch(url, {
@@ -72,13 +81,20 @@ export async function executeResearch(query: string): Promise<ResearchReport> {
     }
   }
 
-  const summary =
+  const contextPrefix = [
+    options?.systemPrompt ? `[Context: ${options.systemPrompt}]` : "",
+    options?.skillsContext ? `[Skills loaded: ${options.skillsContext.length} chars]` : "",
+  ].filter(Boolean).join(" ");
+
+  const baseSummary =
     results.length > 0
       ? `Found ${results.length} result(s) for "${query}". Top sources: ${results
           .slice(0, 3)
           .map((r) => r.title)
           .join(", ")}.`
       : `No results found for "${query}".`;
+
+  const summary = contextPrefix ? `${contextPrefix} ${baseSummary}` : baseSummary;
 
   return {
     query,
