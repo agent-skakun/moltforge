@@ -222,7 +222,7 @@ export default function RegisterAgentPage() {
               <p className="text-forge-white/20 text-sm">Click on a body part<br/>to start customizing</p>
             </div>
           ) : (
-            <div className="rounded-2xl p-6" style={{ background: "#0a1a17", border: "1px solid #1a2e2b", minHeight: 400, maxHeight: "calc(100vh - 140px)", overflowY: "auto" }}>
+            <div className="rounded-2xl p-6" style={{ background: "#0a1a17", border: "1px solid #1a2e2b", minHeight: 400, overflow: "hidden" }}>
               {/* Panel header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
