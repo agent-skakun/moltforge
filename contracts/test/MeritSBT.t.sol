@@ -84,4 +84,53 @@ contract MeritSBTTest is Test {
         bytes4 erc721 = 0x80ac58cd;
         assertTrue(sbt.supportsInterface(erc721));
     }
+
+    function test_SetBaseURI() public {
+        // owner can update base URI
+        sbt.setBaseURI("ipfs://new-base/");
+        // mint and check tokenURI reflects new base
+        vm.prank(minter_);
+        uint256 tokenId = sbt.mintTier(holder, MeritSBT.Tier.Bronze);
+        string memory uri = sbt.tokenURI(tokenId);
+        assertEq(uri, string(abi.encodePacked("ipfs://new-base/", vm.toString(tokenId))));
+    }
+
+    function test_SetBaseURI_RevertNotOwner() public {
+        vm.prank(holder);
+        vm.expectRevert(MeritSBT.NotOwner.selector);
+        sbt.setBaseURI("ipfs://hack/");
+    }
+
+    function test_SetMinter() public {
+        address newMinter = makeAddr("newMinter");
+        sbt.setMinter(newMinter);
+        assertEq(sbt.minter(), newMinter);
+        // new minter can mint
+        vm.prank(newMinter);
+        sbt.mintTier(holder, MeritSBT.Tier.Silver);
+        assertEq(sbt.balanceOf(holder), 1);
+    }
+
+    function test_SetMinter_RevertNotOwner() public {
+        vm.prank(holder);
+        vm.expectRevert(MeritSBT.NotOwner.selector);
+        sbt.setMinter(holder);
+    }
+
+    function test_TokenURI_BaseURI() public {
+        vm.prank(minter_);
+        uint256 tokenId = sbt.mintTier(holder, MeritSBT.Tier.Gold);
+        string memory uri = sbt.tokenURI(tokenId);
+        // base URI is "ipfs://merit/" → tokenURI = "ipfs://merit/1"
+        assertEq(uri, string(abi.encodePacked("ipfs://merit/", vm.toString(tokenId))));
+    }
+
+    function test_Approve_Revert_Soulbound() public {
+        vm.prank(minter_);
+        sbt.mintTier(holder, MeritSBT.Tier.Bronze);
+        vm.prank(holder);
+        // safeTransferFrom should also revert
+        vm.expectRevert(MeritSBT.Soulbound.selector);
+        sbt.safeTransferFrom(holder, holder2, 1);
+    }
 }
