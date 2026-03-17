@@ -8,14 +8,26 @@ export type Zone = "head" | "face" | "heart" | "hands" | "wallet" | null;
 
 // Real photo paths (public/avatars/face-1.jpg ... face-8.jpg)
 const AVATAR_PHOTOS: Record<string, string> = {
-  'sexy-student': '/avatars/sexy-student.jpg',
-  'professor':    '/avatars/professor.jpg',
-  'it-nerd':      '/avatars/it-nerd.jpg',
-  'teacher':      '/avatars/teacher.jpg',
-  'journalist':   '/avatars/journalist.jpg',
-  'black-worker': '/avatars/black-worker.jpg',
-  'indian-dev':   '/avatars/indian-dev.jpg',
-  'ai':           '/avatars/ai.jpg',
+  'sexy-student': '/avatars/sexy-student.png',
+  'professor':    '/avatars/professor.png',
+  'it-nerd':      '/avatars/it-nerd.png',
+  'teacher':      '/avatars/teacher.png',
+  'journalist':   '/avatars/journalist.png',
+  'black-worker': '/avatars/black-worker.png',
+  'indian-dev':   '/avatars/indian-dev.png',
+  'ai':           '/avatars/ai.png',
+};
+
+// SVG paths for <img> thumbnails in selector — vector, crisp at any size
+const AVATAR_THUMBS: Record<string, string> = {
+  'sexy-student': '/avatars/sexy-student.svg',
+  'professor':    '/avatars/professor.svg',
+  'it-nerd':      '/avatars/it-nerd.svg',
+  'teacher':      '/avatars/teacher.svg',
+  'journalist':   '/avatars/journalist.svg',
+  'black-worker': '/avatars/black-worker.svg',
+  'indian-dev':   '/avatars/indian-dev.svg',
+  'ai':           '/avatars/ai.svg',
 };
 export interface Avatar {
   id: string;
@@ -403,7 +415,7 @@ export function HumanoidFigure({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 300 }}>
           {AVATARS.map((av) => {
             const selected = av.id === selectedAvatarId;
-            const portraitURI = AVATAR_PHOTOS[av.id] || AVATAR_PHOTOS.ai;
+            const portraitURI = AVATAR_THUMBS[av.id] || AVATAR_THUMBS.ai;
             return (
               <button
                 key={av.id}
