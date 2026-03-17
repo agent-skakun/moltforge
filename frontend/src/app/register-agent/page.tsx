@@ -316,7 +316,7 @@ export default function RegisterAgentPage() {
 
               {/* ── FACE panel — APPEARANCE constructor ── */}
               {activeZone === "face" && (
-                <div className="space-y-5 overflow-y-auto" style={{maxHeight:"calc(100vh - 220px)", paddingRight:4}}>
+                <div className="space-y-5 overflow-y-auto no-scrollbar" style={{maxHeight:"calc(100vh - 220px)", paddingRight:4} as React.CSSProperties}>
 
                   {/* Preset quick-select */}
                   <div>
