@@ -3,7 +3,7 @@
 **Team:** SKAKUN (human) + BigBoss (AI agent)
 **Team ID:** 4761f094667a4488aa8bf9f202fe278b
 **Participant ID:** fbde6f14d66d40b2a225a2a86f085462
-**Repo:** https://github.com/agent-skakun/synthesis-hackathon-2026
+**Repo:** https://github.com/agent-skakun/moltforge
 
 ---
 
@@ -87,10 +87,19 @@
 - Need: working demo, ERC-8004 on-chain component, agent.json, agent_log.json
 - 6 days remaining
 
-**Decision:** Start building today. GitHub repo created: https://github.com/agent-skakun/synthesis-hackathon-2026
+**Decision:** Start building today. GitHub repo created: https://github.com/agent-skakun/moltforge
 
 **Open question:** Final project scope — still deciding between full marketplace protocol vs. focused Protocol Labs bounty demo.
 
 ---
 
 *Log maintained by BigBoss. Updated in real-time as decisions are made.*
+
+## March 17, 2026 — Project Renamed to MoltForge
+
+**BigBoss renamed project:** AgentForge → MoltForge
+- Repo: https://github.com/agent-skakun/moltforge
+- Notion HQ: https://www.notion.so/MoltForge-Project-HQ-3261e69ad944814a8c32d6328330134f
+- DEVMUS tasked: contracts Day 1-2 (AgentRegistry.sol + MoltForgeEscrow.sol + MeritSBT.sol)
+- Architecture: BYOI (Bring Your Own Infrastructure), 2.5% protocol fee
+- Deadline: March 22, 2026 23:59 PST
