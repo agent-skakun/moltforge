@@ -1,21 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { keccak256, toBytes } from "viem";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
-import { HumanoidFigure } from "@/components/HumanoidFigure";
+import { HumanoidFigure, AVATARS as HUMANOID_AVATARS } from "@/components/HumanoidFigure";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
-
-const AVATARS = [
-  { id: "robot",    emoji: "🤖" }, { id: "arm",    emoji: "🦾" },
-  { id: "brain",    emoji: "🧠" }, { id: "lab",    emoji: "🔬" },
-  { id: "computer", emoji: "💻" }, { id: "chart",  emoji: "📊" },
-  { id: "write",    emoji: "✍️"  }, { id: "art",    emoji: "🎨" },
-  { id: "rocket",   emoji: "🚀" }, { id: "shield", emoji: "🛡️" },
-  { id: "crystal",  emoji: "🔮" }, { id: "bolt",   emoji: "⚡" },
-];
 
 const SPECIALIZATIONS = [
   { id: "research", emoji: "🔬", label: "Research",  color: "#1db8a8" },
@@ -24,22 +15,6 @@ const SPECIALIZATIONS = [
   { id: "writing",  emoji: "✍️",  label: "Writing",  color: "#e8c842" },
   { id: "trading",  emoji: "📈", label: "Trading",   color: "#e63030" },
   { id: "design",   emoji: "🎨", label: "Design",    color: "#9b59b6" },
-];
-
-const SKILLS = [
-  { id: "web3",       label: "Web3 / Solidity", emoji: "⛓️"  },
-  { id: "security",   label: "Security / Audit",emoji: "🔒"  },
-  { id: "defi",       label: "DeFi Protocols",  emoji: "💱"  },
-  { id: "data",       label: "Data Analysis",   emoji: "📐"  },
-  { id: "nlp",        label: "NLP / Writing",   emoji: "📝"  },
-  { id: "ml",         label: "ML / Models",     emoji: "🤖"  },
-];
-
-const DOCS = [
-  { id: "polymarket", label: "Polymarket Docs",  emoji: "🎯" },
-  { id: "uniswap",    label: "Uniswap Docs",     emoji: "🦄" },
-  { id: "chainlink",  label: "Chainlink Docs",   emoji: "⬡"  },
-  { id: "base",       label: "Base Docs",        emoji: "🔵" },
 ];
 
 const TOOLS = [
@@ -64,14 +39,29 @@ const HOSTING = [
   { id: "render",  label: "Render",    price: "$7/mo", icon: "☁️" },
 ];
 
+// Category icons for skill groups
+const CATEGORY_ICONS: Record<string, string> = {
+  "blockchain":       "⛓️",
+  "data-analytics":   "📊",
+  "defi-trading":     "💱",
+  "infrastructure":   "🛠️",
+  "prediction-markets":"🎯",
+  "research":         "🔬",
+  "ai-compute":       "🤖",
+  "general":          "📄",
+};
+
 type Zone = "head" | "face" | "heart" | "hands" | "wallet" | null;
 
+interface SkillItem { id: string; label: string; path: string; category: string }
+interface SkillGroups { [category: string]: SkillItem[] }
+
 const ZONE_META: Record<NonNullable<Zone>, { emoji: string; title: string; desc: string }> = {
-  head:   { emoji: "🧠", title: "Knowledge",      desc: "Skills, Docs, MCP servers"  },
-  face:   { emoji: "👁️", title: "Identity",       desc: "Avatar, name, tone"         },
-  heart:  { emoji: "❤️", title: "Specialization", desc: "Your agent's core focus"    },
-  hands:  { emoji: "🤝", title: "Tools",          desc: "External APIs & integrations"},
-  wallet: { emoji: "💰", title: "Settings",       desc: "Pricing, hosting, webhook"  },
+  head:   { emoji: "🧠", title: "Knowledge",      desc: "Skills from moltforge-skills repo"  },
+  face:   { emoji: "👁️", title: "Identity",       desc: "Avatar, name, tone"                 },
+  heart:  { emoji: "❤️", title: "Specialization", desc: "Your agent's core focus"            },
+  hands:  { emoji: "🤝", title: "Tools",          desc: "External APIs & integrations"       },
+  wallet: { emoji: "💰", title: "Settings",       desc: "Pricing, hosting, webhook"          },
 };
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
@@ -83,8 +73,7 @@ export default function RegisterAgentPage() {
   const [avatarId, setAvatarId]       = useState("sexy-student");
   const [agentName, setAgentName]     = useState("");
   const [spec, setSpec]               = useState("coding");
-  const [skills, setSkills]           = useState<string[]>(["web3", "defi"]);
-  const [docs, setDocs]               = useState<string[]>(["polymarket"]);
+  const [skills, setSkills]           = useState<string[]>([]);
   const [tools, setTools]             = useState<string[]>(["coingecko", "websearch"]);
   const [tone, setTone]               = useState("professional");
   const [language, setLanguage]       = useState("EN");
@@ -94,6 +83,27 @@ export default function RegisterAgentPage() {
   const [webhookOpen, setWebhookOpen] = useState(false);
   const [mcpUrl, setMcpUrl]           = useState("");
   const [mcpList, setMcpList]         = useState<string[]>([]);
+
+  // Dynamic skills from moltforge-skills repo
+  const [skillGroups, setSkillGroups] = useState<SkillGroups>({});
+  const [skillsLoading, setSkillsLoading] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSkillsLoading(true);
+    fetch("/api/skills?action=list")
+      .then(r => r.json())
+      .then(data => {
+        if (data.groups) {
+          setSkillGroups(data.groups);
+          // Auto-expand first category
+          const firstCat = Object.keys(data.groups)[0];
+          if (firstCat) setExpandedCategories([firstCat]);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setSkillsLoading(false));
+  }, []);
 
   // UI
   const [activeZone, setActiveZone]   = useState<Zone>(null);
@@ -109,7 +119,33 @@ export default function RegisterAgentPage() {
 
   const selectedSpec   = SPECIALIZATIONS.find(s => s.id === spec)!;
 
-  const metaObj = { name: agentName, avatar: avatarId, specialization: spec, skills, docs, tools, tone, language, price, hosting, webhookUrl, mcpList };
+  // Generate docker entrypoint snippet for selected skills
+  const generateDockerEntrypoint = () => {
+    if (skills.length === 0) return "";
+    const RAW_BASE = "https://raw.githubusercontent.com/agent-skakun/moltforge-skills/main";
+    const skillDownloads = skills.map(path =>
+      `curl -s "${RAW_BASE}/${path}" -o "/skills/${path.replace(/\//g, '_')}"`
+    ).join(" && \\\n  ");
+    return `#!/bin/sh\nmkdir -p /skills\n${skillDownloads}\nexec "$@"`;
+  };
+
+  const metaObj = {
+    name: agentName,
+    avatar: avatarId,
+    specialization: spec,
+    skills,                    // array of paths e.g. ["blockchain/erc8004.md"]
+    tools,
+    tone,
+    language,
+    price,
+    hosting,
+    webhookUrl,
+    mcpList,
+    systemPrompt: skills.length > 0
+      ? `You have access to skill files in /skills/ directory. Read them to understand how to work with specific tools and protocols. Skills loaded: ${skills.map(p => p.split('/').pop()?.replace('.md','')).join(', ')}.`
+      : undefined,
+    dockerEntrypoint: generateDockerEntrypoint() || undefined,
+  };
   const metaURI = `data:application/json;base64,${typeof window !== "undefined" ? btoa(unescape(encodeURIComponent(JSON.stringify(metaObj)))) : ""}`;
   const agentIdHash = agentName ? keccak256(toBytes(agentName.trim().toLowerCase())) : undefined;
   const canDeploy = !!(agentName && spec && !isPending && !waiting && isOwner);
@@ -205,29 +241,60 @@ export default function RegisterAgentPage() {
                   style={{ background: "#060c0b", border: "1px solid #1a2e2b" }}>✕</button>
               </div>
 
-              {/* ── HEAD panel ── */}
+              {/* ── HEAD panel — moltforge-skills repo ── */}
               {activeZone === "head" && (
-                <div className="space-y-6">
-                  <div>
-                    <SectionLabel>Skills</SectionLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {SKILLS.map(sk => (
-                        <CheckCard key={sk.id} checked={skills.includes(sk.id)}
-                          onClick={() => toggle(skills, setSkills, sk.id)}
-                          emoji={sk.emoji} label={sk.label} />
+                <div className="space-y-4">
+                  <div className="text-xs mb-3" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                    From <span style={{color:"#1db8a8"}}>agent-skakun/moltforge-skills</span> repo
+                  </div>
+                  {skillsLoading && (
+                    <div className="text-xs text-center py-4" style={{color:"#3a5550"}}>Loading skills…</div>
+                  )}
+                  {!skillsLoading && Object.keys(skillGroups).length === 0 && (
+                    <div className="text-xs text-center py-4" style={{color:"#e63030"}}>Failed to load skills</div>
+                  )}
+                  {Object.entries(skillGroups).map(([cat, items]) => (
+                    <div key={cat}>
+                      <button
+                        onClick={() => setExpandedCategories(prev =>
+                          prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+                        )}
+                        className="flex items-center gap-2 w-full text-left mb-2"
+                        style={{ color: "#1db8a8" }}
+                      >
+                        <span>{CATEGORY_ICONS[cat] || "📄"}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wider" style={{fontFamily:"var(--font-jetbrains-mono)"}}>
+                          {cat.replace(/-/g, " ")}
+                        </span>
+                        <span className="text-xs ml-auto" style={{color:"#3a5550"}}>
+                          {items.filter(s => skills.includes(s.path)).length}/{items.length}
+                        </span>
+                        <span style={{fontSize:"0.65rem",color:"#3a5550"}}>
+                          {expandedCategories.includes(cat) ? "▲" : "▼"}
+                        </span>
+                      </button>
+                      {expandedCategories.includes(cat) && (
+                        <div className="grid grid-cols-1 gap-1.5 pl-2">
+                          {items.map(sk => (
+                            <CheckCard key={sk.path} checked={skills.includes(sk.path)}
+                              onClick={() => toggle(skills, setSkills, sk.path)}
+                              emoji={CATEGORY_ICONS[cat] || "📄"} label={sk.label} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {skills.length > 0 && (
+                    <div className="mt-3 p-3 rounded-lg text-xs" style={{background:"#060c0b",border:"1px solid #1db8a820"}}>
+                      <div className="mb-1" style={{color:"#1db8a8",fontFamily:"var(--font-jetbrains-mono)"}}>Selected ({skills.length}):</div>
+                      {skills.map(p => (
+                        <div key={p} className="flex items-center gap-1" style={{color:"#5a807a"}}>
+                          <span>✓</span>
+                          <span className="truncate">{p}</span>
+                        </div>
                       ))}
                     </div>
-                  </div>
-                  <div>
-                    <SectionLabel>Docs (llms.txt)</SectionLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {DOCS.map(d => (
-                        <CheckCard key={d.id} checked={docs.includes(d.id)}
-                          onClick={() => toggle(docs, setDocs, d.id)}
-                          emoji={d.emoji} label={d.label} />
-                      ))}
-                    </div>
-                  </div>
+                  )}
                   <div>
                     <SectionLabel>MCP Servers</SectionLabel>
                     <div className="space-y-2">
@@ -258,7 +325,7 @@ export default function RegisterAgentPage() {
                   <div>
                     <SectionLabel>Avatar</SectionLabel>
                     <div className="grid grid-cols-6 gap-2">
-                      {AVATARS.map(av => (
+                      {HUMANOID_AVATARS.map(av => (
                         <button key={av.id} onClick={() => setAvatarId(av.id)}
                           className="flex items-center justify-center text-2xl rounded-xl transition-all"
                           style={{ height: 52, background: avatarId === av.id ? "#1db8a822" : "#060c0b", border: `2px solid ${avatarId === av.id ? "#1db8a8" : "#1a2e2b"}`, transform: avatarId === av.id ? "scale(1.1)" : "scale(1)" }}>
