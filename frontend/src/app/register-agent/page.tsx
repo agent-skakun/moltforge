@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { keccak256, toBytes } from "viem";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
+import { CyborgFigure } from "@/components/CyborgFigure";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -160,110 +161,18 @@ export default function RegisterAgentPage() {
             </span>
           </div>
 
-          {/* SVG Figure */}
-          <div className="relative select-none" style={{ width: 280, height: 480 }}>
-
-            {/* ── FACE zone ── */}
-            <ZoneButton
-              zone="face" activeZone={activeZone} hoverZone={hoverZone}
-              setActiveZone={setActiveZone} setHoverZone={setHoverZone}
-              style={{ position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)", width: 100, height: 100 }}
-              glowColor="#1db8a8"
-            >
-              <div className="w-full h-full rounded-full flex items-center justify-center text-5xl"
-                style={{ background: `radial-gradient(circle, ${selectedSpec.color}22, #0a1a17)`, border: `2px solid ${selectedSpec.color}50`, boxShadow: hoverZone === "face" ? `0 0 30px ${selectedSpec.color}60` : "none", transition: "all 0.3s" }}>
-                {selectedAvatar.emoji}
-              </div>
-            </ZoneButton>
-
-            {/* ── HEAD zone ── */}
-            <ZoneButton
-              zone="head" activeZone={activeZone} hoverZone={hoverZone}
-              setActiveZone={setActiveZone} setHoverZone={setHoverZone}
-              style={{ position: "absolute", top: 115, left: "50%", transform: "translateX(-50%)", width: 140, height: 40 }}
-              glowColor="#1db8a8"
-            >
-              <div className="w-full h-full rounded-xl flex items-center justify-center gap-2 text-sm font-medium"
-                style={{ background: activeZone === "head" ? "#1db8a822" : "#0a1a17", border: `1px solid ${activeZone === "head" || hoverZone === "head" ? "#1db8a8" : "#1a2e2b"}`, transition: "all 0.2s", color: "#1db8a8" }}>
-                🧠 Knowledge
-              </div>
-            </ZoneButton>
-
-            {/* ── HEART zone (torso) ── */}
-            <ZoneButton
-              zone="heart" activeZone={activeZone} hoverZone={hoverZone}
-              setActiveZone={setActiveZone} setHoverZone={setHoverZone}
-              style={{ position: "absolute", top: 165, left: "50%", transform: "translateX(-50%)", width: 160, height: 100 }}
-              glowColor={selectedSpec.color}
-            >
-              <div className="w-full h-full rounded-2xl flex flex-col items-center justify-center gap-1"
-                style={{ background: `${selectedSpec.color}15`, border: `2px solid ${activeZone === "heart" || hoverZone === "heart" ? selectedSpec.color : selectedSpec.color + "40"}`, transition: "all 0.3s", boxShadow: hoverZone === "heart" ? `0 0 30px ${selectedSpec.color}40` : "none" }}>
-                <span className="text-3xl">{selectedSpec.emoji}</span>
-                <span className="text-xs font-medium" style={{ color: selectedSpec.color }}>{selectedSpec.label}</span>
-              </div>
-            </ZoneButton>
-
-            {/* ── HANDS zone (left) ── */}
-            <ZoneButton
-              zone="hands" activeZone={activeZone} hoverZone={hoverZone}
-              setActiveZone={setActiveZone} setHoverZone={setHoverZone}
-              style={{ position: "absolute", top: 185, left: 10, width: 60, height: 60 }}
-              glowColor="#f07828"
-            >
-              <div className="w-full h-full rounded-xl flex items-center justify-center text-2xl"
-                style={{ background: activeZone === "hands" ? "#f0782822" : "#0a1a17", border: `1px solid ${activeZone === "hands" || hoverZone === "hands" ? "#f07828" : "#1a2e2b"}`, transition: "all 0.2s" }}>
-                🤝
-              </div>
-            </ZoneButton>
-
-            {/* ── HANDS zone (right) ── */}
-            <ZoneButton
-              zone="hands" activeZone={activeZone} hoverZone={hoverZone}
-              setActiveZone={setActiveZone} setHoverZone={setHoverZone}
-              style={{ position: "absolute", top: 185, right: 10, width: 60, height: 60 }}
-              glowColor="#f07828"
-            >
-              <div className="w-full h-full rounded-xl flex items-center justify-center text-2xl"
-                style={{ background: activeZone === "hands" ? "#f0782822" : "#0a1a17", border: `1px solid ${activeZone === "hands" || hoverZone === "hands" ? "#f07828" : "#1a2e2b"}`, transition: "all 0.2s" }}>
-                🛠️
-              </div>
-            </ZoneButton>
-
-            {/* ── WALLET zone (legs/bottom) ── */}
-            <ZoneButton
-              zone="wallet" activeZone={activeZone} hoverZone={hoverZone}
-              setActiveZone={setActiveZone} setHoverZone={setHoverZone}
-              style={{ position: "absolute", top: 280, left: "50%", transform: "translateX(-50%)", width: 160, height: 80 }}
-              glowColor="#3ec95a"
-            >
-              <div className="w-full h-full rounded-2xl flex flex-col items-center justify-center gap-1"
-                style={{ background: activeZone === "wallet" ? "#3ec95a15" : "#0a1a17", border: `1px solid ${activeZone === "wallet" || hoverZone === "wallet" ? "#3ec95a" : "#1a2e2b"}`, transition: "all 0.2s" }}>
-                <span className="text-2xl">💰</span>
-                <span className="text-xs" style={{ color: "#3ec95a", fontFamily: "var(--font-jetbrains-mono)" }}>{price ? `$${price} USDC` : "Set Price"}</span>
-              </div>
-            </ZoneButton>
-
-            {/* Connecting lines (decorative) */}
-            <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
-              {/* Head to torso */}
-              <line x1="140" y1="155" x2="140" y2="165" stroke="#1a2e2b" strokeWidth="2" strokeDasharray="4,4" />
-              {/* Torso to legs */}
-              <line x1="140" y1="265" x2="140" y2="280" stroke="#1a2e2b" strokeWidth="2" strokeDasharray="4,4" />
-              {/* Left arm */}
-              <line x1="80" y1="215" x2="70" y2="215" stroke="#1a2e2b" strokeWidth="2" strokeDasharray="4,4" />
-              {/* Right arm */}
-              <line x1="200" y1="215" x2="210" y2="215" stroke="#1a2e2b" strokeWidth="2" strokeDasharray="4,4" />
-            </svg>
-
-            {/* Plumbob */}
-            <div className="absolute flex flex-col items-center" style={{ top: 375, left: "50%", transform: "translateX(-50%)" }}>
-              <div style={{ width: 2, height: 20, background: "#3ec95a50" }} />
-              <div style={{ width: 20, height: 20, background: canDeploy ? "#3ec95a" : "#4a5568", transform: "rotate(45deg)", boxShadow: canDeploy ? "0 0 16px #3ec95a80" : "none", transition: "all 0.5s" }} />
-            </div>
-          </div>
+          {/* SVG Cyborg Figure */}
+          <CyborgFigure
+            activeZone={activeZone}
+            hoverZone={hoverZone}
+            specColor={selectedSpec.color}
+            avatarEmoji={selectedAvatar.emoji}
+            onZoneClick={(z) => setActiveZone(activeZone === z ? null : z)}
+            onZoneHover={setHoverZone}
+          />
 
           {/* Zone hint badges */}
-          <div className="flex flex-wrap justify-center gap-2 mt-8">
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
             {(Object.keys(ZONE_META) as Zone[]).filter(Boolean).map(z => (
               <button key={z} onClick={() => setActiveZone(activeZone === z ? null : z!)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
@@ -507,23 +416,6 @@ export default function RegisterAgentPage() {
 }
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
-
-function ZoneButton({ zone, activeZone, hoverZone, setActiveZone, setHoverZone, style, glowColor, children }: {
-  zone: NonNullable<Zone>; activeZone: Zone; hoverZone: Zone;
-  setActiveZone: (z: Zone) => void; setHoverZone: (z: Zone) => void;
-  style: React.CSSProperties; glowColor: string; children: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{ ...style, cursor: "pointer", filter: hoverZone === zone ? `drop-shadow(0 0 12px ${glowColor})` : "none", transition: "filter 0.3s" }}
-      onClick={() => setActiveZone(activeZone === zone ? null : zone)}
-      onMouseEnter={() => setHoverZone(zone)}
-      onMouseLeave={() => setHoverZone(null)}
-    >
-      {children}
-    </div>
-  );
-}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
