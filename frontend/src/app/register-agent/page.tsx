@@ -95,10 +95,15 @@ export default function RegisterAgentPage() {
 
   // Human mode: build metadata + hash automatically
   const humanMeta = JSON.stringify({
-    name: agentName, avatar: selectedAvatar.emoji, specialization: spec,
+    name: agentName, avatar: selectedAvatar.id, specialization: spec,
     skills, price, language, hosting, webhookUrl,
   });
-  const humanMetaURI  = `data:application/json;base64,${typeof window !== "undefined" ? btoa(humanMeta) : ""}`;
+  // btoa is Latin1-only — encode via encodeURIComponent to handle unicode safely
+  const humanMetaURI = `data:application/json;base64,${
+    typeof window !== "undefined"
+      ? btoa(unescape(encodeURIComponent(humanMeta)))
+      : ""
+  }`;
   const humanIdHash   = agentName ? keccak256(toBytes(agentName.trim().toLowerCase())) : undefined;
 
   // Dev mode
