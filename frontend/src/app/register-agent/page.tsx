@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { keccak256, toBytes } from "viem";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
-import { HumanoidFigure, AVATARS as HUMANOID_AVATARS } from "@/components/HumanoidFigure";
+import { HumanoidFigure } from "@/components/HumanoidFigure";
+import { PRESETS, SKIN_COLORS, FaceParams } from "@/components/AvatarFace";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -70,13 +71,14 @@ export default function RegisterAgentPage() {
   const { address } = useAccount();
 
   // Builder state
-  const [avatarId, setAvatarId]       = useState("sexy-student");
+  const [avatarId, setAvatarId]       = useState("developer");
+  const [faceParams, setFaceParams]   = useState<FaceParams>(PRESETS["developer"]);
   const [agentName, setAgentName]     = useState("");
   const [spec, setSpec]               = useState("coding");
   const [skills, setSkills]           = useState<string[]>([]);
   const [tools, setTools]             = useState<string[]>(["coingecko", "websearch"]);
   const [tone, setTone]               = useState("professional");
-  const [language, setLanguage]       = useState("EN");
+  const [language] = useState("EN");
   const [price, setPrice]             = useState("");
   const [hosting, setHosting]         = useState("railway");
   const [webhookUrl, setWebhookUrl]   = useState("");
@@ -202,9 +204,10 @@ export default function RegisterAgentPage() {
             hoverZone={hoverZone}
             specColor={selectedSpec.color}
             selectedAvatarId={avatarId}
+            faceParams={faceParams}
             onZoneClick={(z) => setActiveZone(activeZone === z ? null : z)}
             onZoneHover={setHoverZone}
-            onAvatarSelect={setAvatarId}
+            onAvatarSelect={(id) => { setAvatarId(id); setFaceParams(PRESETS[id] ?? faceParams); }}
           />
 
           {/* Zone hint badges */}
@@ -319,21 +322,254 @@ export default function RegisterAgentPage() {
                 </div>
               )}
 
-              {/* ── FACE panel ── */}
+              {/* ── FACE panel — APPEARANCE constructor ── */}
               {activeZone === "face" && (
-                <div className="space-y-6">
+                <div className="space-y-5 overflow-y-auto" style={{maxHeight:480}}>
+
+                  {/* Preset quick-select */}
                   <div>
-                    <SectionLabel>Avatar</SectionLabel>
-                    <div className="grid grid-cols-6 gap-2">
-                      {HUMANOID_AVATARS.map(av => (
-                        <button key={av.id} onClick={() => setAvatarId(av.id)}
-                          className="flex items-center justify-center text-2xl rounded-xl transition-all"
-                          style={{ height: 52, background: avatarId === av.id ? "#1db8a822" : "#060c0b", border: `2px solid ${avatarId === av.id ? "#1db8a8" : "#1a2e2b"}`, transform: avatarId === av.id ? "scale(1.1)" : "scale(1)" }}>
-                          {av.emoji}
+                    <SectionLabel>Preset</SectionLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.keys(PRESETS).map(pid => (
+                        <button key={pid}
+                          onClick={() => { setAvatarId(pid); setFaceParams({...PRESETS[pid]}); }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize"
+                          style={{
+                            background: avatarId === pid ? "#1db8a822" : "#060c0b",
+                            border: `1px solid ${avatarId === pid ? "#1db8a8" : "#1a2e2b"}`,
+                            color: avatarId === pid ? "#1db8a8" : "#6b8f8a"
+                          }}>
+                          {pid.replace(/-/g," ")}
                         </button>
                       ))}
                     </div>
                   </div>
+
+                  {/* Skin Color */}
+                  <div>
+                    <SectionLabel>Skin Color</SectionLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {SKIN_COLORS.map(c => (
+                        <button key={c} onClick={() => setFaceParams(p=>({...p,skinColor:c}))}
+                          title={c}
+                          style={{
+                            width:28, height:28, borderRadius:"50%", background:c,
+                            border: faceParams.skinColor === c ? "3px solid #1db8a8" : "2px solid #1a2e2b",
+                            cursor:"pointer", transition:"all 0.15s"
+                          }}/>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Face Shape */}
+                  <div>
+                    <SectionLabel>Face Shape</SectionLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {(["oval","round","square","heart","diamond","oblong"] as FaceParams["faceShape"][]).map(s => (
+                        <button key={s} onClick={() => setFaceParams(p=>({...p,faceShape:s}))}
+                          className="px-3 py-1.5 rounded-lg text-xs capitalize transition-all"
+                          style={{
+                            background: faceParams.faceShape===s ? "#1db8a822" : "#060c0b",
+                            border:`1px solid ${faceParams.faceShape===s ? "#1db8a8":"#1a2e2b"}`,
+                            color: faceParams.faceShape===s ? "#1db8a8":"#6b8f8a"
+                          }}>{s}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Style */}
+                  <div>
+                    <SectionLabel>Hair Style</SectionLabel>
+                    <div className="flex gap-2 overflow-x-auto pb-1" style={{scrollbarWidth:"none"}}>
+                      {(["short","long","curly","bald","ponytail","afro","business","mohawk","undercut","buzz","bun","wavy","dreadlocks","braids","pixie","bob"] as FaceParams["hair"][]).map(h => (
+                        <button key={h} onClick={() => setFaceParams(p=>({...p,hair:h}))}
+                          className="px-3 py-1.5 rounded-lg text-xs capitalize whitespace-nowrap transition-all flex-shrink-0"
+                          style={{
+                            background: faceParams.hair===h ? "#1db8a822" : "#060c0b",
+                            border:`1px solid ${faceParams.hair===h ? "#1db8a8":"#1a2e2b"}`,
+                            color: faceParams.hair===h ? "#1db8a8":"#6b8f8a"
+                          }}>{h}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hair Color */}
+                  <div>
+                    <SectionLabel>Hair Color</SectionLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {({"black":"#1a1008","brown":"#4a2f1a","blonde":"#d4a843","red":"#8b2500","gray":"#8a8a8a","white":"#e8e8e8","platinum":"#dde0e8","auburn":"#6b2000"} as Record<string,string>).toString() && 
+                        Object.entries({"black":"#1a1008","brown":"#4a2f1a","blonde":"#d4a843","red":"#8b2500","gray":"#8a8a8a","white":"#e8e8e8","platinum":"#dde0e8","auburn":"#6b2000"}).map(([name,hex]) => (
+                        <button key={name} onClick={() => setFaceParams(p=>({...p,hairColor:name as FaceParams["hairColor"]}))}
+                          title={name}
+                          style={{
+                            width:26, height:26, borderRadius:"50%", background:hex,
+                            border: faceParams.hairColor===name ? "3px solid #1db8a8":"2px solid #1a2e2b",
+                            cursor:"pointer", outline: hex === "#e8e8e8" ? "1px solid #2a3a38" : "none"
+                          }}/>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Eyes */}
+                  <div>
+                    <SectionLabel>Eyes</SectionLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {(["normal","asian","wide","tired","hooded","deep","almond","round"] as FaceParams["eyes"][]).map(e => (
+                        <button key={e} onClick={() => setFaceParams(p=>({...p,eyes:e}))}
+                          className="px-2.5 py-1.5 rounded-lg text-xs capitalize transition-all"
+                          style={{
+                            background: faceParams.eyes===e ? "#1db8a822":"#060c0b",
+                            border:`1px solid ${faceParams.eyes===e ? "#1db8a8":"#1a2e2b"}`,
+                            color: faceParams.eyes===e ? "#1db8a8":"#6b8f8a"
+                          }}>{e}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Facial Hair */}
+                  <div>
+                    <SectionLabel>Facial Hair</SectionLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {(["none","stubble","short","full","goatee","mustache","viking","thick"] as FaceParams["facialHair"][]).map(b => (
+                        <button key={b} onClick={() => setFaceParams(p=>({...p,facialHair:b}))}
+                          className="px-2.5 py-1.5 rounded-lg text-xs capitalize transition-all"
+                          style={{
+                            background: faceParams.facialHair===b ? "#1db8a822":"#060c0b",
+                            border:`1px solid ${faceParams.facialHair===b ? "#1db8a8":"#1a2e2b"}`,
+                            color: faceParams.facialHair===b ? "#1db8a8":"#6b8f8a"
+                          }}>{b}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Makeup */}
+                  <div>
+                    <SectionLabel>Makeup</SectionLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {(["none","natural","light","bold","goth"] as FaceParams["makeup"][]).map(m => (
+                        <button key={m} onClick={() => setFaceParams(p=>({...p,makeup:m}))}
+                          className="px-2.5 py-1.5 rounded-lg text-xs capitalize transition-all"
+                          style={{
+                            background: faceParams.makeup===m ? "#1db8a822":"#060c0b",
+                            border:`1px solid ${faceParams.makeup===m ? "#1db8a8":"#1a2e2b"}`,
+                            color: faceParams.makeup===m ? "#1db8a8":"#6b8f8a"
+                          }}>{m}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Skin Detail */}
+                  <div>
+                    <SectionLabel>Skin Detail</SectionLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {(["none","freckles","moles","wrinkles","scar"] as FaceParams["skinDetail"][]).map(sd => (
+                        <button key={sd} onClick={() => setFaceParams(p=>({...p,skinDetail:sd}))}
+                          className="px-2.5 py-1.5 rounded-lg text-xs capitalize transition-all"
+                          style={{
+                            background: faceParams.skinDetail===sd ? "#1db8a822":"#060c0b",
+                            border:`1px solid ${faceParams.skinDetail===sd ? "#1db8a8":"#1a2e2b"}`,
+                            color: faceParams.skinDetail===sd ? "#1db8a8":"#6b8f8a"
+                          }}>{sd}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Glasses */}
+                  <div>
+                    <SectionLabel>Glasses</SectionLabel>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {(["none","round","square","oval","cat-eye","rimless"] as FaceParams["glasses"][]).map(g => (
+                        <button key={g} onClick={() => setFaceParams(p=>({...p,glasses:g}))}
+                          className="px-2.5 py-1.5 rounded-lg text-xs capitalize transition-all"
+                          style={{
+                            background: faceParams.glasses===g ? "#1db8a822":"#060c0b",
+                            border:`1px solid ${faceParams.glasses===g ? "#1db8a8":"#1a2e2b"}`,
+                            color: faceParams.glasses===g ? "#1db8a8":"#6b8f8a"
+                          }}>{g}</button>
+                      ))}
+                    </div>
+                    {faceParams.glasses !== "none" && (
+                      <div className="flex flex-wrap gap-2">
+                        {["#111","#6b4020","#c8a040","#aaa","#fff","#8b3a00","#1a3a8b","#8b1a1a"].map(c => (
+                          <button key={c} onClick={() => setFaceParams(p=>({...p,glassesColor:c}))}
+                            title={c} style={{width:22,height:22,borderRadius:4,background:c,border:faceParams.glassesColor===c?"3px solid #1db8a8":"2px solid #1a2e2b",cursor:"pointer"}}/>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hat */}
+                  <div>
+                    <SectionLabel>Hat</SectionLabel>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {(["none","cap","beanie","fedora","hood","crown","beret","hardhat"] as FaceParams["hat"][]).map(h => (
+                        <button key={h} onClick={() => setFaceParams(p=>({...p,hat:h}))}
+                          className="px-2.5 py-1.5 rounded-lg text-xs capitalize transition-all"
+                          style={{
+                            background: faceParams.hat===h ? "#1db8a822":"#060c0b",
+                            border:`1px solid ${faceParams.hat===h ? "#1db8a8":"#1a2e2b"}`,
+                            color: faceParams.hat===h ? "#1db8a8":"#6b8f8a"
+                          }}>{h}</button>
+                      ))}
+                    </div>
+                    {faceParams.hat !== "none" && (
+                      <div className="flex flex-wrap gap-2">
+                        {["#111","#fff","#8b1a1a","#1a3a8b","#1a6b1a","#e8c830","#555","#6b4020"].map(c => (
+                          <button key={c} onClick={() => setFaceParams(p=>({...p,hatColor:c}))}
+                            title={c} style={{width:22,height:22,borderRadius:4,background:c,border:faceParams.hatColor===c?"3px solid #1db8a8":"2px solid #1a2e2b",cursor:"pointer"}}/>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Extras */}
+                  <div>
+                    <SectionLabel>Extras</SectionLabel>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                      <div>
+                        <div className="text-xs mb-1.5" style={{color:"#3a5550",fontFamily:"var(--font-jetbrains-mono)"}}>Earrings</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(["none","studs","hoops","drops","dangles","cuffs"] as FaceParams["earrings"][]).map(e => (
+                            <button key={e} onClick={() => setFaceParams(p=>({...p,earrings:e}))}
+                              className="px-2 py-1 rounded text-xs capitalize"
+                              style={{background:faceParams.earrings===e?"#1db8a822":"#060c0b",border:`1px solid ${faceParams.earrings===e?"#1db8a8":"#1a2e2b"}`,color:faceParams.earrings===e?"#1db8a8":"#6b8f8a"}}>{e}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs mb-1.5" style={{color:"#3a5550",fontFamily:"var(--font-jetbrains-mono)"}}>Piercing</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(["none","nose","lip","eyebrow","multiple"] as FaceParams["piercing"][]).map(p => (
+                            <button key={p} onClick={() => setFaceParams(fp=>({...fp,piercing:p}))}
+                              className="px-2 py-1 rounded text-xs capitalize"
+                              style={{background:faceParams.piercing===p?"#1db8a822":"#060c0b",border:`1px solid ${faceParams.piercing===p?"#1db8a8":"#1a2e2b"}`,color:faceParams.piercing===p?"#1db8a8":"#6b8f8a"}}>{p}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs mb-1.5" style={{color:"#3a5550",fontFamily:"var(--font-jetbrains-mono)"}}>Tattoo</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(["none","neck","face","tear","tribal","circuit"] as FaceParams["tattoo"][]).map(t => (
+                            <button key={t} onClick={() => setFaceParams(p=>({...p,tattoo:t}))}
+                              className="px-2 py-1 rounded text-xs capitalize"
+                              style={{background:faceParams.tattoo===t?"#1db8a822":"#060c0b",border:`1px solid ${faceParams.tattoo===t?"#1db8a8":"#1a2e2b"}`,color:faceParams.tattoo===t?"#1db8a8":"#6b8f8a"}}>{t}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs mb-1.5" style={{color:"#3a5550",fontFamily:"var(--font-jetbrains-mono)"}}>Necklace</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(["none","chain","pendant","choker","beads"] as FaceParams["necklace"][]).map(n => (
+                            <button key={n} onClick={() => setFaceParams(p=>({...p,necklace:n}))}
+                              className="px-2 py-1 rounded text-xs capitalize"
+                              style={{background:faceParams.necklace===n?"#1db8a822":"#060c0b",border:`1px solid ${faceParams.necklace===n?"#1db8a8":"#1a2e2b"}`,color:faceParams.necklace===n?"#1db8a8":"#6b8f8a"}}>{n}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Name / Tone — kept here too */}
                   <div>
                     <SectionLabel>Agent Name</SectionLabel>
                     <input value={agentName} onChange={e => setAgentName(e.target.value)}
@@ -341,18 +577,6 @@ export default function RegisterAgentPage() {
                       className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-lg"
                       style={{ background: "#060c0b", border: "1px solid #1a2e2b", fontFamily: "var(--font-space-grotesk)", letterSpacing: "-0.02em" }} />
                     {agentIdHash && <p className="text-xs mt-1 truncate" style={{ color: "#1a2e2b", fontFamily: "var(--font-jetbrains-mono)" }}>ID: {agentIdHash}</p>}
-                  </div>
-                  <div>
-                    <SectionLabel>Language</SectionLabel>
-                    <div className="flex gap-2">
-                      {["EN", "Multi"].map(l => (
-                        <button key={l} onClick={() => setLanguage(l)}
-                          className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all"
-                          style={{ background: language === l ? "#1db8a822" : "#060c0b", border: `1px solid ${language === l ? "#1db8a8" : "#1a2e2b"}`, color: language === l ? "#1db8a8" : "#6b8f8a" }}>
-                          {l}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                   <div>
                     <SectionLabel>Tone</SectionLabel>
