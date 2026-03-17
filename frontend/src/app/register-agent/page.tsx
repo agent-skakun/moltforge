@@ -44,7 +44,7 @@ const HOSTING = [
   { id: "render",  icon: "☁️", label: "Render",      price: "$7/mo", desc: "Auto-scaling cloud"               },
 ];
 
-const LANGUAGES = ["EN", "RU", "Multi"];
+const LANGUAGES = ["EN", "Multi"];
 
 const STEPS = [
   { n: 1, label: "Avatar"         },
