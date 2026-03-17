@@ -668,11 +668,72 @@ export default function RegisterAgentPage() {
         </div>
       </div>
 
-      {/* ── Bottom: Deploy button ── */}
+      {/* ── Bottom: Deploy button + post-deploy instructions ── */}
       <div className="flex justify-center mt-12 pb-16">
         {isSuccess ? (
-          <div className="px-8 py-4 rounded-2xl text-base font-semibold" style={{ background: "#3ec95a20", border: "1px solid #3ec95a", color: "#3ec95a" }}>
-            🎉 Agent deployed on-chain!
+          <div className="max-w-2xl w-full space-y-6">
+            <div className="px-8 py-4 rounded-2xl text-base font-semibold text-center" style={{ background: "#3ec95a20", border: "1px solid #3ec95a", color: "#3ec95a" }}>
+              🎉 Agent deployed on-chain!
+            </div>
+
+            {/* Agent ID */}
+            {agentIdHash && (
+              <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+                <div className="text-xs font-medium uppercase tracking-widest mb-2" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>Agent ID</div>
+                <div className="text-xs break-all" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#5a807a" }}>{agentIdHash}</div>
+              </div>
+            )}
+
+            {/* Deploy on Railway */}
+            <div className="flex gap-3">
+              <a href="https://railway.app/new?template=github" target="_blank" rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
+                style={{ background: "#1db8a822", border: "1px solid #1db8a8", color: "#1db8a8" }}>
+                🚂 Deploy on Railway
+              </a>
+              <button
+                onClick={() => {
+                  const testUrl = prompt("Enter your agent URL (e.g. https://your-agent.railway.app)");
+                  if (!testUrl) return;
+                  fetch(testUrl + "/health").then(r => r.json()).then(d => alert("Agent is live! Status: " + d.status)).catch(() => alert("Agent not reachable at " + testUrl));
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
+                style={{ background: "#f0782822", border: "1px solid #f07828", color: "#f07828" }}>
+                🧪 Test Your Agent
+              </button>
+            </div>
+
+            {/* Docker run command */}
+            <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+              <div className="text-xs font-medium uppercase tracking-widest mb-3" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>Docker Run Command</div>
+              <pre className="text-xs overflow-x-auto whitespace-pre" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#5a807a" }}>{
+`docker run -d -p 3000:3000 \\
+  -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\
+  -e REGISTRY_ADDRESS=0x68C2390146C795879758F2a71a62fd114cd1E88d \\
+  -e ESCROW_ADDRESS=0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4 \\
+  -e RPC_URL=https://mainnet.base.org \\
+  -e AGENT_NAME=${agentName || "<agent-name>"} \\
+  ghcr.io/agent-skakun/moltforge-agent:latest`
+              }</pre>
+              <button
+                onClick={() => {
+                  const cmd = `docker run -d -p 3000:3000 \\\n  -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\\n  -e REGISTRY_ADDRESS=0x68C2390146C795879758F2a71a62fd114cd1E88d \\\n  -e ESCROW_ADDRESS=0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4 \\\n  -e RPC_URL=https://mainnet.base.org \\\n  -e AGENT_NAME=${agentName || "<agent-name>"} \\\n  ghcr.io/agent-skakun/moltforge-agent:latest`;
+                  navigator.clipboard.writeText(cmd);
+                }}
+                className="mt-3 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                style={{ background: "#1db8a815", border: "1px solid #1db8a840", color: "#1db8a8" }}>
+                Copy
+              </button>
+            </div>
+
+            {txHash && (
+              <div className="text-center">
+                <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
+                  className="text-xs underline" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  View transaction on BaseScan
+                </a>
+              </div>
+            )}
           </div>
         ) : !address ? (
           /* No wallet — show ConnectButton inline */
