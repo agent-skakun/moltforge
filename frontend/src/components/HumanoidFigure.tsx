@@ -8,14 +8,14 @@ export type Zone = "head" | "face" | "heart" | "hands" | "wallet" | null;
 
 // Real photo paths (public/avatars/face-1.jpg ... face-8.jpg)
 const AVATAR_PHOTOS: Record<string, string> = {
-  student:   "/avatars/face-1.jpg",
-  hacker:    "/avatars/face-2.jpg",
-  bearded:   "/avatars/face-3.jpg",
-  finance:   "/avatars/face-4.jpg",
-  professor: "/avatars/face-5.jpg",
-  creative:  "/avatars/face-6.jpg",
-  dark:      "/avatars/face-7.jpg",
-  ai:        "/avatars/face-8.jpg",
+  'sexy-student': '/avatars/sexy-student.jpg',
+  'professor':    '/avatars/professor.jpg',
+  'it-nerd':      '/avatars/it-nerd.jpg',
+  'teacher':      '/avatars/teacher.jpg',
+  'journalist':   '/avatars/journalist.jpg',
+  'black-worker': '/avatars/black-worker.jpg',
+  'indian-dev':   '/avatars/indian-dev.jpg',
+  'ai':           '/avatars/ai.jpg',
 };
 export interface Avatar {
   id: string;
@@ -24,14 +24,14 @@ export interface Avatar {
 }
 
 export const AVATARS: Avatar[] = [
-  { id: "student",   label: "Sexy Student",      emoji: "😊" },
-  { id: "hacker",    label: "Nerdy Hacker",       emoji: "🤓" },
-  { id: "bearded",   label: "Bearded IT Guy",     emoji: "🧔" },
-  { id: "finance",   label: "Finance Bro",        emoji: "💼" },
-  { id: "professor", label: "The Professor",      emoji: "👩‍🏫" },
-  { id: "creative",  label: "Creative Director",  emoji: "🎨" },
-  { id: "dark",      label: "Dark Hacker",        emoji: "🥷" },
-  { id: "ai",        label: "Pure AI",            emoji: "🤖" },
+  { id: 'sexy-student', label: 'Sexy Student',      emoji: '😊' },
+  { id: 'professor',    label: 'The Professor',      emoji: '🎓' },
+  { id: 'it-nerd',      label: 'IT Nerd',            emoji: '🤓' },
+  { id: 'teacher',      label: 'Teacher',            emoji: '📚' },
+  { id: 'journalist',   label: 'Journalist',         emoji: '✍️'  },
+  { id: 'black-worker', label: 'Black Worker',       emoji: '💪' },
+  { id: 'indian-dev',   label: 'Indian Dev',         emoji: '💻' },
+  { id: 'ai',           label: 'Pure AI',            emoji: '🤖' },
 ];
 
 interface HumanoidFigureProps {

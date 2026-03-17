@@ -80,7 +80,7 @@ export default function RegisterAgentPage() {
   const { address } = useAccount();
 
   // Builder state
-  const [avatarId, setAvatarId]       = useState("student");
+  const [avatarId, setAvatarId]       = useState("sexy-student");
   const [agentName, setAgentName]     = useState("");
   const [spec, setSpec]               = useState("coding");
   const [skills, setSkills]           = useState<string[]>(["web3", "defi"]);
