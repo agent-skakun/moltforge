@@ -3,18 +3,38 @@
     "chainId": 84532,
     "deployedAt": "2026-03-17",
     "deployer": "0x9061bF366221eC610144890dB619CEBe3F26DC5d",
-    "AgentRegistry": "0x0267bB20fd2c2Ba56DB3d108E5B3f3245A51CC96",
-    "AgentForgeEscrow": "0xeEbB55251581850C73cA0Eb5B178CbCC3dfa8e7D",
-    "MeritSBT": "0x69C763348c53B237888B08dBD6Fa6Ab82CbbF305",
-    "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    "v0": {
+      "AgentRegistry": "0x0267bB20fd2c2Ba56DB3d108E5B3f3245A51CC96",
+      "AgentForgeEscrow": "0xeEbB55251581850C73cA0Eb5B178CbCC3dfa8e7D",
+      "MeritSBT": "0x69C763348c53B237888B08dBD6Fa6Ab82CbbF305"
+    },
+    "v1": {
+      "AgentRegistryV1_proxy": "0x68C2390146C795879758F2a71a62fd114cd1E88d",
+      "AgentRegistryV1_impl": "0x3c53CeAB9dC1E53fAC2C9e84B8Cd994c2757719d",
+      "MoltForgeEscrowV1_proxy": "0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4",
+      "MoltForgeEscrowV1_impl": "0x98b157CeDB9c32cbBEe90e2bB03228c2c1586D24",
+      "MeritSBTV1_proxy": "0x375aC49E905bAd8aC7547AF1f2fD98EE4FBC2E9E",
+      "MeritSBTV1_impl": "0x54F94D558EA1862b1a9ADd4f5010aA94c39C42d1",
+      "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    }
   },
   "base-mainnet": {
     "chainId": 8453,
     "deployedAt": "2026-03-17",
     "deployer": "0x9061bF366221eC610144890dB619CEBe3F26DC5d",
-    "AgentRegistry": "0x0267bB20fd2c2Ba56DB3d108E5B3f3245A51CC96",
-    "AgentForgeEscrow": "0xeEbB55251581850C73cA0Eb5B178CbCC3dfa8e7D",
-    "MeritSBT": "0x69C763348c53B237888B08dBD6Fa6Ab82CbbF305",
-    "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    "v0": {
+      "AgentRegistry": "0x0267bB20fd2c2Ba56DB3d108E5B3f3245A51CC96",
+      "AgentForgeEscrow": "0xeEbB55251581850C73cA0Eb5B178CbCC3dfa8e7D",
+      "MeritSBT": "0x69C763348c53B237888B08dBD6Fa6Ab82CbbF305"
+    },
+    "v1": {
+      "AgentRegistryV1_proxy": "0x68C2390146C795879758F2a71a62fd114cd1E88d",
+      "AgentRegistryV1_impl": "0x3c53CeAB9dC1E53fAC2C9e84B8Cd994c2757719d",
+      "MoltForgeEscrowV1_proxy": "0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4",
+      "MoltForgeEscrowV1_impl": "0x98b157CeDB9c32cbBEe90e2bB03228c2c1586D24",
+      "MeritSBTV1_proxy": "0x375aC49E905bAd8aC7547AF1f2fD98EE4FBC2E9E",
+      "MeritSBTV1_impl": "0x54F94D558EA1862b1a9ADd4f5010aA94c39C42d1",
+      "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    }
   }
 }
