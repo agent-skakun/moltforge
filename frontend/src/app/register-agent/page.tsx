@@ -127,7 +127,7 @@ export default function RegisterAgentPage() {
         <button
           onClick={() => setDevMode(m => !m)}
           className={`text-xs px-3 py-1.5 rounded-lg border transition-all font-mono
-            ${devMode ? "border-violet-500 text-violet-300 bg-violet-900/20" : "border-slate-700 text-slate-500 hover:border-slate-500"}`}
+            ${devMode ? "border-teal-500 text-teal-300 bg-teal-900/20" : "border-slate-700 text-slate-500 hover:border-slate-500"}`}
         >
           {devMode ? "🤖 Dev mode" : "👤 Human mode"}
         </button>
@@ -147,18 +147,18 @@ export default function RegisterAgentPage() {
             <Field label="Agent ID (string)">
               <input value={devAgentId} onChange={e => setDevAgentId(e.target.value)}
                 placeholder="my-agent-v1"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-violet-500" />
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-teal-500" />
               {devIdHash && <p className="text-xs text-slate-600 mt-1 font-mono truncate">bytes32: {devIdHash}</p>}
             </Field>
             <Field label="Metadata URI">
               <input value={devMeta} onChange={e => setDevMeta(e.target.value)}
                 placeholder="ipfs://Qm..."
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-violet-500" />
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-teal-500" />
             </Field>
             <Field label="Webhook URL">
               <input value={devWebhook} onChange={e => setDevWebhook(e.target.value)}
                 placeholder="https://api.example.com/webhook"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-violet-500" />
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-teal-500" />
             </Field>
             <DeployBtn onClick={handleDeploy} disabled={!devAgentId || !devMeta || isPending || waiting || !isOwner} loading={isPending || waiting} success={isSuccess} />
           </div>
@@ -173,7 +173,7 @@ export default function RegisterAgentPage() {
             <div className="bg-gradient-to-b from-slate-800/80 to-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl">
               {/* Avatar */}
               <div className="flex justify-center mb-5">
-                <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-6xl shadow-2xl shadow-violet-900/50 ring-4 ring-violet-500/20">
+                <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-teal-600 to-teal-800 flex items-center justify-center text-6xl shadow-2xl shadow-teal-900/50 ring-4 ring-teal-500/20">
                   {selectedAvatar.emoji}
                 </div>
               </div>
@@ -222,7 +222,7 @@ export default function RegisterAgentPage() {
                     {skills.map(sk => {
                       const s = SKILLS.find(x => x.id === sk);
                       return s ? (
-                        <span key={sk} className="px-2 py-1 bg-violet-900/30 border border-violet-800/40 rounded-lg text-xs text-violet-300 flex items-center gap-1">
+                        <span key={sk} className="px-2 py-1 bg-teal-900/30 border border-teal-800/40 rounded-lg text-xs text-teal-300 flex items-center gap-1">
                           {s.emoji} {s.label}
                         </span>
                       ) : null;
@@ -259,7 +259,7 @@ export default function RegisterAgentPage() {
                   <button key={av.id} onClick={() => setAvatarId(av.id)}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all
                       ${avatarId === av.id
-                        ? "border-violet-500 bg-violet-900/40 shadow-lg shadow-violet-900/30 scale-105"
+                        ? "border-teal-500 bg-teal-900/40 shadow-lg shadow-teal-900/30 scale-105"
                         : "border-slate-700 hover:border-slate-500 bg-slate-800/40 hover:scale-102"}`}>
                     <span className="text-2xl">{av.emoji}</span>
                     <span className="text-xs text-slate-400">{av.label}</span>
@@ -275,7 +275,7 @@ export default function RegisterAgentPage() {
                 <input
                   type="text" value={agentName} onChange={e => setAgentName(e.target.value)}
                   placeholder="e.g. AlphaScout, DataBot, ResearcherX"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-lg placeholder-slate-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-lg placeholder-slate-600 focus:outline-none focus:border-teal-500 transition-colors"
                 />
                 {agentIdHash && (
                   <p className="text-xs text-slate-600 mt-1 font-mono truncate">ID: {agentIdHash}</p>
@@ -288,7 +288,7 @@ export default function RegisterAgentPage() {
                     <button key={sp.id} onClick={() => setSpec(sp.id)}
                       className={`flex flex-col p-4 rounded-2xl border-2 transition-all text-left
                         ${spec === sp.id
-                          ? "border-violet-500 bg-violet-900/30"
+                          ? "border-teal-500 bg-teal-900/30"
                           : "border-slate-700 hover:border-slate-500 bg-slate-800/40"}`}>
                       <span className="text-2xl mb-2">{sp.emoji}</span>
                       <span className="text-sm font-bold text-white">{sp.label}</span>
@@ -307,9 +307,9 @@ export default function RegisterAgentPage() {
                   return (
                     <button key={sk.id} onClick={() => toggleSkill(sk.id)}
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left
-                        ${on ? "border-violet-500 bg-violet-900/20" : "border-slate-700 hover:border-slate-600 bg-slate-800/40"}`}>
+                        ${on ? "border-teal-500 bg-teal-900/20" : "border-slate-700 hover:border-slate-600 bg-slate-800/40"}`}>
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors
-                        ${on ? "border-violet-400 bg-violet-600" : "border-slate-600"}`}>
+                        ${on ? "border-teal-400 bg-teal-600" : "border-slate-600"}`}>
                         {on && <span className="text-white text-xs font-bold">✓</span>}
                       </div>
                       <span className="text-lg">{sk.emoji}</span>
@@ -329,7 +329,7 @@ export default function RegisterAgentPage() {
                     <span className="text-slate-500 font-bold text-xl">$</span>
                     <input type="number" value={price} onChange={e => setPrice(e.target.value)}
                       placeholder="25"
-                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-xl font-bold placeholder-slate-600 focus:outline-none focus:border-violet-500" />
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-xl font-bold placeholder-slate-600 focus:outline-none focus:border-teal-500" />
                     <span className="text-slate-400 text-sm">USDC</span>
                   </div>
                 </div>
@@ -339,7 +339,7 @@ export default function RegisterAgentPage() {
                     {["EN", "Multi"].map(l => (
                       <button key={l} onClick={() => setLanguage(l)}
                         className={`flex-1 rounded-xl border-2 font-semibold text-sm transition-all
-                          ${language === l ? "border-violet-500 bg-violet-900/30 text-violet-300" : "border-slate-700 text-slate-400 hover:border-slate-500"}`}>
+                          ${language === l ? "border-teal-500 bg-teal-900/30 text-teal-300" : "border-slate-700 text-slate-400 hover:border-slate-500"}`}>
                         {l}
                       </button>
                     ))}
@@ -355,11 +355,11 @@ export default function RegisterAgentPage() {
                   <button key={h.id} onClick={() => setHosting(h.id)}
                     className={`flex flex-col p-5 rounded-2xl border-2 transition-all text-left
                       ${hosting === h.id
-                        ? "border-violet-500 bg-violet-900/25 shadow-lg shadow-violet-900/20"
+                        ? "border-teal-500 bg-teal-900/25 shadow-lg shadow-teal-900/20"
                         : "border-slate-700 hover:border-slate-500 bg-slate-800/40"}`}>
                     <span className="text-3xl mb-3">{h.icon}</span>
                     <span className="font-bold text-white text-sm">{h.label}</span>
-                    <span className={`text-xs font-semibold mt-1 ${h.id === "self" ? "text-green-400" : "text-violet-400"}`}>{h.price}</span>
+                    <span className={`text-xs font-semibold mt-1 ${h.id === "self" ? "text-green-400" : "text-teal-400"}`}>{h.price}</span>
                     <span className="text-xs text-slate-500 mt-1">{h.desc}</span>
                   </button>
                 ))}
@@ -382,7 +382,7 @@ export default function RegisterAgentPage() {
                   <Field label="Webhook URL">
                     <input type="text" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
                       placeholder="https://your-agent.app/tasks/hook"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-violet-500" />
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-teal-500" />
                   </Field>
                 </div>
               )}
@@ -428,11 +428,11 @@ function DeployBtn({ onClick, disabled, loading, success }: {
   }
   return (
     <button onClick={onClick} disabled={disabled}
-      className="w-full py-3.5 px-4 bg-gradient-to-r from-violet-600 to-indigo-600
-        hover:from-violet-500 hover:to-indigo-500
+      className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600
+        hover:from-amber-400 hover:to-amber-500
         disabled:opacity-40 disabled:cursor-not-allowed
         text-white rounded-2xl font-semibold text-sm transition-all
-        shadow-lg shadow-violet-900/40">
+        shadow-lg shadow-amber-900/40">
       {loading ? (
         <span className="flex items-center justify-center gap-2">
           <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
