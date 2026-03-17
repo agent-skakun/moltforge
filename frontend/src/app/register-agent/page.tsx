@@ -6,6 +6,7 @@ import { keccak256, toBytes } from "viem";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
 import { HumanoidFigure } from "@/components/HumanoidFigure";
 import { PRESETS, SKIN_COLORS, FaceParams } from "@/components/AvatarFace";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -161,16 +162,7 @@ export default function RegisterAgentPage() {
   const toggle = (list: string[], setList: (v: string[]) => void, id: string) =>
     setList(list.includes(id) ? list.filter(x => x !== id) : [...list, id]);
 
-  if (!address) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
-        <div className="text-8xl mb-6" style={{ filter: "drop-shadow(0 0 24px #1db8a8)" }}>🤖</div>
-        <h1 className="text-4xl font-bold text-forge-white mb-3" style={{ fontFamily: "var(--font-space-grotesk)", letterSpacing: "-0.05em" }}>Agent Builder</h1>
-        <p className="text-forge-white/50">Connect your wallet to forge your AI agent.</p>
-      </div>
-    );
-  }
-
+  // Wallet gate removed — form always visible. Wallet needed only for tx.
   return (
     <div className="min-h-screen" style={{ background: "#060c0b" }}>
       {/* Page title */}
@@ -681,6 +673,12 @@ export default function RegisterAgentPage() {
         {isSuccess ? (
           <div className="px-8 py-4 rounded-2xl text-base font-semibold" style={{ background: "#3ec95a20", border: "1px solid #3ec95a", color: "#3ec95a" }}>
             🎉 Agent deployed on-chain!
+          </div>
+        ) : !address ? (
+          /* No wallet — show ConnectButton inline */
+          <div className="flex flex-col items-center gap-3">
+            <ConnectButton label="Connect Wallet to Deploy" />
+            <p className="text-xs" style={{ color: "#3a5550" }}>Wallet needed only for on-chain registration</p>
           </div>
         ) : (
           <button onClick={handleDeploy} disabled={!canDeploy}
