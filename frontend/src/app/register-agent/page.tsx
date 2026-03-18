@@ -127,6 +127,8 @@ export default function RegisterAgentPage() {
   const [llmProvider, setLlmProvider] = useState("claude");
   const [llmApiKey, setLlmApiKey]     = useState("");
   const [showApiKey, setShowApiKey]   = useState(false);
+  const [telegramBotToken, setTelegramBotToken] = useState("");
+  const [showTgToken, setShowTgToken] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens]     = useState(2000);
@@ -411,6 +413,13 @@ export default function RegisterAgentPage() {
           agentName,
           agentNumericId: numericId ? numericId.toString() : undefined,
           walletAddress: address,
+          llmProvider,
+          llmApiKey: llmApiKey || undefined,
+          systemPrompt: systemPrompt || undefined,
+          agentSkills: skills.join(",") || undefined,
+          agentTools: tools.join(",") || undefined,
+          agentSpecialization: spec,
+          telegramBotToken: telegramBotToken || undefined,
         }),
       });
       const data = await res.json() as { ok: boolean; agentUrl?: string; dashboardUrl?: string; domain?: string; error?: string };
@@ -1021,6 +1030,36 @@ export default function RegisterAgentPage() {
                         className="text-xs whitespace-nowrap ml-3 flex-shrink-0"
                         style={{ color: "#1db8a8" }}>
                         Get a free key →
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Telegram Bot Token */}
+                  <div>
+                    <SectionLabel>Telegram Bot Token <span style={{ color: "#3a5550", fontWeight: 400 }}>(optional)</span></SectionLabel>
+                    <div className="relative">
+                      <input
+                        type={showTgToken ? "text" : "password"}
+                        value={telegramBotToken}
+                        onChange={e => setTelegramBotToken(e.target.value)}
+                        placeholder="1234567890:ABCDef..."
+                        className="w-full px-4 py-3 pr-12 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+                        style={{ background: "#060c0b", border: `1px solid ${telegramBotToken ? "#a855f740" : "#1a2e2b"}`, fontFamily: "var(--font-jetbrains-mono)" }}
+                      />
+                      <button type="button" onClick={() => setShowTgToken(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs"
+                        style={{ color: "#3a5550", background: "transparent" }}>
+                        {showTgToken ? "🙈" : "👁"}
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs" style={{ color: "#3a5550" }}>
+                        🤖 Your agent will be reachable via Telegram bot
+                      </p>
+                      <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer"
+                        className="text-xs whitespace-nowrap ml-3"
+                        style={{ color: "#1db8a8" }}>
+                        Create bot →
                       </a>
                     </div>
                   </div>

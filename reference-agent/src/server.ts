@@ -4,6 +4,7 @@ import fs from "fs";
 import { loadConfig } from "./config";
 import { createBlockchainClient } from "./blockchain";
 import { executeResearch, buildMetadataURI } from "./agent";
+import { startTelegramBot } from "./telegram";
 
 const config = loadConfig();
 const { getAgentId, getAgentExtended } = createBlockchainClient(config);
@@ -275,5 +276,17 @@ app.listen(config.port, () => {
   console.log(`  A2A Card: http://localhost:${config.port}/.well-known/agent-card.json`);
   if (loadedSkillFiles.length > 0) {
     console.log(`  Skills:   ${loadedSkillFiles.length} loaded from ${SKILLS_DIR}`);
+  }
+
+  // Start Telegram bot if token is configured
+  if (config.telegramBotToken) {
+    startTelegramBot(config, {
+      openaiApiKey:    config.openaiApiKey,
+      anthropicApiKey: config.anthropicApiKey,
+      groqApiKey:      config.groqApiKey,
+      model:           config.llmModel,
+      temperature:     config.temperature,
+      maxTokens:       config.maxTokens,
+    });
   }
 });
