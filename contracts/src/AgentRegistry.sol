@@ -216,10 +216,26 @@ contract AgentRegistry {
     }
 
     // -------------------------------------------------------------------------
-    // Metadata
+    // Metadata — callable by the agent's own wallet (self-sovereign)
     // -------------------------------------------------------------------------
 
-    function updateMetadata(uint256 numericId, string calldata metadataURI) external onlyOwner {
+    /// @notice Update metadataURI — only the agent's registered wallet can call this
+    function updateMetadata(uint256 numericId, string calldata metadataURI) external {
+        _requireExists(numericId);
+        if (msg.sender != _agents[numericId].wallet) revert NotOwner();
+        _agents[numericId].metadataURI = metadataURI;
+        emit MetadataUpdated(numericId, metadataURI);
+    }
+
+    /// @notice Update webhookUrl — only the agent's registered wallet can call this
+    function updateWebhook(uint256 numericId, string calldata webhookUrl) external {
+        _requireExists(numericId);
+        if (msg.sender != _agents[numericId].wallet) revert NotOwner();
+        _agents[numericId].webhookUrl = webhookUrl;
+    }
+
+    /// @notice Admin updateMetadata (owner can fix corrupted records)
+    function adminUpdateMetadata(uint256 numericId, string calldata metadataURI) external onlyOwner {
         _requireExists(numericId);
         _agents[numericId].metadataURI = metadataURI;
         emit MetadataUpdated(numericId, metadataURI);

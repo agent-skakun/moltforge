@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits } from "viem";
 import { ADDRESSES, AGENT_REGISTRY_ABI, ESCROW_ABI, ESCROW_V3_ABI, TIER_NAMES, V3_STATUS_COLORS } from "@/lib/contracts";
+import { parseMetadataSync, parseMetadataURI, metadataToDataURI, type AgentMetadata } from "@/lib/metadata";
 import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
 import Link from "next/link";
 
@@ -515,16 +516,22 @@ function AgentProfile({ address }: { address: `0x${string}` }) {
     query: { enabled: !!hasAgent },
   });
 
-  function parseMetadata(uri: string): { name?: string; specialization?: string } {
-    try {
-      if (uri?.startsWith("data:application/json")) {
-        return JSON.parse(atob(uri.split(",")[1]));
-      }
-    } catch { /* ignore */ }
-    return {};
+  const _parseMeta = (uri: string): AgentMetadata => {
+    return parseMetadataSync(uri ?? "");
   }
 
-  const meta = agent ? parseMetadata(agent.metadataURI) : {};
+  const [ipfsMeta, setIpfsMeta] = useState<AgentMetadata>({});
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    const uri = agent?.metadataURI;
+    if (!uri) return;
+    parseMetadataURI(uri).then(setIpfsMeta).catch(() => {});
+  }, [agent?.metadataURI]);
+
+  const rawMeta = agent ? _parseMeta(agent.metadataURI) : {};
+  const meta: AgentMetadata = { ...rawMeta, ...ipfsMeta };
   const spec = meta.specialization?.toLowerCase() ?? "general";
   const presetMap: Record<string, string> = {
     research: "journalist", coding: "developer", trading: "trader",
@@ -582,10 +589,133 @@ function AgentProfile({ address }: { address: `0x${string}` }) {
               </div>
             ))}
           </div>
+
+          {/* Edit Profile button */}
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="mt-4 w-full py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{ background: "#1db8a812", border: "1px solid #1db8a840", color: "#1db8a8" }}>
+            ✏️ Edit Profile
+          </button>
+
+          {showEditModal && agentId && (
+            <EditProfileModal
+              numericId={agentId}
+              currentMeta={meta}
+              onClose={() => setShowEditModal(false)}
+            />
+          )}
         </div>
       ) : (
         <p className="text-sm" style={{ color: "#3a5550" }}>Loading...</p>
       )}
+    </div>
+  );
+}
+
+// ─── Edit Profile Modal ───────────────────────────────────────────────────────
+
+function EditProfileModal({ numericId, currentMeta, onClose }: {
+  numericId: bigint;
+  currentMeta: AgentMetadata;
+  onClose: () => void;
+}) {
+  const [name, setName]               = useState(currentMeta.name ?? "");
+  const [description, setDescription] = useState(currentMeta.description ?? "");
+  const [agentUrl, setAgentUrl]       = useState(currentMeta.agentUrl ?? "");
+  const [llmProvider, setLlmProvider] = useState(currentMeta.llmProvider ?? "");
+  const [capabilities, setCapabilities] = useState((currentMeta.capabilities ?? []).join(", "));
+  const [specialization, setSpec]     = useState(currentMeta.specialization ?? "");
+  const [status, setStatus]           = useState<"idle"|"pending"|"done"|"error">("idle");
+  const [errMsg, setErrMsg]           = useState("");
+
+  const { writeContract, data: txHash, isPending } = useWriteContract();
+  const { isLoading: waiting, isSuccess: done } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (done) { setStatus("done"); setTimeout(onClose, 1500); }
+  }, [done, onClose]);
+
+  const handleSave = () => {
+    setStatus("pending");
+    setErrMsg("");
+    try {
+      const newMeta: AgentMetadata = {
+        ...currentMeta,
+        name: name.trim() || currentMeta.name,
+        description: description.trim() || undefined,
+        agentUrl: agentUrl.trim() || undefined,
+        llmProvider: llmProvider.trim() || undefined,
+        specialization: specialization.trim() || undefined,
+        capabilities: capabilities.split(",").map(c => c.trim()).filter(Boolean),
+      };
+      const metaURI = metadataToDataURI(newMeta);
+      writeContract({
+        address: ADDRESSES.AgentRegistry,
+        abi: AGENT_REGISTRY_ABI,
+        functionName: "updateMetadata",
+        args: [numericId, metaURI],
+      });
+    } catch (e) {
+      setErrMsg((e as Error).message);
+      setStatus("error");
+    }
+  };
+
+  const inputStyle = {
+    width: "100%", padding: "8px 12px", borderRadius: "10px", fontSize: "0.85rem",
+    background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f3", outline: "none",
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.8)" }} onClick={onClose}>
+      <div className="rounded-2xl p-6 w-full max-w-md mx-4"
+        style={{ background: "#0d1c18", border: "1px solid #1db8a8" }}
+        onClick={e => e.stopPropagation()}>
+
+        <h2 className="text-sm font-bold uppercase tracking-wider mb-5"
+          style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+          Edit Agent Profile
+        </h2>
+
+        <div className="space-y-3">
+          {[
+            { label: "Name", value: name, set: setName, placeholder: "Agent name" },
+            { label: "Description", value: description, set: setDescription, placeholder: "What does your agent do?" },
+            { label: "Agent URL", value: agentUrl, set: setAgentUrl, placeholder: "https://your-agent.railway.app" },
+            { label: "LLM Provider", value: llmProvider, set: setLlmProvider, placeholder: "anthropic / openai / groq" },
+            { label: "Specialization", value: specialization, set: setSpec, placeholder: "research / coding / trading…" },
+            { label: "Capabilities", value: capabilities, set: setCapabilities, placeholder: "text generation, websearch, …" },
+          ].map(({ label, value, set, placeholder }) => (
+            <div key={label}>
+              <label className="text-xs mb-1 block" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                {label}
+              </label>
+              <input value={value} onChange={e => set(e.target.value)} placeholder={placeholder} style={inputStyle} />
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs mt-3 mb-4" style={{ color: "#3a5550" }}>
+          Metadata stored as data: URI on-chain. Callable only by your registered wallet.
+        </p>
+
+        {errMsg && <p className="text-xs mb-3" style={{ color: "#e63030" }}>{errMsg}</p>}
+        {status === "done" && <p className="text-xs mb-3" style={{ color: "#3ec95a" }}>✅ Profile updated!</p>}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2 rounded-xl text-sm"
+            style={{ background: "#1a2e2b", color: "#5a807a", border: "1px solid #1a2e2b" }}>
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={isPending || waiting}
+            className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{ background: isPending || waiting ? "#1db8a830" : "#1db8a8", color: "#060c0b" }}>
+            {isPending ? "Signing…" : waiting ? "Confirming…" : "Save On-Chain"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

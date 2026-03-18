@@ -2,7 +2,8 @@
 
 import { useReadContract, useReadContracts } from "wagmi";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
-import { useState, useMemo } from "react";
+import { parseMetadataSync, parseMetadataURI, type AgentMetadata } from "@/lib/metadata";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
 
@@ -60,20 +61,17 @@ const LLM_BADGES: Record<string, { emoji: string; label: string; color: string }
   custom:    { emoji: "⚫", label: "Custom",   color: "#6b7280" },
 };
 
-function parseMetadata(uri: string): { name?: string; specialization?: string; llmProvider?: string } {
-  try {
-    if (uri.startsWith("data:application/json")) {
-      const b64 = uri.split(",")[1];
-      const json = JSON.parse(atob(b64));
-      return { name: json.name, specialization: json.specialization };
-    }
-  } catch { /* ignore */ }
-  return {};
+/** Hook: async-loads full metadata (supports ipfs://, https://, data:) */
+function useAgentMetadata(uri: string): AgentMetadata {
+  const [meta, setMeta] = useState<AgentMetadata>(() => parseMetadataSync(uri));
+  useEffect(() => {
+    if (!uri) return;
+    parseMetadataURI(uri).then(setMeta).catch(() => {});
+  }, [uri]);
+  return meta;
 }
 
-function detectSpec(agent: AgentData): string {
-  const meta = parseMetadata(agent.metadataURI);
-  if (meta.specialization) return meta.specialization.toLowerCase();
+function detectSpecFromSkills(agent: AgentData): string {
   const skills = agent.skills ?? [];
   if (skills.some(s => s.includes("defi") || s.includes("trading"))) return "defi";
   if (skills.some(s => s.includes("research") || s.includes("web-search"))) return "research";
@@ -82,12 +80,6 @@ function detectSpec(agent: AgentData): string {
   if (skills.some(s => s.includes("prediction"))) return "prediction";
   if (skills.some(s => s.includes("ai") || s.includes("venice"))) return "ai";
   return "general";
-}
-
-function detectName(agent: AgentData): string {
-  const meta = parseMetadata(agent.metadataURI);
-  if (meta.name) return meta.name;
-  return `Agent #${agent.numericId}`;
 }
 
 function specToPreset(spec: string): string {
@@ -111,15 +103,16 @@ function formatScore(score: bigint): string {
 function AgentCard({ agent }: { agent: AgentData }) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string>("");
-  const spec = detectSpec(agent);
-  const name = detectName(agent);
-  const meta = parseMetadata(agent.metadataURI);
+  const meta = useAgentMetadata(agent.metadataURI);
+  const spec = meta.specialization?.toLowerCase() || detectSpecFromSkills(agent);
+  const name = meta.name || `Agent #${agent.numericId}`;
   const llmBadge = meta.llmProvider ? LLM_BADGES[meta.llmProvider] : null;
   const preset = specToPreset(spec);
   const faceParams: FaceParams = PRESETS[preset] ?? PRESETS["ai"];
   const tierColor = TIER_COLORS[agent.tier] ?? TIER_COLORS[0];
   const statusActive = agent.status === 1;
-  const agentUrl = agent.agentUrl || agent.webhookUrl || "";
+  const agentUrl = meta.agentUrl || agent.agentUrl || agent.webhookUrl || "";
+  const capabilities = meta.capabilities ?? [];
 
   const testAgent = async () => {
     if (!agentUrl) return;
@@ -232,6 +225,20 @@ function AgentCard({ agent }: { agent: AgentData }) {
                 +{agent.skills.length - 4}
               </span>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Capabilities (from IPFS metadata) */}
+      {capabilities.length > 0 && (
+        <div className="px-4 py-2" style={{ borderBottom: "1px solid #1a2e2b" }}>
+          <div className="flex flex-wrap gap-1">
+            {capabilities.slice(0, 4).map(c => (
+              <span key={c} className="px-1.5 py-0.5 rounded text-xs"
+                style={{ background: "#f0782808", border: "1px solid #f0782830", color: "#b06020", fontSize: "0.6rem" }}>
+                ✦ {c}
+              </span>
+            ))}
           </div>
         </div>
       )}
@@ -388,12 +395,12 @@ export default function MarketplacePage() {
 
   const filtered = useMemo(() => {
     let list = mergedAgents;
-    if (specFilter) list = list.filter(a => detectSpec(a) === specFilter);
+    if (specFilter) list = list.filter(a => detectSpecFromSkills(a) === specFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(a =>
-        detectName(a).toLowerCase().includes(q) ||
-        detectSpec(a).includes(q) ||
+        ( parseMetadataSync(a.metadataURI)?.name ?? `Agent #${a.numericId}` ).toLowerCase().includes(q) ||
+        detectSpecFromSkills(a).includes(q) ||
         a.skills?.some(s => s.toLowerCase().includes(q))
       );
     }

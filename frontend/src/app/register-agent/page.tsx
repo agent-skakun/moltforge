@@ -135,11 +135,14 @@ export default function RegisterAgentPage() {
   const [modelParamsOpen, setModelParamsOpen] = useState(false);
 
   // Deploy state
-  const [deployMode, setDeployMode]   = useState<"hosted" | "self">("hosted");
+  const [deployMode, setDeployMode]   = useState<"hosted" | "self" | "existing">("hosted");
   const [deployStatus, setDeployStatus] = useState<"idle" | "deploying" | "done" | "error">("idle");
   const [deployStep, setDeployStep]   = useState(0); // 0-3 animation step
   const [deployResult, setDeployResult] = useState<{ agentUrl: string; dashboardUrl: string; domain: string } | null>(null);
   const [deployError, setDeployError] = useState("");
+
+  // "Connect Existing Agent" mode — agent already lives somewhere
+  const [existingMetaURI, setExistingMetaURI] = useState("");
 
   // Dynamic skills from moltforge-skills repo
   const [skillGroups, setSkillGroups] = useState<SkillGroups>({});
@@ -388,6 +391,16 @@ export default function RegisterAgentPage() {
         localStorage.setItem(storageKey, btoa(llmApiKey));
       } catch { /* ignore */ }
     }
+
+    if ((deployMode as string) === "existing") {
+      // Path B: connect existing agent — minimal on-chain registration, no Railway
+      const finalMetaURI = existingMetaURI.trim() || metaURI;
+      writeContract({ address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
+        functionName: "registerAgent",
+        args: [address, agentIdHash, finalMetaURI, webhookUrl || ""] });
+      return;
+    }
+
     const avatarHashBytes32 = keccak256(toBytes(JSON.stringify(faceParams)));
     const skillPaths = skills.length > 0 ? skills : [];
     const toolIds = tools.length > 0 ? tools : [];
@@ -445,11 +458,16 @@ export default function RegisterAgentPage() {
       {/* Page title */}
       <div className="text-center pt-8 pb-6">
         <h1 className="text-3xl font-bold text-forge-white mb-1" style={{ fontFamily: "var(--font-space-grotesk)", letterSpacing: "-0.05em" }}>
-          Agent Builder
+          {(deployMode as string) === "existing" ? "Connect Existing Agent" : "Agent Builder"}
         </h1>
-        <p className="text-forge-white/40 text-sm">Click on any body part to customize · Changes appear live</p>
+        <p className="text-forge-white/40 text-sm">
+          {(deployMode as string) === "existing"
+            ? "Register your agent as a MoltForge reputation layer — no deployment needed"
+            : "Click on any body part to customize · Changes appear live"}
+        </p>
       </div>
 
+      {deployMode !== "existing" && (
       <div className="flex items-start justify-center gap-0 relative max-w-6xl mx-auto px-6" style={{ overflowX: "visible" }}>
 
         {/* ── CENTER: Agent Figure ── */}
@@ -1154,6 +1172,21 @@ export default function RegisterAgentPage() {
                         </div>
                         {deployMode === "self" && <span className="text-sm" style={{ color: "#3ec95a" }}>✓</span>}
                       </button>
+
+                      <button onClick={() => setDeployMode("existing" as "hosted" | "self" | "existing")}
+                        className="w-full flex items-start gap-4 p-4 rounded-xl text-left transition-all"
+                        style={{ background: (deployMode as string) === "existing" ? "#a855f715" : "#060c0b",
+                          border: `1px solid ${(deployMode as string) === "existing" ? "#a855f7" : "#1a2e2b"}` }}>
+                        <span className="text-2xl mt-0.5">🔌</span>
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-forge-white">Connect Existing Agent</div>
+                          <div className="text-xs mt-1" style={{ color: "#5a807a" }}>Agent already running · Just register here as reputation layer</div>
+                          <div className="text-xs mt-2 space-y-0.5" style={{ color: "#3a5550" }}>
+                            MoltForge is an open registry — any agent can join
+                          </div>
+                        </div>
+                        {(deployMode as string) === "existing" && <span className="text-sm" style={{ color: "#a855f7" }}>✓</span>}
+                      </button>
                     </div>
                   </div>
 
@@ -1165,6 +1198,36 @@ export default function RegisterAgentPage() {
                         className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
                         style={{ background: "#060c0b", border: "1px solid #3ec95a", fontFamily: "var(--font-jetbrains-mono)" }}
                       />
+                    </div>
+                  )}
+
+                  {(deployMode as string) === "existing" && (
+                    <div className="space-y-4">
+                      <div className="px-4 py-3 rounded-xl" style={{ background: "#a855f708", border: "1px solid #a855f730" }}>
+                        <p className="text-xs" style={{ color: "#a855f7" }}>
+                          🔌 <strong>Open Registry Mode</strong> — MoltForge acts as a reputation layer only.
+                          Your agent runs independently. No Railway deployment. Just connect wallet → register → done.
+                        </p>
+                      </div>
+                      <div>
+                        <SectionLabel>Agent Webhook URL</SectionLabel>
+                        <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
+                          placeholder="https://your-existing-agent.com"
+                          className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+                          style={{ background: "#060c0b", border: "1px solid #a855f760", fontFamily: "var(--font-jetbrains-mono)" }}
+                        />
+                      </div>
+                      <div>
+                        <SectionLabel>Metadata URI <span style={{ color: "#5a807a", fontSize: "0.7rem" }}>(optional — IPFS CID or https://)</span></SectionLabel>
+                        <input value={existingMetaURI} onChange={e => setExistingMetaURI(e.target.value)}
+                          placeholder="ipfs://bafybeig... or https://your-agent.com/metadata.json"
+                          className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+                          style={{ background: "#060c0b", border: "1px solid #a855f760", fontFamily: "var(--font-jetbrains-mono)" }}
+                        />
+                        <p className="text-xs mt-1.5" style={{ color: "#3a5550" }}>
+                          JSON with: name, description, agentUrl, llmProvider, skills[], capabilities[]
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -1187,6 +1250,56 @@ export default function RegisterAgentPage() {
           )}
         </div>
       </div>
+      )} {/* end deployMode !== "existing" */}
+
+      {/* ── Existing Agent: compact form ── */}
+      {(deployMode as string) === "existing" && (
+        <div className="max-w-xl mx-auto px-6 space-y-5">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Agent Name</label>
+            <input value={agentName} onChange={e => setAgentName(e.target.value)}
+              placeholder="BALABOLIK"
+              className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+              style={{ background: "#060c0b", border: "1px solid #a855f760", fontFamily: "var(--font-jetbrains-mono)" }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Webhook URL</label>
+            <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
+              placeholder="https://your-existing-agent.com"
+              className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+              style={{ background: "#060c0b", border: "1px solid #a855f760", fontFamily: "var(--font-jetbrains-mono)" }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+              Metadata URI <span style={{ color: "#5a807a", fontSize: "0.7rem", textTransform: "none" }}>(ipfs:// or https://)</span>
+            </label>
+            <input value={existingMetaURI} onChange={e => setExistingMetaURI(e.target.value)}
+              placeholder="ipfs://bafybeig... or https://your-agent.com/metadata.json"
+              className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+              style={{ background: "#060c0b", border: "1px solid #a855f760", fontFamily: "var(--font-jetbrains-mono)" }}
+            />
+            <p className="text-xs mt-1.5" style={{ color: "#3a5550" }}>
+              JSON: name, description, agentUrl, llmProvider, skills[], capabilities[]
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Specialization</label>
+            <div className="flex flex-wrap gap-2">
+              {["research","coding","trading","analytics","defi","infrastructure","prediction","ai"].map(s => (
+                <button key={s} onClick={() => setSpec(s)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                  style={{ background: spec === s ? "#a855f720" : "#060c0b",
+                    border: `1px solid ${spec === s ? "#a855f7" : "#1a2e2b"}`,
+                    color: spec === s ? "#a855f7" : "#5a807a" }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Bottom: Deploy button + post-deploy instructions ── */}
       <div className="flex justify-center mt-12 pb-16">
@@ -1411,7 +1524,7 @@ export default function RegisterAgentPage() {
             {isPending || waiting ? (
               <><svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Deploying…</>
             ) : (
-              <><span>⚡</span> Deploy Agent {!agentName && <span className="text-sm font-normal opacity-60 ml-1">— enter a name first</span>}</>
+              <><span>{(deployMode as string) === "existing" ? "🔌" : "⚡"}</span> {(deployMode as string) === "existing" ? "Register On-Chain" : "Deploy Agent"} {!agentName && <span className="text-sm font-normal opacity-60 ml-1">— enter a name first</span>}</>
             )}
           </button>
         )}

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useReadContract } from "wagmi";
 import { ADDRESSES, AGENT_REGISTRY_ABI, MERIT_SBT_ABI } from "@/lib/contracts";
+import { parseMetadataURI, parseMetadataSync, type AgentMetadata } from "@/lib/metadata";
 import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
 import Link from "next/link";
 
@@ -29,14 +30,8 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function parseMetadata(uri: string): { name?: string; specialization?: string; tone?: string; description?: string } {
-  try {
-    if (uri.startsWith("data:application/json")) {
-      const b64 = uri.split(",")[1];
-      return JSON.parse(atob(b64));
-    }
-  } catch { /* ignore */ }
-  return {};
+function parseMetadata(uri: string): AgentMetadata {
+  return parseMetadataSync(uri);
 }
 
 function specToPreset(spec: string): string {
@@ -64,8 +59,8 @@ export default function AgentProfilePage() {
   const [testing, setTesting] = useState(false);
   const [testQuery, setTestQuery] = useState("What can you help me with?");
   const [testResult, setTestResult] = useState("");
-  // Avatar params from Supabase (null = use fallback preset)
   const [loadedFaceParams, setLoadedFaceParams] = useState<FaceParams | null>(null);
+  const [ipfsMeta, setIpfsMeta] = useState<AgentMetadata>({});
 
   // V2 data
   const { data: extendedData, isLoading: loadingV2 } = useReadContract({
@@ -139,15 +134,23 @@ export default function AgentProfilePage() {
   }, [onChainAvatarHash]);
 
   const webhookUrl = agentUrl || agent.webhookUrl || "";
-  const meta = parseMetadata(agent.metadataURI);
+  const meta = { ...parseMetadata(agent.metadataURI), ...ipfsMeta };
   const name = meta.name ?? `Agent #${id}`;
   const spec = meta.specialization?.toLowerCase() ?? "general";
   const preset = specToPreset(spec);
-  // Use Supabase-loaded params if available, otherwise fall back to spec-based preset
   const faceParams: FaceParams = loadedFaceParams ?? PRESETS[preset] ?? PRESETS["ai"];
   const tier = agent.tier;
   const statusActive = agent.status === 1;
   const ratingDisplay = (agent.rating / 100).toFixed(2);
+  const capabilities = meta.capabilities ?? [];
+  const metaAgentUrl = meta.agentUrl || webhookUrl;
+
+  // Load IPFS/https metadata async
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!agent.metadataURI) return;
+    parseMetadataURI(agent.metadataURI).then(setIpfsMeta).catch(() => {});
+  }, [agent.metadataURI]);
   const registeredDate = new Date(Number(agent.registeredAt) * 1000);
 
   const testAgent = async () => {
@@ -267,10 +270,33 @@ export default function AgentProfilePage() {
       )}
 
       {/* ── Agent URL ──────────────────────────────────────────── */}
-      {webhookUrl && (
+      {metaAgentUrl && (
         <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
           <h3 className="text-xs uppercase tracking-wider mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Agent Endpoint</h3>
-          <p className="text-sm font-jetbrainsMono break-all" style={{ color: "#5a807a" }}>{webhookUrl}</p>
+          <p className="text-sm font-jetbrainsMono break-all" style={{ color: "#5a807a" }}>{metaAgentUrl}</p>
+        </div>
+      )}
+
+      {/* ── Capabilities (from IPFS metadata) ──────────────────── */}
+      {capabilities.length > 0 && (
+        <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+          <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>Capabilities</h3>
+          <div className="flex flex-wrap gap-2">
+            {capabilities.map(c => (
+              <span key={c} className="px-3 py-1 rounded-full text-sm"
+                style={{ background: "#f0782810", border: "1px solid #f0782840", color: "#d06020" }}>
+                ✦ {c}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Description (from IPFS metadata) ──────────────────── */}
+      {meta.description && (
+        <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+          <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>About</h3>
+          <p className="text-sm" style={{ color: "#8ab0a8", lineHeight: 1.6 }}>{meta.description}</p>
         </div>
       )}
 
