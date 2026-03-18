@@ -15,6 +15,13 @@ export interface Config {
   tools?: string[];
   skills?: string[];
   tone?: string;
+  // LLM
+  openaiApiKey?: string;
+  anthropicApiKey?: string;
+  groqApiKey?: string;
+  llmModel?: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 function requireEnv(key: string): string {
@@ -38,5 +45,12 @@ export function loadConfig(): Config {
     tools: process.env.AGENT_TOOLS ? process.env.AGENT_TOOLS.split(",") : undefined,
     skills: process.env.AGENT_SKILLS ? process.env.AGENT_SKILLS.split(",") : undefined,
     tone: process.env.AGENT_TONE,
+    // LLM keys
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    groqApiKey: process.env.GROQ_API_KEY,
+    llmModel: process.env.LLM_MODEL,
+    temperature: process.env.LLM_TEMPERATURE ? parseFloat(process.env.LLM_TEMPERATURE) : 0.7,
+    maxTokens: process.env.LLM_MAX_TOKENS ? parseInt(process.env.LLM_MAX_TOKENS, 10) : 2000,
   };
 }

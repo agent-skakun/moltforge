@@ -1,3 +1,12 @@
+export interface LLMConfig {
+  openaiApiKey?: string;
+  anthropicApiKey?: string;
+  groqApiKey?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+
 export interface ResearchResult {
   title: string;
   url: string;
@@ -69,7 +78,7 @@ function parseHtmlDDG(html: string): ResearchResult[] {
 
 export async function executeResearch(
   query: string,
-  options?: { systemPrompt?: string; skillsContext?: string },
+  options?: { systemPrompt?: string; skillsContext?: string; llmConfig?: LLMConfig },
 ): Promise<ResearchReport> {
   console.log(`[agent] Researching: "${query}"`);
 
@@ -120,16 +129,94 @@ export async function executeResearch(
     options?.skillsContext ? `[Skills: ${options.skillsContext.length} chars]` : "",
   ].filter(Boolean).join(" ");
 
-  const baseSummary = results.length > 0
+  // Try LLM summarization if key available
+  let summary = results.length > 0
     ? `Found ${results.length} result(s) for "${query}". Top sources: ${results.slice(0, 3).map(r => r.title).join(", ")}.`
     : `No results found for "${query}".`;
+
+  if (options?.llmConfig && results.length > 0) {
+    try {
+      const llmSummary = await summarizeWithLLM(query, results, options.llmConfig, options.systemPrompt);
+      if (llmSummary) summary = llmSummary;
+    } catch (e) {
+      console.warn("[agent] LLM summarization failed, using fallback:", (e as Error).message);
+    }
+  }
 
   return {
     query,
     results,
-    summary: contextPrefix ? `${contextPrefix} ${baseSummary}` : baseSummary,
+    summary: contextPrefix ? `${contextPrefix} ${summary}` : summary,
     timestamp: new Date().toISOString(),
   };
+}
+
+// ─── LLM Summarization ────────────────────────────────────────────────────────
+
+async function summarizeWithLLM(
+  query: string,
+  results: ResearchResult[],
+  llm: LLMConfig,
+  systemPrompt?: string,
+): Promise<string | null> {
+  const context = results.slice(0, 5).map((r, i) =>
+    `[${i + 1}] ${r.title}\n${r.url}\n${r.snippet}`
+  ).join("\n\n");
+
+  const userMessage = `Research query: "${query}"\n\nSearch results:\n${context}\n\nProvide a concise, accurate summary (2-4 sentences) answering the query based on these results.`;
+
+  const sysMsg = systemPrompt || "You are a research assistant. Summarize search results concisely and accurately.";
+
+  // OpenAI / Groq (same API format)
+  const openaiKey = llm.openaiApiKey || llm.groqApiKey;
+  const isGroq = !llm.openaiApiKey && !!llm.groqApiKey;
+  if (openaiKey) {
+    const baseUrl = isGroq ? "https://api.groq.com/openai/v1" : "https://api.openai.com/v1";
+    const model = llm.model || (isGroq ? "llama-3.3-70b-versatile" : "gpt-4o-mini");
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "system", content: sysMsg }, { role: "user", content: userMessage }],
+        temperature: llm.temperature ?? 0.7,
+        max_tokens: Math.min(llm.maxTokens ?? 500, 500),
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
+      const text = data.choices?.[0]?.message?.content?.trim();
+      if (text) { console.log(`[agent] LLM summary via ${isGroq ? "Groq" : "OpenAI"}`); return text; }
+    }
+  }
+
+  // Anthropic
+  if (llm.anthropicApiKey) {
+    const model = llm.model || "claude-3-5-sonnet-20241022";
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": llm.anthropicApiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: Math.min(llm.maxTokens ?? 500, 500),
+        system: sysMsg,
+        messages: [{ role: "user", content: userMessage }],
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { content?: Array<{ text?: string }> };
+      const text = data.content?.[0]?.text?.trim();
+      if (text) { console.log("[agent] LLM summary via Anthropic"); return text; }
+    }
+  }
+
+  return null;
 }
 
 export function buildMetadataURI(report: ResearchReport): string {

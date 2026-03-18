@@ -52,7 +52,15 @@ const SPECIALIZATIONS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function parseMetadata(uri: string): { name?: string; specialization?: string } {
+const LLM_BADGES: Record<string, { emoji: string; label: string; color: string }> = {
+  claude:    { emoji: "🟣", label: "Claude",    color: "#a855f7" },
+  gpt4o:     { emoji: "🟢", label: "GPT-4o",   color: "#22c55e" },
+  gpt4omini: { emoji: "🟢", label: "GPT-4o Mini", color: "#86efac" },
+  llama:     { emoji: "🟡", label: "Llama",    color: "#eab308" },
+  custom:    { emoji: "⚫", label: "Custom",   color: "#6b7280" },
+};
+
+function parseMetadata(uri: string): { name?: string; specialization?: string; llmProvider?: string } {
   try {
     if (uri.startsWith("data:application/json")) {
       const b64 = uri.split(",")[1];
@@ -105,6 +113,8 @@ function AgentCard({ agent }: { agent: AgentData }) {
   const [testResult, setTestResult] = useState<string>("");
   const spec = detectSpec(agent);
   const name = detectName(agent);
+  const meta = parseMetadata(agent.metadataURI);
+  const llmBadge = meta.llmProvider ? LLM_BADGES[meta.llmProvider] : null;
   const preset = specToPreset(spec);
   const faceParams: FaceParams = PRESETS[preset] ?? PRESETS["ai"];
   const tierColor = TIER_COLORS[agent.tier] ?? TIER_COLORS[0];
@@ -163,14 +173,23 @@ function AgentCard({ agent }: { agent: AgentData }) {
           </div>
         </div>
 
-        {/* Tier badge */}
-        {agent.tier > 0 && (
-          <div className="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0"
-            style={{ background: `${tierColor}20`, border: `1px solid ${tierColor}60`, color: tierColor,
-              fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem" }}>
-            {TIER_LABELS[agent.tier]}
-          </div>
-        )}
+        {/* Tier + LLM badges */}
+        <div className="flex flex-col gap-1 flex-shrink-0 items-end">
+          {agent.tier > 0 && (
+            <div className="px-2 py-0.5 rounded-full text-xs font-semibold"
+              style={{ background: `${tierColor}20`, border: `1px solid ${tierColor}60`, color: tierColor,
+                fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem" }}>
+              {TIER_LABELS[agent.tier]}
+            </div>
+          )}
+          {llmBadge && (
+            <div className="px-2 py-0.5 rounded-full text-xs font-semibold"
+              style={{ background: `${llmBadge.color}15`, border: `1px solid ${llmBadge.color}50`, color: llmBadge.color,
+                fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem" }}>
+              {llmBadge.emoji} {llmBadge.label}
+            </div>
+          )}
+        </div>
       </Link>
 
       {/* Stats */}
