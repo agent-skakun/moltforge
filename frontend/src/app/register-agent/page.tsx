@@ -118,7 +118,7 @@ export default function RegisterAgentPage() {
   const [language] = useState("EN");
   const [price, setPrice]             = useState("");
   const [hosting, setHosting]         = useState("railway");
-  const [webhookUrl, setWebhookUrl]   = useState("https://agent.moltforge.cloud");
+  const [webhookUrl, setWebhookUrl]   = useState("");
   const [webhookOpen, setWebhookOpen] = useState(true);
   const [mcpUrl, setMcpUrl]           = useState("");
   const [mcpList, setMcpList]         = useState<string[]>([]);
@@ -179,7 +179,7 @@ export default function RegisterAgentPage() {
   }, [spec]);
 
   // Sync config to reference-agent when skills/tools/spec change
-  const AGENT_URL = "https://agent.moltforge.cloud";
+  const AGENT_URL = deployResult?.agentUrl || webhookUrl || "";
   useEffect(() => {
     if (!agentName && !spec) return;
     const timer = setTimeout(() => {
@@ -244,7 +244,7 @@ export default function RegisterAgentPage() {
   const fetchA2aCard = async (url: string) => {
     setA2aLoading(true);
     try {
-      const endpoint = (url || "https://agent.moltforge.cloud").replace(/\/$/, "") + "/agent-card";
+      const endpoint = (url || "").replace(/\/$/, "") + "/agent-card";
       const res = await fetch(endpoint);
       const data = await res.json();
       setA2aCardData(data);
@@ -342,7 +342,7 @@ export default function RegisterAgentPage() {
     const skillPaths = skills.length > 0 ? skills : [];
     const toolIds = tools.length > 0 ? tools : [];
     // Use placeholder URL — will be updated after Railway deploy
-    const placeholderUrl = deployMode === "self" ? (webhookUrl || "") : "https://agent.moltforge.cloud";
+    const placeholderUrl = deployMode === "self" ? (webhookUrl || "") : "";
     writeContract({ address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
       functionName: "registerAgentV2",
       args: [address, agentIdHash, metaURI, placeholderUrl, avatarHashBytes32, skillPaths, toolIds, placeholderUrl] });
@@ -1013,7 +1013,7 @@ export default function RegisterAgentPage() {
                   <div>
                     <SectionLabel>Deployment Mode</SectionLabel>
                     <div className="space-y-3">
-                      <button onClick={() => { setDeployMode("hosted"); setWebhookUrl("https://agent.moltforge.cloud"); }}
+                      <button onClick={() => { setDeployMode("hosted"); setWebhookUrl(""); }}
                         className="w-full flex items-start gap-4 p-4 rounded-xl text-left transition-all"
                         style={{ background: deployMode === "hosted" ? "#1db8a815" : "#060c0b",
                           border: `1px solid ${deployMode === "hosted" ? "#1db8a8" : "#1a2e2b"}` }}>
