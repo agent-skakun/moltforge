@@ -82,8 +82,8 @@ export default function RegisterAgentPage() {
   const [language] = useState("EN");
   const [price, setPrice]             = useState("");
   const [hosting, setHosting]         = useState("railway");
-  const [webhookUrl, setWebhookUrl]   = useState("");
-  const [webhookOpen, setWebhookOpen] = useState(false);
+  const [webhookUrl, setWebhookUrl]   = useState("https://agent-production-f600.up.railway.app");
+  const [webhookOpen, setWebhookOpen] = useState(true);
   const [mcpUrl, setMcpUrl]           = useState("");
   const [mcpList, setMcpList]         = useState<string[]>([]);
 
@@ -184,11 +184,13 @@ export default function RegisterAgentPage() {
   const [testLoading, setTestLoading]   = useState(false);
   const [testResult, setTestResult]     = useState<string>("");
   const [testError, setTestError]       = useState<string>("");
+  const [testModalOpen, setTestModalOpen] = useState(false);
 
   const runAgentTest = async (url: string) => {
     setTestLoading(true);
     setTestResult("");
     setTestError("");
+    setTestModalOpen(true);
     try {
       const endpoint = url.replace(/\/$/, "") + "/tasks";
       const res = await fetch(endpoint, {
@@ -761,13 +763,13 @@ export default function RegisterAgentPage() {
                       className="flex items-center gap-2 text-sm transition-colors"
                       style={{ color: webhookOpen ? "#1db8a8" : "#6b8f8a" }}>
                       <span style={{ transform: webhookOpen ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block", transition: "transform 0.2s" }}>▶</span>
-                      Webhook URL <span className="text-forge-white/30">(advanced)</span>
+                      Agent URL <span className="font-jetbrainsMono text-xs" style={{ color: "#1db8a8" }}>(required for Hire flow)</span>
                     </button>
                     {webhookOpen && (
                       <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
-                        placeholder="https://your-agent.app/hook"
+                        placeholder="https://your-agent.up.railway.app"
                         className="w-full mt-2 px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
-                        style={{ background: "#060c0b", border: "1px solid #1a2e2b", fontFamily: "var(--font-jetbrains-mono)" }} />
+                        style={{ background: "#060c0b", border: "1px solid #1db8a8", fontFamily: "var(--font-jetbrains-mono)" }} />
                     )}
                   </div>
                 </div>
@@ -805,34 +807,25 @@ export default function RegisterAgentPage() {
               </div>
             </div>
 
-            {/* Test Agent */}
+            {/* Test Agent — button that opens modal */}
             <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
               <div className="text-xs font-medium uppercase tracking-widest mb-3" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>🧪 Test Your Agent</div>
-              <input
-                value={testQuery}
-                onChange={e => setTestQuery(e.target.value)}
-                placeholder="Enter a task query for your agent…"
-                className="w-full px-3 py-2 rounded-lg text-xs mb-3"
-                style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f3", fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
-              />
-              <button
-                onClick={() => runAgentTest(agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app")}
-                disabled={testLoading}
-                className="px-5 py-2 rounded-xl text-xs font-semibold transition-all"
-                style={{ background: testLoading ? "#0a1a17" : "#f0782822", border: `1px solid ${testLoading ? "#1a2e2b" : "#f07828"}`, color: testLoading ? "#3a5550" : "#f07828", cursor: testLoading ? "wait" : "pointer" }}>
-                {testLoading ? "⏳ Running…" : "▶ Run Task"}
-              </button>
-
-              {testResult && (
-                <pre className="mt-3 p-3 rounded-lg text-xs whitespace-pre-wrap break-words" style={{ background: "#060c0b", border: "1px solid #1db8a820", color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", maxHeight: 240, overflowY: "auto" }}>
-                  {testResult}
-                </pre>
-              )}
-              {testError && (
-                <div className="mt-3 p-3 rounded-lg text-xs" style={{ background: "#2a0a0a", border: "1px solid #e6303060", color: "#e63030" }}>
-                  {testError}
-                </div>
-              )}
+              <div className="flex gap-3 items-center">
+                <input
+                  value={testQuery}
+                  onChange={e => setTestQuery(e.target.value)}
+                  placeholder="Enter a task query for your agent…"
+                  className="flex-1 px-3 py-2 rounded-lg text-xs"
+                  style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f3", fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
+                />
+                <button
+                  onClick={() => runAgentTest(agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app")}
+                  disabled={testLoading}
+                  className="px-5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
+                  style={{ background: testLoading ? "#0a1a17" : "#f0782822", border: `1px solid ${testLoading ? "#1a2e2b" : "#f07828"}`, color: testLoading ? "#3a5550" : "#f07828", cursor: testLoading ? "wait" : "pointer" }}>
+                  {testLoading ? "⏳ Running…" : "▶ Run Task"}
+                </button>
+              </div>
             </div>
 
             {/* Deploy on Railway + A2A Card */}
@@ -928,6 +921,69 @@ export default function RegisterAgentPage() {
           </button>
         )}
       </div>
+
+      {/* ── Test Agent Modal ── */}
+      {testModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }}
+          onClick={e => { if (e.target === e.currentTarget) setTestModalOpen(false); }}>
+          <div className="w-full max-w-lg rounded-2xl overflow-hidden"
+            style={{ background: "#0a1a17", border: "1px solid #1db8a840", boxShadow: "0 0 60px #1db8a820" }}>
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4"
+              style={{ borderBottom: "1px solid #1a2e2b" }}>
+              <div className="text-sm font-semibold" style={{ fontFamily: "var(--font-space-grotesk)", color: "#e8f5f3" }}>
+                🧪 Agent Response
+              </div>
+              <button onClick={() => setTestModalOpen(false)}
+                className="text-xs px-2 py-1 rounded"
+                style={{ color: "#3a5550", background: "#060c0b", border: "1px solid #1a2e2b" }}>
+                ✕ Close
+              </button>
+            </div>
+            {/* Modal body */}
+            <div className="px-6 py-5">
+              <div className="text-xs mb-3" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#3a5550" }}>
+                Query: <span style={{ color: "#5a807a" }}>{testQuery}</span>
+              </div>
+              {testLoading ? (
+                <div className="flex items-center gap-3 py-8 justify-center">
+                  <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#1db8a8", borderTopColor: "transparent" }} />
+                  <span className="text-sm" style={{ color: "#5a807a" }}>Agent is processing…</span>
+                </div>
+              ) : testError ? (
+                <div className="p-4 rounded-xl text-sm" style={{ background: "#1a0808", border: "1px solid #e6303040", color: "#e63030" }}>
+                  {testError}
+                </div>
+              ) : testResult ? (
+                <pre className="p-4 rounded-xl text-xs whitespace-pre-wrap break-words"
+                  style={{ background: "#060c0b", border: "1px solid #1db8a820", color: "#5a807a",
+                    fontFamily: "var(--font-jetbrains-mono)", maxHeight: 400, overflowY: "auto" }}>
+                  {testResult}
+                </pre>
+              ) : null}
+            </div>
+            {/* Modal footer */}
+            {!testLoading && (
+              <div className="px-6 pb-5 flex gap-3">
+                <input
+                  value={testQuery}
+                  onChange={e => setTestQuery(e.target.value)}
+                  placeholder="New query…"
+                  className="flex-1 px-3 py-2 rounded-lg text-xs"
+                  style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f3", fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
+                />
+                <button
+                  onClick={() => runAgentTest(agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app")}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold"
+                  style={{ background: "#f0782822", border: "1px solid #f07828", color: "#f07828" }}>
+                  Re-run
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
