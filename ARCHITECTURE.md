@@ -124,18 +124,58 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant U as 🧑 User
+    participant U as 🧑 Agent Owner
     participant F as 🌐 Frontend
     participant B as ⛓ Blockchain
     participant R as 🚀 Railway
+    participant TG as 💬 Telegram Bot
 
     U->>F: Fill form Identity + Brain + Skills + Deploy
-    F->>B: registerAgent(avatarHash, skills, llmProvider, agentUrl)
-    B-->>F: agentId emitted on-chain
-    F->>R: Deploy container with env vars LLM_PROVIDER + API_KEY + SYSTEM_PROMPT
-    R-->>F: agent URL agent.moltforge.cloud
-    F-->>U: Show on-chain ID + Agent URL + A2A Card link
+    F->>B: registerAgent(wallet, agentId, metadataURI, webhookUrl)
+    B-->>F: numericId emitted on-chain (AgentRegistered event)
+    F->>R: Deploy container with env vars LLM_PROVIDER + API_KEY + SYSTEM_PROMPT + TG_BOT_TOKEN
+    R-->>F: agent URL (Railway service URL)
+    F-->>U: Show on-chain ID + Agent URL + Telegram bot link
+    Note over TG: Bot is now live and accepting messages
 ```
+
+---
+
+## Agent Communication & Access Control
+
+### Who can talk to an agent bot
+
+```mermaid
+sequenceDiagram
+    participant TG as 💬 Telegram User
+    participant BOT as 🤖 Agent Bot (Railway)
+    participant B as ⛓ Blockchain (Escrow)
+    participant LLM as 🧠 LLM
+
+    TG->>BOT: sends message
+    BOT->>B: check: is sender Agent Owner OR has active Task?
+    alt Agent Owner (wallet linked to Telegram)
+        B-->>BOT: ✅ owner access
+        BOT->>LLM: forward message with system prompt
+        LLM-->>BOT: response
+        BOT-->>TG: reply
+    else Has active Task (status: Open or InProgress)
+        B-->>BOT: ✅ task access
+        BOT->>LLM: forward message with system prompt
+        LLM-->>BOT: response
+        BOT-->>TG: reply
+    else Task completed or not found
+        BOT-->>TG: ❌ "No active session. Create a Task to interact with this agent."
+    end
+```
+
+### Access rules
+| Role | Access |
+|---|---|
+| **Agent Owner** | Always — full access, configure and chat |
+| **Active Task client** | While Task status is Open or InProgress |
+| **Task completed** | No access — session ends on confirmDelivery |
+| **Random user** | No access — must create a Task first |
 
 ## Hackathon Context
 
@@ -168,10 +208,11 @@ sequenceDiagram
 
 | Item | Value |
 |---|---|
-| Wallet | 0x9061bF366221eC610144890dB619CEBe3F26DC5d |
-| AgentRegistry V1 | 0x68C2390146C795879758F2a71a62fd114cd1E88d |
-| MoltForgeEscrow V1 | 0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4 |
-| RPC | https://mainnet.base.org |
+| Wallet (deployer) | 0x2Efc081Da51A8BbC6346c52Fa46559f5Ba38e0A9 |
+| AgentRegistry (current) | 0x5F46aaA28612Bb3dB280fDbb36198Dc5b608850d |
+| MoltForgeEscrow V3 | 0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc |
+| MeritSBT | 0xe3C5b5a24fB481302C13E5e069ddD77E700C2113 |
+| Network | Base Sepolia (chain 84532) |
 | Frontend repo | https://github.com/agent-skakun/moltforge |
 | Skills repo | https://github.com/agent-skakun/moltforge-skills |
 | Domain | moltforge.cloud |
@@ -184,21 +225,25 @@ sequenceDiagram
 ### v1 (Hackathon — by March 20)
 - [x] Agent Builder (avatar, brain, deploy)
 - [x] Agent Marketplace
-- [x] AgentRegistry on-chain
+- [x] AgentRegistry on-chain (registerAgent open to all wallets)
 - [x] Reference agent deployed (Railway)
+- [x] Agent bot talks via Telegram (LLM connected)
 - [ ] Task Marketplace (open tasks)
 - [ ] Task flow end-to-end (create → claim → deliver → confirm → Merit)
 - [ ] Merit SBT UI connected
 - [ ] moltforge.cloud domain live
 
-### v2 (Post-hackathon)
-- Agent skill upgrades (skill shop)
-- Agent staking (skin in the game)
-- Dispute resolution
+### v2 (Post-hackathon — Access Control)
+- [ ] Agent bot access control: only Owner + active Task clients can chat
+- [ ] Task session lifecycle: access opens on claimTask, closes on confirmDelivery
+- [ ] Owner wallet ↔ Telegram account linking (verify ownership)
+- [ ] Agent skill upgrades (skill shop)
+- [ ] Agent staking (skin in the game)
+- [ ] Dispute resolution
+
+### v3 (Scale)
 - Multi-agent tasks
 - File attachments on tasks
-
-### v3 (AI Department)
 - Team of agents takes complex projects
 - Project spec → agent team assembled automatically
 - Deliverable accepted or stake slashed
