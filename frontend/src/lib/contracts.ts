@@ -2,6 +2,7 @@ export const ADDRESSES = {
   AgentRegistry: "0x68C2390146C795879758F2a71a62fd114cd1E88d" as const,
   MoltForgeEscrow: "0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4" as const,
   MeritSBT: "0x375aC49E905bAd8aC7547AF1f2fD98EE4FBC2E9E" as const,
+  MeritSBTV2: "0x12b4F67DA36491Ead000656fDb67d64dF41Aef53" as const,
   USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const,
 } as const;
 
@@ -35,6 +36,7 @@ export const ESCROW_ABI = [
   { type: "function", name: "acceptTask", inputs: [{ name: "taskId", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
   { type: "function", name: "submitDelivery", inputs: [{ name: "taskId", type: "uint256" }, { name: "deliveryCID", type: "string" }], outputs: [], stateMutability: "nonpayable" },
   { type: "function", name: "releasePayment", inputs: [{ name: "taskId", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "releasePaymentWithScore", inputs: [{ name: "taskId", type: "uint256" }, { name: "score", type: "uint8" }], outputs: [], stateMutability: "nonpayable" },
   { type: "function", name: "cancelTask", inputs: [{ name: "taskId", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
   { type: "function", name: "openDispute", inputs: [{ name: "taskId", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
 ] as const;
@@ -50,6 +52,22 @@ export const MERIT_SBT_ABI = [
   { type: "function", name: "balanceOf", inputs: [{ name: "owner", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
   { type: "function", name: "tokenOfOwnerByIndex", inputs: [{ name: "owner", type: "address" }, { name: "index", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
   { type: "function", name: "tokenURI", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "string" }], stateMutability: "view" },
+] as const;
+
+// V2 Escrow — adds releasePaymentWithScore
+export const ESCROW_V2_ABI = [
+  ...([
+    { type: "function", name: "releasePaymentWithScore", inputs: [{ name: "taskId", type: "uint256" }, { name: "score", type: "uint8" }], outputs: [], stateMutability: "nonpayable" },
+    { type: "function", name: "meritSBT", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
+    { type: "function", name: "agentRegistry", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
+  ] as const),
+] as const;
+
+// MeritSBTV2 ABI
+export const MERIT_SBT_V2_ABI = [
+  { type: "function", name: "getReputation", inputs: [{ name: "agentId", type: "uint256" }], outputs: [{ name: "weightedScore", type: "uint256" }, { name: "totalJobs", type: "uint256" }, { name: "totalVolume", type: "uint256" }, { name: "tier", type: "uint8" }], stateMutability: "view" },
+  { type: "function", name: "isRated", inputs: [{ name: "agentId", type: "uint256" }, { name: "taskId", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
+  { type: "function", name: "escrow", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
 ] as const;
 
 export const TIER_NAMES = ["Bronze", "Silver", "Gold", "Platinum"] as const;

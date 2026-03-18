@@ -3,6 +3,7 @@
 import { useReadContract, useReadContracts } from "wagmi";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ interface AgentData {
   skills: readonly string[];
   tools: readonly string[];
   agentUrl: string;
+  meritScore?: bigint;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -134,7 +136,7 @@ function AgentCard({ agent }: { agent: AgentData }) {
       style={{ background: "#0a1a17", border: "1px solid #1a2e2b", boxShadow: statusActive ? "0 0 20px #1db8a810" : "none" }}>
 
       {/* Header */}
-      <div className="flex items-center gap-4 p-4 pb-3" style={{ borderBottom: "1px solid #1a2e2b" }}>
+      <Link href={`/agent/${agent.numericId}`} className="flex items-center gap-4 p-4 pb-3" style={{ borderBottom: "1px solid #1a2e2b" }}>
         {/* Avatar */}
         <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
           border: `2px solid ${statusActive ? "#1db8a8" : "#1a2e2b"}`,
@@ -169,21 +171,22 @@ function AgentCard({ agent }: { agent: AgentData }) {
             {TIER_LABELS[agent.tier]}
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-0" style={{ borderBottom: "1px solid #1a2e2b" }}>
+      <div className="grid grid-cols-4 gap-0" style={{ borderBottom: "1px solid #1a2e2b" }}>
         {[
-          { label: "Score", value: formatScore(agent.score) },
-          { label: "Jobs", value: agent.jobsCompleted.toString() },
-          { label: "Rating", value: agent.rating > 0 ? (agent.rating / 100).toFixed(1) + "★" : "—" },
+          { label: "Score", value: formatScore(agent.score), color: "#1db8a8" },
+          { label: "Jobs", value: agent.jobsCompleted.toString(), color: "#f07828" },
+          { label: "Merit", value: agent.meritScore !== undefined ? agent.meritScore.toString() : "—", color: "#3ec95a" },
+          { label: "Rating", value: agent.rating > 0 ? (agent.rating / 100).toFixed(1) + "\u2605" : "\u2014", color: "#e8c842" },
         ].map((stat, i) => (
           <div key={i} className="flex flex-col items-center py-2"
-            style={{ borderRight: i < 2 ? "1px solid #1a2e2b" : "none" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>
+            style={{ borderRight: i < 3 ? "1px solid #1a2e2b" : "none" }}>
+            <span style={{ fontSize: "0.8rem", fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)", color: stat.color }}>
               {stat.value}
             </span>
-            <span style={{ fontSize: "0.6rem", color: "#3a5550", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <span style={{ fontSize: "0.55rem", color: "#3a5550", textTransform: "uppercase", letterSpacing: "0.08em" }}>
               {stat.label}
             </span>
           </div>
@@ -216,13 +219,19 @@ function AgentCard({ agent }: { agent: AgentData }) {
 
       {/* Actions */}
       <div className="p-3 flex gap-2">
+        <Link href={`/create-task?agentId=${agent.numericId}`}
+          className="flex-1 py-2 rounded-lg text-xs font-semibold text-center transition-all"
+          style={{ background: "linear-gradient(135deg, #f07828, #d05e10)", color: "white",
+            fontFamily: "var(--font-space-grotesk)" }}>
+          Hire
+        </Link>
         {agentUrl ? (
           <button onClick={testAgent} disabled={testing}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
             style={{ background: testing ? "#060c0b" : "#f0782815", border: `1px solid ${testing ? "#1a2e2b" : "#f07828"}`,
               color: testing ? "#3a5550" : "#f07828", cursor: testing ? "wait" : "pointer",
               fontFamily: "var(--font-space-grotesk)" }}>
-            {testing ? "Testing…" : "▶ Test Agent"}
+            {testing ? "Testing\u2026" : "\u25B6 Test"}
           </button>
         ) : (
           <div className="flex-1 py-2 rounded-lg text-xs text-center"
@@ -288,6 +297,34 @@ export default function MarketplacePage() {
     })), [count]),
   });
 
+  // Merit score calls (per wallet)
+  const walletList = useMemo(() => {
+    if (!count) return [];
+    return Array.from({ length: count }, (_, i) => {
+      const v2 = agentsRaw?.[i];
+      if (v2?.status === "success" && v2.result) {
+        try { return ((v2.result as unknown as readonly unknown[])[0] as { wallet: string }).wallet; } catch { /* */ }
+      }
+      const v1 = agentsV1Raw?.[i];
+      if (v1?.status === "success" && v1.result) {
+        try { return (v1.result as { wallet: string }).wallet; } catch { /* */ }
+      }
+      return null;
+    });
+  }, [count, agentsRaw, agentsV1Raw]);
+
+  const meritCalls = useMemo(() =>
+    walletList.map(w => w ? ({
+      address: ADDRESSES.AgentRegistry as `0x${string}`,
+      abi: AGENT_REGISTRY_ABI,
+      functionName: "getMeritScore" as const,
+      args: [w as `0x${string}`] as const,
+    }) : null).filter((c): c is NonNullable<typeof c> => c !== null),
+    [walletList]
+  );
+
+  const { data: meritScoresRaw } = useReadContracts({ contracts: meritCalls });
+
   // Merge: V2 data preferred, fallback to V1
   const mergedAgents: AgentData[] = useMemo(() => {
     if (!count) return [];
@@ -321,8 +358,14 @@ export default function MarketplacePage() {
       }
 
       return null;
-    }).filter((a): a is AgentData => a !== null);
-  }, [count, agentsRaw, agentsV1Raw]);
+    }).filter((a): a is AgentData => a !== null).map((a, idx) => {
+      const merit = meritScoresRaw?.[idx];
+      if (merit?.status === "success" && merit.result !== undefined) {
+        a.meritScore = merit.result as bigint;
+      }
+      return a;
+    });
+  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw]);
 
   const filtered = useMemo(() => {
     let list = mergedAgents;

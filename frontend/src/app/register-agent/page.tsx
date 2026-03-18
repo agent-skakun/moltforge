@@ -247,8 +247,13 @@ export default function RegisterAgentPage() {
 
   const handleDeploy = () => {
     if (!address || !agentIdHash) return;
+    const avatarHashBytes32 = keccak256(toBytes(JSON.stringify(faceParams)));
+    const skillPaths = skills.length > 0 ? skills : [];
+    const toolIds = tools.length > 0 ? tools : [];
+    const onChainUrl = webhookUrl || "";
     writeContract({ address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
-      functionName: "registerAgent", args: [address, agentIdHash, metaURI, webhookUrl] });
+      functionName: "registerAgentV2",
+      args: [address, agentIdHash, metaURI, onChainUrl, avatarHashBytes32, skillPaths, toolIds, onChainUrl] });
   };
 
   const toggle = (list: string[], setList: (v: string[]) => void, id: string) =>
