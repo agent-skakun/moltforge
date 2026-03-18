@@ -141,6 +141,56 @@ export default function RegisterAgentPage() {
   const { writeContract, data: txHash, isPending } = useWriteContract();
   const { isLoading: waiting, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
+  // Post-forge: read on-chain agent ID and URL
+  const { data: onChainNumericId } = useReadContract({
+    address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
+    functionName: "getAgentIdByWallet",
+    args: address ? [address] : undefined,
+    query: { enabled: isSuccess && !!address },
+  });
+  const numericId = onChainNumericId as bigint | undefined;
+
+  const { data: extendedData } = useReadContract({
+    address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
+    functionName: "getAgentExtended",
+    args: numericId && numericId > 0n ? [numericId] : undefined,
+    query: { enabled: !!numericId && numericId > 0n },
+  });
+  const agentOnChainUrl = extendedData ? (extendedData as unknown as readonly unknown[])[4] as string : "";
+
+  // Test Agent state
+  const [testQuery, setTestQuery]       = useState("Tell me about AI agent reputation systems on blockchain");
+  const [testLoading, setTestLoading]   = useState(false);
+  const [testResult, setTestResult]     = useState<string>("");
+  const [testError, setTestError]       = useState<string>("");
+
+  const runAgentTest = async (url: string) => {
+    setTestLoading(true);
+    setTestResult("");
+    setTestError("");
+    try {
+      const endpoint = url.replace(/\/$/, "") + "/tasks";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: testQuery }),
+      });
+      const data = await res.json();
+      const report = data.report ?? data;
+      const summary = report.summary ?? JSON.stringify(report, null, 2);
+      const results = report.results ?? [];
+      let out = `✅ ${summary}\n\n`;
+      results.slice(0, 3).forEach((r: { title?: string; url?: string; snippet?: string }, i: number) => {
+        out += `${i + 1}. ${r.title ?? ""}${r.url ? `\n   ${r.url}` : ""}${r.snippet ? `\n   ${r.snippet?.slice(0, 120)}` : ""}\n\n`;
+      });
+      setTestResult(out.trim());
+    } catch (e) {
+      setTestError("Agent unreachable: " + (e as Error).message);
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   const selectedSpec   = SPECIALIZATIONS.find(s => s.id === spec)!;
 
   // Generate docker entrypoint snippet for selected skills
@@ -704,18 +754,60 @@ export default function RegisterAgentPage() {
       {/* ── Bottom: Deploy button + post-deploy instructions ── */}
       <div className="flex justify-center mt-12 pb-16">
         {isSuccess ? (
-          <div className="max-w-2xl w-full space-y-6">
+          <div className="max-w-2xl w-full space-y-5">
+            {/* Success banner */}
             <div className="px-8 py-4 rounded-2xl text-base font-semibold text-center" style={{ background: "#3ec95a20", border: "1px solid #3ec95a", color: "#3ec95a" }}>
               🎉 Agent deployed on-chain!
             </div>
 
-            {/* Agent ID */}
-            {agentIdHash && (
-              <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
-                <div className="text-xs font-medium uppercase tracking-widest mb-2" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>Agent ID</div>
-                <div className="text-xs break-all" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#5a807a" }}>{agentIdHash}</div>
+            {/* On-chain ID + Agent URL */}
+            <div className="px-6 py-4 rounded-xl space-y-3" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+              <div>
+                <div className="text-xs font-medium uppercase tracking-widest mb-1" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>On-Chain Agent ID</div>
+                <div className="text-sm font-bold" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#f07828" }}>
+                  {numericId && numericId > 0n ? `#${numericId.toString()}` : "Loading…"}
+                </div>
+                {agentIdHash && (
+                  <div className="text-xs mt-1 break-all" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#3a5550" }}>{agentIdHash}</div>
+                )}
               </div>
-            )}
+              <div>
+                <div className="text-xs font-medium uppercase tracking-widest mb-1" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>Agent URL</div>
+                <div className="text-xs break-all" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#5a807a" }}>
+                  {agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app"}
+                </div>
+              </div>
+            </div>
+
+            {/* Test Agent */}
+            <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+              <div className="text-xs font-medium uppercase tracking-widest mb-3" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>🧪 Test Your Agent</div>
+              <input
+                value={testQuery}
+                onChange={e => setTestQuery(e.target.value)}
+                placeholder="Enter a task query for your agent…"
+                className="w-full px-3 py-2 rounded-lg text-xs mb-3"
+                style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f3", fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
+              />
+              <button
+                onClick={() => runAgentTest(agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app")}
+                disabled={testLoading}
+                className="px-5 py-2 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: testLoading ? "#0a1a17" : "#f0782822", border: `1px solid ${testLoading ? "#1a2e2b" : "#f07828"}`, color: testLoading ? "#3a5550" : "#f07828", cursor: testLoading ? "wait" : "pointer" }}>
+                {testLoading ? "⏳ Running…" : "▶ Run Task"}
+              </button>
+
+              {testResult && (
+                <pre className="mt-3 p-3 rounded-lg text-xs whitespace-pre-wrap break-words" style={{ background: "#060c0b", border: "1px solid #1db8a820", color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", maxHeight: 240, overflowY: "auto" }}>
+                  {testResult}
+                </pre>
+              )}
+              {testError && (
+                <div className="mt-3 p-3 rounded-lg text-xs" style={{ background: "#2a0a0a", border: "1px solid #e6303060", color: "#e63030" }}>
+                  {testError}
+                </div>
+              )}
+            </div>
 
             {/* Deploy on Railway */}
             <div className="flex gap-3">
@@ -724,21 +816,18 @@ export default function RegisterAgentPage() {
                 style={{ background: "#1db8a822", border: "1px solid #1db8a8", color: "#1db8a8" }}>
                 🚂 Deploy on Railway
               </a>
-              <button
-                onClick={() => {
-                  const testUrl = prompt("Enter your agent URL (e.g. https://your-agent.railway.app)");
-                  if (!testUrl) return;
-                  fetch(testUrl + "/health").then(r => r.json()).then(d => alert("Agent is live! Status: " + d.status)).catch(() => alert("Agent not reachable at " + testUrl));
-                }}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
-                style={{ background: "#f0782822", border: "1px solid #f07828", color: "#f07828" }}>
-                🧪 Test Your Agent
-              </button>
+              {txHash && (
+                <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550" }}>
+                  🔗 View on BaseScan
+                </a>
+              )}
             </div>
 
             {/* Docker run command */}
             <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
-              <div className="text-xs font-medium uppercase tracking-widest mb-3" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>Docker Run Command</div>
+              <div className="text-xs font-medium uppercase tracking-widest mb-3" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>Self-Host (Docker)</div>
               <pre className="text-xs overflow-x-auto whitespace-pre" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#5a807a" }}>{
 `docker run -d -p 3000:3000 \\
   -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\
@@ -749,24 +838,12 @@ export default function RegisterAgentPage() {
   ghcr.io/agent-skakun/moltforge-agent:latest`
               }</pre>
               <button
-                onClick={() => {
-                  const cmd = `docker run -d -p 3000:3000 \\\n  -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\\n  -e REGISTRY_ADDRESS=0x68C2390146C795879758F2a71a62fd114cd1E88d \\\n  -e ESCROW_ADDRESS=0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4 \\\n  -e RPC_URL=https://mainnet.base.org \\\n  -e AGENT_NAME=${agentName || "<agent-name>"} \\\n  ghcr.io/agent-skakun/moltforge-agent:latest`;
-                  navigator.clipboard.writeText(cmd);
-                }}
+                onClick={() => { const cmd = `docker run -d -p 3000:3000 \\\n  -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\\n  -e REGISTRY_ADDRESS=0x68C2390146C795879758F2a71a62fd114cd1E88d \\\n  -e ESCROW_ADDRESS=0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4 \\\n  -e RPC_URL=https://mainnet.base.org \\\n  -e AGENT_NAME=${agentName || "<agent-name>"} \\\n  ghcr.io/agent-skakun/moltforge-agent:latest`; navigator.clipboard.writeText(cmd); }}
                 className="mt-3 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
                 style={{ background: "#1db8a815", border: "1px solid #1db8a840", color: "#1db8a8" }}>
                 Copy
               </button>
             </div>
-
-            {txHash && (
-              <div className="text-center">
-                <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
-                  className="text-xs underline" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
-                  View transaction on BaseScan
-                </a>
-              </div>
-            )}
           </div>
         ) : !address ? (
           /* No wallet — show ConnectButton inline */
