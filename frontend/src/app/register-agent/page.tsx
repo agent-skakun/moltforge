@@ -134,6 +134,7 @@ export default function RegisterAgentPage() {
   // Deploy state
   const [deployMode, setDeployMode]   = useState<"hosted" | "self">("hosted");
   const [deployStatus, setDeployStatus] = useState<"idle" | "deploying" | "done" | "error">("idle");
+  const [deployStep, setDeployStep]   = useState(0); // 0-3 animation step
   const [deployResult, setDeployResult] = useState<{ agentUrl: string; dashboardUrl: string; domain: string } | null>(null);
   const [deployError, setDeployError] = useState("");
 
@@ -351,7 +352,11 @@ export default function RegisterAgentPage() {
   const triggerRailwayDeploy = async (_agentUrl?: string) => {
     if (deployMode !== "hosted") return;
     setDeployStatus("deploying");
+    setDeployStep(0);
     setDeployError("");
+    // Animate steps: Preparing(0) → Building(1) → Deploying(2) → Going Live(3)
+    const stepDelays = [700, 1400, 2200];
+    stepDelays.forEach((ms, i) => setTimeout(() => setDeployStep(i + 1), ms));
     try {
       const res = await fetch("/api/deploy-agent", {
         method: "POST",
@@ -360,19 +365,11 @@ export default function RegisterAgentPage() {
           agentName,
           agentNumericId: numericId ? numericId.toString() : undefined,
           walletAddress: address,
-          registryAddress: ADDRESSES.AgentRegistry,
-          escrowAddress: ADDRESSES.MoltForgeEscrowV3 ?? ADDRESSES.MoltForgeEscrow,
-          rpcUrl: "https://mainnet.base.org",
-          llmProvider,
-          llmApiKey: llmApiKey || undefined,
-          systemPrompt: systemPrompt || undefined,
-          agentSkills: skills.join(",") || undefined,
-          agentTools: tools.join(",") || undefined,
-          agentSpecialization: spec,
         }),
       });
       const data = await res.json() as { ok: boolean; agentUrl?: string; dashboardUrl?: string; domain?: string; error?: string };
       if (!data.ok) throw new Error(data.error ?? "Deploy failed");
+      setDeployStep(4); // all done
       setDeployResult({ agentUrl: data.agentUrl!, dashboardUrl: data.dashboardUrl!, domain: data.domain! });
       setDeployStatus("done");
     } catch (e) {
@@ -1110,56 +1107,88 @@ export default function RegisterAgentPage() {
               </div>
             </div>
 
-            {/* ── Railway Auto-Deploy Status ── */}
+            {/* ── Deploy Progress / Result ── */}
             {deployMode === "hosted" && (
-              <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: `1px solid ${deployStatus === "done" ? "#3ec95a40" : deployStatus === "error" ? "#e6303040" : "#1a2e2b"}` }}>
-                <div className="text-xs font-medium uppercase tracking-widest mb-3" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>
-                  🚂 Railway Auto-Deploy
-                </div>
-                {deployStatus === "idle" && (
-                  <p className="text-xs" style={{ color: "#3a5550" }}>Preparing deployment…</p>
-                )}
-                {deployStatus === "deploying" && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0" style={{ borderColor: "#1db8a8", borderTopColor: "transparent" }} />
-                    <span className="text-xs" style={{ color: "#5a807a" }}>Deploying to Railway — creating service, setting env vars, generating domain…</span>
-                  </div>
-                )}
-                {deployStatus === "done" && deployResult && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">✅</span>
-                      <span className="text-xs font-semibold" style={{ color: "#3ec95a" }}>Agent deployed successfully!</span>
+              <div className="px-6 py-5 rounded-xl" style={{ background: "#0a1a17", border: `1px solid ${deployStatus === "done" ? "#3ec95a40" : deployStatus === "error" ? "#e6303040" : "#1a2e2b"}` }}>
+                {/* Steps */}
+                {(deployStatus === "deploying" || deployStatus === "done") && (() => {
+                  const STEPS = [
+                    { label: "Preparing environment",    icon: "⚙️" },
+                    { label: "Building agent container", icon: "📦" },
+                    { label: "Deploying to Railway",     icon: "🚂" },
+                    { label: "Going live",               icon: "🌐" },
+                  ];
+                  const current = deployStatus === "done" ? 4 : deployStep;
+                  return (
+                    <div className="space-y-3">
+                      <div className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>
+                        {deployStatus === "done" ? "✅ Agent is live!" : "🚀 Deploying your agent…"}
+                      </div>
+                      {STEPS.map((step, i) => {
+                        const done    = i < current;
+                        const active  = i === current && deployStatus === "deploying";
+                        return (
+                          <div key={i} className="flex items-center gap-3">
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs transition-all"
+                              style={{
+                                background: done ? "#3ec95a20" : active ? "#1db8a820" : "#0a1a17",
+                                border: `1px solid ${done ? "#3ec95a" : active ? "#1db8a8" : "#1a2e2b"}`,
+                              }}>
+                              {done ? "✓" : active ? (
+                                <span className="w-3 h-3 rounded-full border border-t-transparent animate-spin block"
+                                  style={{ borderColor: "#1db8a8", borderTopColor: "transparent" }} />
+                              ) : step.icon}
+                            </div>
+                            <span className="text-xs transition-all"
+                              style={{ color: done ? "#3ec95a" : active ? "#e8f5f3" : "#2a4a45" }}>
+                              {step.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {/* Progress bar */}
+                      <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: "#1a2e2b" }}>
+                        <div className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${(current / 4) * 100}%`, background: deployStatus === "done" ? "#3ec95a" : "#1db8a8" }} />
+                      </div>
+                      {/* Agent URL after done */}
+                      {deployStatus === "done" && deployResult && (
+                        <div className="mt-4 space-y-3">
+                          <div className="px-3 py-2 rounded-lg" style={{ background: "#060c0b", border: "1px solid #3ec95a30" }}>
+                            <div className="text-xs mb-1" style={{ color: "#3a5550" }}>Agent URL</div>
+                            <a href={deployResult.agentUrl} target="_blank" rel="noopener noreferrer"
+                              className="text-sm font-mono break-all"
+                              style={{ color: "#1db8a8" }}>{deployResult.agentUrl}</a>
+                          </div>
+                          <div className="flex gap-2">
+                            <a href={deployResult.agentUrl + "/health"} target="_blank" rel="noopener noreferrer"
+                              className="px-3 py-1.5 rounded-lg text-xs"
+                              style={{ background: "#1db8a815", border: "1px solid #1db8a840", color: "#1db8a8" }}>
+                              /health ↗
+                            </a>
+                            <a href={deployResult.agentUrl + "/agent.json"} target="_blank" rel="noopener noreferrer"
+                              className="px-3 py-1.5 rounded-lg text-xs"
+                              style={{ background: "#f0782815", border: "1px solid #f0782840", color: "#f07828" }}>
+                              /agent.json ↗
+                            </a>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-xs" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
-                      URL: <a href={deployResult.agentUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#1db8a8" }}>{deployResult.agentUrl}</a>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <a href={deployResult.agentUrl + "/health"} target="_blank" rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-lg text-xs"
-                        style={{ background: "#1db8a815", border: "1px solid #1db8a840", color: "#1db8a8" }}>
-                        /health ↗
-                      </a>
-                      <a href={deployResult.dashboardUrl} target="_blank" rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-lg text-xs"
-                        style={{ background: "#f0782815", border: "1px solid #f0782840", color: "#f07828" }}>
-                        Railway Dashboard ↗
-                      </a>
-                    </div>
-                    <p className="text-xs mt-2" style={{ color: "#3a5550" }}>
-                      ⚠️ Build takes ~2 min. Check Railway dashboard for live status.
-                    </p>
-                  </div>
-                )}
+                  );
+                })()}
                 {deployStatus === "error" && (
                   <div>
-                    <div className="text-xs mb-2" style={{ color: "#e63030" }}>❌ Deploy failed: {deployError}</div>
+                    <div className="text-xs mb-3" style={{ color: "#e63030" }}>❌ Deploy failed: {deployError}</div>
                     <button onClick={() => triggerRailwayDeploy(agentOnChainUrl || "")}
-                      className="px-3 py-1.5 rounded-lg text-xs"
+                      className="px-4 py-2 rounded-xl text-xs font-semibold"
                       style={{ background: "#e6303015", border: "1px solid #e6303040", color: "#e63030" }}>
                       Retry
                     </button>
                   </div>
+                )}
+                {deployStatus === "idle" && (
+                  <p className="text-xs" style={{ color: "#3a5550" }}>Waiting for on-chain confirmation…</p>
                 )}
               </div>
             )}
