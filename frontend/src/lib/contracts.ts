@@ -1,6 +1,9 @@
 export const ADDRESSES = {
   AgentRegistry: "0x68C2390146C795879758F2a71a62fd114cd1E88d" as const,
+  // V1/V2 escrow — legacy tasks
   MoltForgeEscrow: "0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4" as const,
+  // V3 escrow — new marketplace (open tasks + direct hire + claim/submit/confirm/dispute)
+  MoltForgeEscrowV3: "0xe6ea8c6B2993ee064869e9Ef1b0379E294a82E80" as const,
   MeritSBT: "0x375aC49E905bAd8aC7547AF1f2fD98EE4FBC2E9E" as const,
   MeritSBTV2: "0xA047f715866C15f307A7cE6Af8Ee93a02640ec20" as const,
   USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const,
@@ -29,6 +32,79 @@ export const AGENT_REGISTRY_ABI = [
   { type: "function", name: "updateAvatarHash", inputs: [{ name: "numericId", type: "uint256" }, { name: "avatarHash", type: "bytes32" }], outputs: [], stateMutability: "nonpayable" },
 ] as const;
 
+// V3 Escrow ABI — open tasks + direct hire + full lifecycle
+export const ESCROW_V3_ABI = [
+  { type: "function", name: "taskCount", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  {
+    type: "function", name: "getTask",
+    inputs: [{ name: "taskId", type: "uint256" }],
+    outputs: [{ name: "", type: "tuple", components: [
+      { name: "id",          type: "uint256" },
+      { name: "client",      type: "address" },
+      { name: "agentId",     type: "uint256" },
+      { name: "token",       type: "address" },
+      { name: "reward",      type: "uint256" },
+      { name: "fee",         type: "uint256" },
+      { name: "description", type: "string" },
+      { name: "fileUrl",     type: "string" },
+      { name: "resultUrl",   type: "string" },
+      { name: "status",      type: "uint8" },
+      { name: "claimedBy",   type: "address" },
+      { name: "score",       type: "uint8" },
+      { name: "createdAt",   type: "uint64" },
+      { name: "deadlineAt",  type: "uint64" },
+    ]}],
+    stateMutability: "view",
+  },
+  {
+    type: "function", name: "getTasksBatch",
+    inputs: [{ name: "from", type: "uint256" }, { name: "to", type: "uint256" }],
+    outputs: [{ name: "tasks", type: "tuple[]", components: [
+      { name: "id",          type: "uint256" },
+      { name: "client",      type: "address" },
+      { name: "agentId",     type: "uint256" },
+      { name: "token",       type: "address" },
+      { name: "reward",      type: "uint256" },
+      { name: "fee",         type: "uint256" },
+      { name: "description", type: "string" },
+      { name: "fileUrl",     type: "string" },
+      { name: "resultUrl",   type: "string" },
+      { name: "status",      type: "uint8" },
+      { name: "claimedBy",   type: "address" },
+      { name: "score",       type: "uint8" },
+      { name: "createdAt",   type: "uint64" },
+      { name: "deadlineAt",  type: "uint64" },
+    ]}],
+    stateMutability: "view",
+  },
+  {
+    type: "function", name: "createTask",
+    inputs: [
+      { name: "tokenAddr",   type: "address" },
+      { name: "reward",      type: "uint256" },
+      { name: "agentId",     type: "uint256" },
+      { name: "description", type: "string" },
+      { name: "fileUrl",     type: "string" },
+      { name: "deadlineAt",  type: "uint64" },
+    ],
+    outputs: [{ name: "taskId", type: "uint256" }],
+    stateMutability: "nonpayable",
+  },
+  { type: "function", name: "claimTask",     inputs: [{ name: "taskId", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "submitResult",  inputs: [{ name: "taskId", type: "uint256" }, { name: "resultUrl", type: "string" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "confirmDelivery", inputs: [{ name: "taskId", type: "uint256" }, { name: "score", type: "uint8" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "cancelTask",    inputs: [{ name: "taskId", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "disputeTask",   inputs: [{ name: "taskId", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "resolveDispute", inputs: [{ name: "taskId", type: "uint256" }, { name: "agentWon", type: "bool" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "event", name: "TaskCreated",   inputs: [{ name: "taskId", type: "uint256", indexed: true }, { name: "client", type: "address", indexed: true }, { name: "agentId", type: "uint256", indexed: false }, { name: "reward", type: "uint256", indexed: false }] },
+  { type: "event", name: "TaskClaimed",   inputs: [{ name: "taskId", type: "uint256", indexed: true }, { name: "agent", type: "address", indexed: true }, { name: "agentId", type: "uint256", indexed: false }] },
+  { type: "event", name: "ResultSubmitted", inputs: [{ name: "taskId", type: "uint256", indexed: true }, { name: "agent", type: "address", indexed: true }, { name: "resultUrl", type: "string", indexed: false }] },
+  { type: "event", name: "DeliveryConfirmed", inputs: [{ name: "taskId", type: "uint256", indexed: true }, { name: "client", type: "address", indexed: true }, { name: "score", type: "uint8", indexed: false }, { name: "payout", type: "uint256", indexed: false }] },
+  { type: "event", name: "TaskCancelled", inputs: [{ name: "taskId", type: "uint256", indexed: true }, { name: "client", type: "address", indexed: true }, { name: "refund", type: "uint256", indexed: false }] },
+  { type: "event", name: "TaskDisputed",  inputs: [{ name: "taskId", type: "uint256", indexed: true }, { name: "opener", type: "address", indexed: true }] },
+] as const;
+
+// Legacy V1/V2 ABI (kept for dashboard backward compat)
 export const ESCROW_ABI = [
   { type: "function", name: "taskCount", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
   { type: "function", name: "getTask", inputs: [{ name: "taskId", type: "uint256" }], outputs: [{ name: "", type: "tuple", components: [{ name: "client", type: "address" }, { name: "agent", type: "address" }, { name: "arbiter", type: "address" }, { name: "token", type: "address" }, { name: "reward", type: "uint256" }, { name: "fee", type: "uint256" }, { name: "descriptionCID", type: "string" }, { name: "deliveryCID", type: "string" }, { name: "status", type: "uint8" }, { name: "createdAt", type: "uint64" }, { name: "deadlineAt", type: "uint64" }, { name: "voteCount", type: "uint8" }, { name: "votesForAgent", type: "uint8" }] }], stateMutability: "view" },
@@ -54,15 +130,6 @@ export const MERIT_SBT_ABI = [
   { type: "function", name: "tokenURI", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "string" }], stateMutability: "view" },
 ] as const;
 
-// V2 Escrow — adds releasePaymentWithScore
-export const ESCROW_V2_ABI = [
-  ...([
-    { type: "function", name: "releasePaymentWithScore", inputs: [{ name: "taskId", type: "uint256" }, { name: "score", type: "uint8" }], outputs: [], stateMutability: "nonpayable" },
-    { type: "function", name: "meritSBT", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
-    { type: "function", name: "agentRegistry", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
-  ] as const),
-] as const;
-
 // MeritSBTV2 ABI
 export const MERIT_SBT_V2_ABI = [
   { type: "function", name: "getReputation", inputs: [{ name: "agentId", type: "uint256" }], outputs: [{ name: "weightedScore", type: "uint256" }, { name: "totalJobs", type: "uint256" }, { name: "totalVolume", type: "uint256" }, { name: "tier", type: "uint8" }], stateMutability: "view" },
@@ -70,5 +137,23 @@ export const MERIT_SBT_V2_ABI = [
   { type: "function", name: "escrow", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
 ] as const;
 
+// V2 Escrow — legacy with releasePaymentWithScore
+export const ESCROW_V2_ABI = [
+  { type: "function", name: "releasePaymentWithScore", inputs: [{ name: "taskId", type: "uint256" }, { name: "score", type: "uint8" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "meritSBT", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
+  { type: "function", name: "agentRegistry", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
+] as const;
+
 export const TIER_NAMES = ["Bronze", "Silver", "Gold", "Platinum"] as const;
-export const STATUS_NAMES = ["Open", "InProgress", "Delivered", "Completed", "Disputed", "Cancelled"] as const;
+
+// V3 task status names
+export const V3_STATUS_NAMES = ["Open", "Claimed", "InProgress", "Delivered", "Confirmed", "Cancelled", "Disputed"] as const;
+export const V3_STATUS_COLORS = {
+  0: { label: "Open",       color: "#1db8a8", bg: "#1db8a815" },
+  1: { label: "Claimed",    color: "#f07828", bg: "#f0782815" },
+  2: { label: "In Progress",color: "#f07828", bg: "#f0782815" },
+  3: { label: "Delivered",  color: "#e8c842", bg: "#e8c84215" },
+  4: { label: "Confirmed",  color: "#3ec95a", bg: "#3ec95a15" },
+  5: { label: "Cancelled",  color: "#6b7280", bg: "#6b728015" },
+  6: { label: "Disputed",   color: "#e63030", bg: "#e6303015" },
+} as const;
