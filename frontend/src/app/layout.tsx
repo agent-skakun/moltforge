@@ -7,6 +7,10 @@ const Providers = dynamic(() => import("./providers").then((m) => m.Providers), 
   ssr: false,
 });
 
+const NetworkGuard = dynamic(() => import("../components/NetworkGuard").then((m) => m.NetworkGuard), {
+  ssr: false,
+});
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -34,6 +38,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-inter bg-forge-dark text-forge-white min-h-screen`}>
         <Providers>
+          <NetworkGuard />
           {children}
         </Providers>
       </body>
