@@ -1,25 +1,19 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Install dependencies
 COPY package*.json ./
-RUN npm ci
-
-# Copy source and build
+RUN npm install --ignore-scripts
 COPY tsconfig.json ./
 COPY src/ ./src/
+RUN npx tsc --skipLibCheck
+
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --production --ignore-scripts
+COPY --from=builder /app/dist ./dist
 COPY agent.json ./
 COPY public/ ./public/
-
-# Build TypeScript
-RUN npm run build
-
-# Remove dev dependencies
-RUN npm prune --production
-
-# Skills directory
 RUN mkdir -p /skills
-
 ENV PORT=3000
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
