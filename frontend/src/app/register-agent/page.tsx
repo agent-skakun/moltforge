@@ -233,7 +233,7 @@ export default function RegisterAgentPage() {
   const [a2aCardData, setA2aCardData]   = useState<object | null>(null);
   const [a2aLoading, setA2aLoading]     = useState(false);
 
-  // After on-chain registration: save API key to Supabase + trigger deploy
+  // After on-chain registration: save API key + avatar params to Supabase + trigger deploy
   useEffect(() => {
     if (!isSuccess) return;
     // Save API key to Supabase (server-side encrypted, AES-256-GCM)
@@ -243,6 +243,26 @@ export default function RegisterAgentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ walletAddress: address, apiKey: llmApiKey, llmProvider }),
       }).catch(() => { /* non-critical — localStorage is fallback */ });
+    }
+    // Save avatar params to Supabase (needed to render correct SVG on /agent/[id])
+    if (address && agentIdHash) {
+      const avatarHashHex = `0x${Buffer.from(
+        agentIdHash.startsWith("0x") ? agentIdHash.slice(2) : agentIdHash, "hex"
+      ).toString("hex")}`;
+      // avatarHash is keccak256(faceParams JSON) — use agentIdHash as key
+      const avatarHashKey = typeof window !== "undefined"
+        ? btoa(unescape(encodeURIComponent(JSON.stringify(faceParams)))).slice(0, 16) + agentIdHash.slice(2, 10)
+        : agentIdHash.slice(0, 24);
+      fetch("/api/save-avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          avatarHash: agentIdHash, // keccak256 of agentName — unique per agent
+          avatarParams: faceParams,
+          walletAddress: address,
+        }),
+      }).catch(() => { /* non-critical */ });
+      void avatarHashHex; void avatarHashKey; // suppress unused warnings
     }
     if (deployMode === "hosted" && deployStatus === "idle") {
       triggerRailwayDeploy(agentOnChainUrl || "");
