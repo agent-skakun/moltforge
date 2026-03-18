@@ -99,6 +99,11 @@ export default function RegisterAgentPage() {
 
   // Deploy state
   const [deployMode, setDeployMode]   = useState<"hosted" | "self">("hosted");
+  const [railwayToken, setRailwayToken] = useState("");
+  const [railwayProjectId, setRailwayProjectId] = useState("cb260e6f-8ca6-4f0e-bf99-99f75e70c9ad"); // default: our project
+  const [deployStatus, setDeployStatus] = useState<"idle" | "deploying" | "done" | "error">("idle");
+  const [deployResult, setDeployResult] = useState<{ agentUrl: string; dashboardUrl: string; domain: string } | null>(null);
+  const [deployError, setDeployError] = useState("");
 
   // Dynamic skills from moltforge-skills repo
   const [skillGroups, setSkillGroups] = useState<SkillGroups>({});
@@ -193,6 +198,14 @@ export default function RegisterAgentPage() {
   const [a2aCardOpen, setA2aCardOpen]   = useState(false);
   const [a2aCardData, setA2aCardData]   = useState<object | null>(null);
   const [a2aLoading, setA2aLoading]     = useState(false);
+
+  // Trigger Railway auto-deploy after on-chain registration
+  useEffect(() => {
+    if (isSuccess && deployMode === "hosted" && railwayToken && deployStatus === "idle") {
+      triggerRailwayDeploy(agentOnChainUrl || "");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccess]);
 
   const fetchA2aCard = async (url: string) => {
     setA2aLoading(true);
@@ -294,12 +307,47 @@ export default function RegisterAgentPage() {
     const avatarHashBytes32 = keccak256(toBytes(JSON.stringify(faceParams)));
     const skillPaths = skills.length > 0 ? skills : [];
     const toolIds = tools.length > 0 ? tools : [];
-    const finalUrl = deployMode === "hosted"
-      ? "https://agent.moltforge.cloud"
-      : (webhookUrl || "");
+    // Use placeholder URL — will be updated after Railway deploy
+    const placeholderUrl = deployMode === "self" ? (webhookUrl || "") : "https://agent.moltforge.cloud";
     writeContract({ address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
       functionName: "registerAgentV2",
-      args: [address, agentIdHash, metaURI, finalUrl, avatarHashBytes32, skillPaths, toolIds, finalUrl] });
+      args: [address, agentIdHash, metaURI, placeholderUrl, avatarHashBytes32, skillPaths, toolIds, placeholderUrl] });
+  };
+
+  // Auto-deploy to Railway after on-chain registration succeeds
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const triggerRailwayDeploy = async (_agentUrl?: string) => {
+    if (deployMode !== "hosted" || !railwayToken) return;
+    setDeployStatus("deploying");
+    setDeployError("");
+    try {
+      const res = await fetch("/api/deploy-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          railwayToken,
+          projectId: railwayProjectId || undefined,
+          agentName,
+          walletAddress: address,
+          registryAddress: ADDRESSES.AgentRegistry,
+          escrowAddress: ADDRESSES.MoltForgeEscrowV3 ?? ADDRESSES.MoltForgeEscrow,
+          rpcUrl: "https://mainnet.base.org",
+          llmProvider,
+          llmApiKey: llmApiKey || undefined,
+          systemPrompt: systemPrompt || undefined,
+          agentSkills: skills.join(",") || undefined,
+          agentTools: tools.join(",") || undefined,
+          agentSpecialization: spec,
+        }),
+      });
+      const data = await res.json() as { ok: boolean; agentUrl?: string; dashboardUrl?: string; domain?: string; error?: string };
+      if (!data.ok) throw new Error(data.error ?? "Deploy failed");
+      setDeployResult({ agentUrl: data.agentUrl!, dashboardUrl: data.dashboardUrl!, domain: data.domain! });
+      setDeployStatus("done");
+    } catch (e) {
+      setDeployError((e as Error).message);
+      setDeployStatus("error");
+    }
   };
 
   const toggle = (list: string[], setList: (v: string[]) => void, id: string) =>
@@ -973,14 +1021,45 @@ export default function RegisterAgentPage() {
                   )}
 
                   {deployMode === "hosted" && (
-                    <div className="px-4 py-3 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1db8a820" }}>
-                      <div className="text-xs" style={{ color: "#3a5550" }}>
-                        Active endpoint: <span style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
-                          https://agent.moltforge.cloud
-                        </span>
+                    <div className="space-y-3">
+                      <div>
+                        <SectionLabel>Railway API Token</SectionLabel>
+                        <input
+                          type="password"
+                          value={railwayToken}
+                          onChange={e => setRailwayToken(e.target.value)}
+                          placeholder="Your Railway account token (railway.com/account/tokens)"
+                          className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+                          style={{ background: "#060c0b", border: `1px solid ${railwayToken ? "#1db8a8" : "#1a2e2b"}`, fontFamily: "var(--font-jetbrains-mono)" }}
+                        />
+                        <p className="text-xs mt-1" style={{ color: "#3a5550" }}>
+                          🔒 Token stays in browser. Get it at{" "}
+                          <a href="https://railway.com/account/tokens" target="_blank" rel="noopener noreferrer" style={{ color: "#1db8a8" }}>
+                            railway.com/account/tokens
+                          </a>
+                        </p>
                       </div>
-                      <div className="text-xs mt-1" style={{ color: "#3a5550" }}>
-                        🟢 Health check: <span style={{ color: "#3ec95a" }}>online</span>
+                      {railwayToken && (
+                        <div>
+                          <SectionLabel>Railway Project ID <span style={{ color: "#3a5550" }}>(optional — leave blank to create new)</span></SectionLabel>
+                          <input
+                            value={railwayProjectId}
+                            onChange={e => setRailwayProjectId(e.target.value)}
+                            placeholder="Leave blank to create new project"
+                            className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+                            style={{ background: "#060c0b", border: "1px solid #1a2e2b", fontFamily: "var(--font-jetbrains-mono)" }}
+                          />
+                        </div>
+                      )}
+                      <div className="px-4 py-3 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1db8a820" }}>
+                        <div className="text-xs" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+                          ⚡ Auto-deploy flow
+                        </div>
+                        <div className="text-xs mt-1.5 space-y-0.5" style={{ color: "#3a5550" }}>
+                          <div>1. Register agent on-chain → get ID</div>
+                          <div>2. Deploy reference-agent to Railway → get URL</div>
+                          <div>3. Agent URL recorded on-chain automatically</div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1014,10 +1093,64 @@ export default function RegisterAgentPage() {
               <div>
                 <div className="text-xs font-medium uppercase tracking-widest mb-1" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>Agent URL</div>
                 <div className="text-xs break-all" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#5a807a" }}>
-                  {agentOnChainUrl || webhookUrl || "https://agent.moltforge.cloud"}
+                  {deployResult?.agentUrl || agentOnChainUrl || webhookUrl || "https://agent.moltforge.cloud"}
                 </div>
               </div>
             </div>
+
+            {/* ── Railway Auto-Deploy Status ── */}
+            {deployMode === "hosted" && railwayToken && (
+              <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: `1px solid ${deployStatus === "done" ? "#3ec95a40" : deployStatus === "error" ? "#e6303040" : "#1a2e2b"}` }}>
+                <div className="text-xs font-medium uppercase tracking-widest mb-3" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>
+                  🚂 Railway Auto-Deploy
+                </div>
+                {deployStatus === "idle" && (
+                  <p className="text-xs" style={{ color: "#3a5550" }}>Preparing deployment…</p>
+                )}
+                {deployStatus === "deploying" && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0" style={{ borderColor: "#1db8a8", borderTopColor: "transparent" }} />
+                    <span className="text-xs" style={{ color: "#5a807a" }}>Deploying to Railway — creating service, setting env vars, generating domain…</span>
+                  </div>
+                )}
+                {deployStatus === "done" && deployResult && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">✅</span>
+                      <span className="text-xs font-semibold" style={{ color: "#3ec95a" }}>Agent deployed successfully!</span>
+                    </div>
+                    <div className="text-xs" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
+                      URL: <a href={deployResult.agentUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#1db8a8" }}>{deployResult.agentUrl}</a>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <a href={deployResult.agentUrl + "/health"} target="_blank" rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-lg text-xs"
+                        style={{ background: "#1db8a815", border: "1px solid #1db8a840", color: "#1db8a8" }}>
+                        /health ↗
+                      </a>
+                      <a href={deployResult.dashboardUrl} target="_blank" rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-lg text-xs"
+                        style={{ background: "#f0782815", border: "1px solid #f0782840", color: "#f07828" }}>
+                        Railway Dashboard ↗
+                      </a>
+                    </div>
+                    <p className="text-xs mt-2" style={{ color: "#3a5550" }}>
+                      ⚠️ Build takes ~2 min. Check Railway dashboard for live status.
+                    </p>
+                  </div>
+                )}
+                {deployStatus === "error" && (
+                  <div>
+                    <div className="text-xs mb-2" style={{ color: "#e63030" }}>❌ Deploy failed: {deployError}</div>
+                    <button onClick={() => triggerRailwayDeploy(agentOnChainUrl || "")}
+                      className="px-3 py-1.5 rounded-lg text-xs"
+                      style={{ background: "#e6303015", border: "1px solid #e6303040", color: "#e63030" }}>
+                      Retry
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Test Agent — button that opens modal */}
             <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
