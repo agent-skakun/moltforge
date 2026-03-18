@@ -5,6 +5,14 @@ import { loadConfig } from "./config";
 import { createBlockchainClient } from "./blockchain";
 import { executeResearch, buildMetadataURI } from "./agent";
 import { startTelegramBot } from "./telegram";
+import {
+  issueChallenge,
+  verifyRegistrationSignature,
+  registerOnChain,
+  generateAvatarTraits,
+  renderAvatarSvg,
+} from "./self-register";
+import type { RegisterRequest } from "./self-register";
 
 const config = loadConfig();
 const { getAgentId, getAgentExtended } = createBlockchainClient(config);
@@ -254,6 +262,115 @@ app.post("/tasks", async (req, res) => {
     res.json({ report, metadataURI });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ─── Agent Self-Registration API ─────────────────────────────────────────────
+
+/**
+ * POST /api/challenge
+ * Body: { wallet: "0x..." }
+ * Returns: { nonce, expiresIn }
+ * Step 1: agent requests a nonce to sign (TTL 10 min)
+ */
+app.post("/api/challenge", (req, res) => {
+  const { wallet } = req.body as { wallet?: string };
+  if (!wallet || !/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
+    res.status(400).json({ error: "wallet (0x address) is required" });
+    return;
+  }
+  const nonce = issueChallenge(wallet as `0x${string}`);
+  res.json({ nonce, expiresIn: 600, message: "Sign this nonce with your wallet private key, then POST to /api/register" });
+});
+
+/**
+ * POST /api/register
+ * Body: { nonce, wallet, signature, name, skills?, tools?, webhookUrl?, agentUrl?, llmProvider?, metadataURI? }
+ * Returns: { ok, numericId, wallet, agentIdHash, txHash, avatarSvg, avatarTraits, marketplaceUrl }
+ * Step 2: verify sig → register on-chain → generate avatar → return result
+ */
+app.post("/api/register", async (req, res) => {
+  const body = req.body as RegisterRequest;
+  const { nonce, wallet, signature, name, skills = [], tools = [], webhookUrl = "", agentUrl = "" } = body;
+
+  // Validate
+  if (!nonce || !wallet || !signature || !name) {
+    res.status(400).json({ error: "nonce, wallet, signature, name are required" });
+    return;
+  }
+  if (!/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
+    res.status(400).json({ error: "invalid wallet address" });
+    return;
+  }
+  if (name.trim().length < 2 || name.trim().length > 64) {
+    res.status(400).json({ error: "name must be 2–64 characters" });
+    return;
+  }
+
+  // Verify signature (also consumes the nonce — one-time use)
+  const sigValid = await verifyRegistrationSignature(nonce, wallet as `0x${string}`, signature as `0x${string}`);
+  if (!sigValid) {
+    res.status(401).json({ error: "Invalid signature — get a fresh nonce from POST /api/challenge" });
+    return;
+  }
+
+  // Generate deterministic avatar from name + skills
+  const traits    = generateAvatarTraits(name.trim(), skills);
+  const avatarSvg = renderAvatarSvg(traits, name.trim());
+  const avatarDataURI = `data:image/svg+xml;base64,${Buffer.from(avatarSvg).toString("base64")}`;
+
+  // Deployer key (server-side, submits the on-chain tx on behalf of agent)
+  const deployerPrivateKey = (process.env.PRIVATE_KEY ?? "") as `0x${string}`;
+  if (!deployerPrivateKey || deployerPrivateKey.length < 10) {
+    res.status(503).json({ error: "Server not configured for on-chain registration (missing PRIVATE_KEY)" });
+    return;
+  }
+
+  // Build metadata JSON
+  const meta = {
+    name: name.trim(),
+    description: `AI agent on MoltForge. Skills: ${skills.join(", ") || "general"}`,
+    image: avatarDataURI,
+    skills,
+    tools,
+    llmProvider: body.llmProvider ?? "unknown",
+    webhookUrl:  agentUrl || webhookUrl,
+    registeredAt: new Date().toISOString(),
+    platform: "MoltForge",
+    selfRegistered: true,
+  };
+  const finalMetaURI = body.metadataURI
+    ?? `data:application/json;base64,${Buffer.from(JSON.stringify(meta)).toString("base64")}`;
+
+  // Register on-chain
+  try {
+    const { numericId, txHash, agentIdHash } = await registerOnChain({
+      registryAddress:    config.registryAddress,
+      deployerPrivateKey,
+      rpcUrl:             config.rpcUrl,
+      agentWallet:        wallet as `0x${string}`,
+      agentName:          name.trim(),
+      metadataURI:        finalMetaURI,
+      webhookUrl:         agentUrl || webhookUrl,
+    });
+
+    console.log(`[self-register] ✅ "${name}" #${numericId} wallet=${wallet} tx=${txHash}`);
+
+    res.json({
+      ok:           true,
+      numericId:    numericId.toString(),
+      wallet,
+      agentIdHash,
+      txHash,
+      avatarSvg,
+      avatarTraits: traits,
+      metadataURI:  finalMetaURI,
+      marketplaceUrl: `https://moltforge.cloud/agent/${numericId}`,
+    });
+  } catch (err) {
+    const msg = (err as Error).message;
+    console.error(`[self-register] ❌ "${name}":`, msg);
+    res.status(400).json({ error: msg });
   }
 });
 
