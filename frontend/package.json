@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.10",
+    "@supabase/supabase-js": "^2.99.2",
     "@tanstack/react-query": "^5.90.21",
     "next": "14.2.35",
     "react": "^18",

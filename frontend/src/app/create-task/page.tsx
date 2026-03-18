@@ -145,31 +145,52 @@ function CreateTaskInner() {
     const agentEndpoint = selectedAgent.agentUrl.replace(/\/$/, "") + "/tasks";
     setNotifyStatus("sending");
 
-    // Read user's LLM API key from localStorage (stored encrypted during agent registration)
-    let apiKey: string | undefined;
-    let llmProvider: string | undefined;
-    try {
-      const agentSlug = selectedAgent.name?.toLowerCase().replace(/\s+/g, "_") ?? "";
-      const stored = localStorage.getItem(`mf_apikey_${agentSlug}`);
-      if (stored) apiKey = atob(stored);
-      // Read provider from agent metadata if available
-      llmProvider = (selectedAgent as { llmProvider?: string }).llmProvider ?? undefined;
-    } catch { /* ignore */ }
+    const sendToAgent = async () => {
+      // Try Supabase first, fall back to localStorage
+      let apiKey: string | undefined;
+      let llmProvider: string | undefined;
+      try {
+        // Get agent owner wallet from agent data
+        const agentWallet = (selectedAgent as { wallet?: string }).wallet ?? "";
+        if (agentWallet) {
+          const res = await fetch("/api/get-key", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ walletAddress: agentWallet }),
+          });
+          if (res.ok) {
+            const data = await res.json() as { ok: boolean; apiKey?: string; llmProvider?: string };
+            if (data.ok) { apiKey = data.apiKey; llmProvider = data.llmProvider; }
+          }
+        }
+      } catch { /* ignore */ }
+      // localStorage fallback
+      if (!apiKey) {
+        try {
+          const agentSlug = selectedAgent.name?.toLowerCase().replace(/\s+/g, "_") ?? "";
+          const stored = localStorage.getItem(`mf_apikey_${agentSlug}`);
+          if (stored) apiKey = atob(stored);
+          llmProvider = (selectedAgent as { llmProvider?: string }).llmProvider ?? llmProvider;
+        } catch { /* ignore */ }
+      }
 
-    fetch(agentEndpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: createdTaskId?.toString() ?? "pending",
-        query: description,
-        reward: reward || "0",
-        clientAddress: address,
-        ...(apiKey      && { apiKey }),
-        ...(llmProvider && { llmProvider }),
-      }),
-    })
-      .then(r => r.ok ? setNotifyStatus("ok") : setNotifyStatus("offline"))
-      .catch(() => setNotifyStatus("offline"));
+      fetch(agentEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: createdTaskId?.toString() ?? "pending",
+          query: description,
+          reward: reward || "0",
+          clientAddress: address,
+          ...(apiKey      && { apiKey }),
+          ...(llmProvider && { llmProvider }),
+        }),
+      })
+        .then(r => r.ok ? setNotifyStatus("ok") : setNotifyStatus("offline"))
+        .catch(() => setNotifyStatus("offline"));
+    };
+
+    sendToAgent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [created]);
 
