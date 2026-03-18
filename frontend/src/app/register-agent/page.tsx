@@ -173,12 +173,21 @@ export default function RegisterAgentPage() {
     ai:             "You are an AI systems specialist agent. You help design, evaluate, and integrate AI/ML pipelines, models, and infrastructure.",
     general:        "You are a capable AI agent ready to help with a wide range of tasks. You are helpful, accurate, and concise.",
   };
+
+  // Generate dynamic prompt from name + spec + skills + tools
+  const generatePrompt = (name: string, specialization: string, agentSkills: string[], agentTools: string[]) => {
+    const base = DEFAULT_PROMPTS[specialization] ?? DEFAULT_PROMPTS["general"];
+    const namePart = name ? `Your name is ${name}.` : "";
+    const skillNames = agentSkills.map(s => s.split("/").pop()?.replace(".md","")).filter(Boolean);
+    const skillsPart = skillNames.length > 0 ? `Your expertise includes: ${skillNames.join(", ")}.` : "";
+    const toolsPart = agentTools.length > 0 ? `You have access to the following tools: ${agentTools.join(", ")}.` : "";
+    return [namePart, base, skillsPart, toolsPart].filter(Boolean).join(" ");
+  };
+
   useEffect(() => {
-    if (!systemPrompt) {
-      setSystemPrompt(DEFAULT_PROMPTS[spec] ?? DEFAULT_PROMPTS["general"]);
-    }
+    setSystemPrompt(generatePrompt(agentName, spec, skills, tools));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spec]);
+  }, [spec, agentName, skills, tools]);
 
   // Sync config to reference-agent when skills/tools/spec change
   const AGENT_URL = deployResult?.agentUrl || webhookUrl || "";
@@ -1075,7 +1084,7 @@ export default function RegisterAgentPage() {
                       style={{ background: "#060c0b", border: "1px solid #1a2e2b", fontFamily: "var(--font-jetbrains-mono)" }}
                     />
                     <p className="text-xs mt-1" style={{ color: "#3a5550" }}>
-                      Auto-filled based on specialization. Edit as needed.
+                      Auto-generated from your name, specialization, skills and tools. Edit as needed.
                     </p>
                   </div>
 
