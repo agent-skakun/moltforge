@@ -44,7 +44,7 @@ contract AgentRegistryV2 is AgentRegistryV1 {
         string[] calldata skills,
         string[] calldata tools,
         string calldata _agentUrl
-    ) external onlyOwner returns (uint256 numericId) {
+    ) external returns (uint256 numericId) {
         if (wallet == address(0)) revert ZeroAddress();
         if (agentId == bytes32(0)) revert InvalidAgentId();
         if (_walletToId[wallet] != 0) revert AlreadyRegistered();
