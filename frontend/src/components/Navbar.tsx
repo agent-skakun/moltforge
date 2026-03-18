@@ -47,6 +47,10 @@ export function Navbar() {
               <span style={{ fontFamily: "var(--font-space-grotesk)", color: "#e4f0ee", fontSize: "1.15rem", fontWeight: 800, letterSpacing: "-0.04em" }}>
                 MoltForge
               </span>
+              {/* Testnet badge */}
+              <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.08em", padding: "2px 7px", borderRadius: 6, background: "#f0782820", border: "1px solid #f0782860", color: "#f07828", fontFamily: "var(--font-jetbrains-mono)", textTransform: "uppercase" }}>
+                Testnet
+              </span>
             </Link>
 
             {/* Desktop nav links */}
@@ -87,6 +91,16 @@ export function Navbar() {
                 </Link>
               </>
             )}
+            {/* Faucet link — Base Sepolia testnet */}
+            <a
+              href="https://www.alchemy.com/faucets/base-sepolia"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
+              style={{ background: "#f0782815", border: "1px solid #f0782840", color: "#f07828", fontFamily: "var(--font-jetbrains-mono)", textDecoration: "none" }}
+              title="Get free Base Sepolia ETH">
+              ⛽ Faucet
+            </a>
             <ConnectButton showBalance={false} label="Connect Wallet" />
           </div>
 
