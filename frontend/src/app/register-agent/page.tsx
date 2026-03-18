@@ -105,7 +105,7 @@ const ZONE_META: Record<NonNullable<Zone>, { emoji: string; title: string; desc:
 // ─── Main ──────────────────────────────────────────────────────────────────────
 
 export default function RegisterAgentPage() {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
 
   // Builder state
   const [avatarId, setAvatarId]       = useState("ai");
@@ -212,13 +212,7 @@ export default function RegisterAgentPage() {
   // UI
   const [activeZone, setActiveZone]   = useState<Zone>(null);
   const [hoverZone, setHoverZone]     = useState<Zone>(null);
-  const [warnDismissed, setWarnDismissed] = useState(false);
-
   // Contract
-  const { data: owner } = useReadContract({
-    address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI, functionName: "owner",
-  });
-  const isOwner = !!(address && owner && address.toLowerCase() === (owner as string).toLowerCase());
   const { writeContract, data: txHash, isPending } = useWriteContract();
   const { isLoading: waiting, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
