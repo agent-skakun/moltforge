@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useReadContract } from "wagmi";
-import { ADDRESSES, AGENT_REGISTRY_ABI, MERIT_SBT_ABI, TIER_NAMES } from "@/lib/contracts";
+import { ADDRESSES, AGENT_REGISTRY_ABI, MERIT_SBT_ABI } from "@/lib/contracts";
 import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
 import Link from "next/link";
 
@@ -64,6 +64,8 @@ export default function AgentProfilePage() {
   const [testing, setTesting] = useState(false);
   const [testQuery, setTestQuery] = useState("What can you help me with?");
   const [testResult, setTestResult] = useState("");
+  // Avatar params from Supabase (null = use fallback preset)
+  const [loadedFaceParams, setLoadedFaceParams] = useState<FaceParams | null>(null);
 
   // V2 data
   const { data: extendedData, isLoading: loadingV2 } = useReadContract({
@@ -111,6 +113,7 @@ export default function AgentProfilePage() {
   let skills: readonly string[] = [];
   let tools: readonly string[] = [];
   let agentUrl = "";
+  let onChainAvatarHash = "";
 
   if (extendedData) {
     try {
@@ -121,12 +124,27 @@ export default function AgentProfilePage() {
     } catch { /* fallback to V1 */ }
   }
 
+  // Fetch avatar params from Supabase when agent.agentId is known
+  if (agent) onChainAvatarHash = agent.agentId as string;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!onChainAvatarHash || onChainAvatarHash === "0x0000000000000000000000000000000000000000000000000000000000000000") return;
+    fetch(`/api/save-avatar?hash=${encodeURIComponent(onChainAvatarHash)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.ok && data.avatarParams) setLoadedFaceParams(data.avatarParams as FaceParams);
+      })
+      .catch(() => { /* fallback to preset */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChainAvatarHash]);
+
   const webhookUrl = agentUrl || agent.webhookUrl || "";
   const meta = parseMetadata(agent.metadataURI);
   const name = meta.name ?? `Agent #${id}`;
   const spec = meta.specialization?.toLowerCase() ?? "general";
   const preset = specToPreset(spec);
-  const faceParams: FaceParams = PRESETS[preset] ?? PRESETS["ai"];
+  // Use Supabase-loaded params if available, otherwise fall back to spec-based preset
+  const faceParams: FaceParams = loadedFaceParams ?? PRESETS[preset] ?? PRESETS["ai"];
   const tier = agent.tier;
   const statusActive = agent.status === 1;
   const ratingDisplay = (agent.rating / 100).toFixed(2);
@@ -185,7 +203,7 @@ export default function AgentProfilePage() {
                 <span>{SPEC_ICONS[spec] ?? "\uD83D\uDCC4"}</span>
                 <span className="text-sm capitalize" style={{ color: "#5a807a" }}>{spec}</span>
                 <span className={`text-sm font-bold bg-gradient-to-r ${TIER_COLORS[tier] ?? TIER_COLORS[0]} bg-clip-text text-transparent`}>
-                  {TIER_BADGES[tier] ?? ""} {DISPLAY_TIER_NAMES[tier] ?? TIER_NAMES[tier] ?? "Unknown"}
+                  {TIER_BADGES[tier] ?? ""} {DISPLAY_TIER_NAMES[tier] ?? "Unknown"}
                 </span>
               </div>
 
