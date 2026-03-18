@@ -16,6 +16,11 @@
       "MeritSBTV1_proxy": "0x375aC49E905bAd8aC7547AF1f2fD98EE4FBC2E9E",
       "MeritSBTV1_impl": "0x54F94D558EA1862b1a9ADd4f5010aA94c39C42d1",
       "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    },
+    "v2": {
+      "AgentRegistryV2_impl": "0xe54a1f4bF303b3d58AE5060c6e45e102b2F935Ff",
+      "AgentRegistryV2_proxy": "0x68C2390146C795879758F2a71a62fd114cd1E88d",
+      "upgradedAt": "2026-03-18"
     }
   },
   "base-mainnet": {
