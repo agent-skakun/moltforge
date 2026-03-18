@@ -138,7 +138,7 @@ contract AgentRegistryV1 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         bytes32 agentId,
         string calldata metadataURI,
         string calldata webhookUrl
-    ) external onlyOwner returns (uint256 numericId) {
+    ) external returns (uint256 numericId) {
         if (wallet == address(0)) revert ZeroAddress();
         if (agentId == bytes32(0)) revert InvalidAgentId();
         if (_walletToId[wallet] != 0) revert AlreadyRegistered();
