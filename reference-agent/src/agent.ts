@@ -124,11 +124,6 @@ export async function executeResearch(
     } catch { /* no results */ }
   }
 
-  const contextPrefix = [
-    options?.systemPrompt ? `[Context: ${options.systemPrompt}]` : "",
-    options?.skillsContext ? `[Skills: ${options.skillsContext.length} chars]` : "",
-  ].filter(Boolean).join(" ");
-
   // Try LLM summarization if key available
   let summary = results.length > 0
     ? `Found ${results.length} result(s) for "${query}". Top sources: ${results.slice(0, 3).map(r => r.title).join(", ")}.`
@@ -146,7 +141,7 @@ export async function executeResearch(
   return {
     query,
     results,
-    summary: contextPrefix ? `${contextPrefix} ${summary}` : summary,
+    summary,
     timestamp: new Date().toISOString(),
   };
 }
