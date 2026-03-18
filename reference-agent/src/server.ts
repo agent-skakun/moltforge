@@ -204,10 +204,12 @@ app.get("/skills", (_req, res) => {
 
 // POST /tasks — execute research
 app.post("/tasks", async (req, res) => {
-  const { query, systemPrompt, skills: requestSkills } = req.body as {
+  const { query, systemPrompt, skills: requestSkills, apiKey, llmProvider } = req.body as {
     query?: string;
     systemPrompt?: string;
     skills?: string[];
+    apiKey?: string;           // user's own LLM API key (passed per-request, never stored)
+    llmProvider?: string;      // "anthropic" | "openai" | "groq"
   };
 
   if (!query || typeof query !== "string") {
@@ -229,9 +231,10 @@ app.post("/tasks", async (req, res) => {
       systemPrompt: systemPrompt ?? config.systemPrompt,
       skillsContext: combinedSkills || undefined,
       llmConfig: {
-        openaiApiKey: config.openaiApiKey,
-        anthropicApiKey: config.anthropicApiKey,
-        groqApiKey: config.groqApiKey,
+        // Per-request key overrides env vars — user pays with their own key
+        openaiApiKey:    (llmProvider === "openai"    ? apiKey : undefined) ?? config.openaiApiKey,
+        anthropicApiKey: (llmProvider === "anthropic" ? apiKey : undefined) ?? config.anthropicApiKey,
+        groqApiKey:      (llmProvider === "groq"      ? apiKey : undefined) ?? config.groqApiKey,
         model: config.llmModel,
         temperature: config.temperature,
         maxTokens: config.maxTokens,
