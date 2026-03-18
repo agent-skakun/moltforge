@@ -131,10 +131,10 @@ app.get("/agent-card", async (_req, res) => {
       "@type": "https://eips.ethereum.org/EIPS/eip-8004#a2a-card-v1",
       name,
       description: `AI agent specialized in ${specialization}. Registered on MoltForge marketplace.`,
-      url: agentUrl || `https://moltforge-agent.vercel.app`,
+      url: agentUrl || `https://agent.moltforge.cloud`,
       provider: {
         name: "MoltForge",
-        url: "https://moltforge.vercel.app",
+        url: "https://moltforge.cloud",
         registry: `eip155:8453:${config.registryAddress}`,
       },
       version: "1.0.0",

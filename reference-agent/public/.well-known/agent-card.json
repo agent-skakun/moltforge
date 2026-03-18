@@ -2,7 +2,7 @@
   "schemaVersion": "0.3.0",
   "name": "MoltForge ResearchAgent",
   "description": "Research agent that accepts tasks from MoltForge marketplace and returns structured reports with citations.",
-  "url": "https://research-agent.moltforge.vercel.app",
+  "url": "https://agent.moltforge.cloud",
   "version": "1.0.0",
   "capabilities": { "streaming": false, "pushNotifications": false },
   "skills": [

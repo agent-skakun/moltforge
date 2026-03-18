@@ -84,7 +84,7 @@ export default function RegisterAgentPage() {
   const [language] = useState("EN");
   const [price, setPrice]             = useState("");
   const [hosting, setHosting]         = useState("railway");
-  const [webhookUrl, setWebhookUrl]   = useState("https://agent-production-f600.up.railway.app");
+  const [webhookUrl, setWebhookUrl]   = useState("https://agent.moltforge.cloud");
   const [webhookOpen, setWebhookOpen] = useState(true);
   const [mcpUrl, setMcpUrl]           = useState("");
   const [mcpList, setMcpList]         = useState<string[]>([]);
@@ -140,7 +140,7 @@ export default function RegisterAgentPage() {
   }, [spec]);
 
   // Sync config to reference-agent when skills/tools/spec change
-  const AGENT_URL = "https://moltforge-agent.vercel.app";
+  const AGENT_URL = "https://agent.moltforge.cloud";
   useEffect(() => {
     if (!agentName && !spec) return;
     const timer = setTimeout(() => {
@@ -197,7 +197,7 @@ export default function RegisterAgentPage() {
   const fetchA2aCard = async (url: string) => {
     setA2aLoading(true);
     try {
-      const endpoint = (url || "https://moltforge-agent.vercel.app").replace(/\/$/, "") + "/agent-card";
+      const endpoint = (url || "https://agent.moltforge.cloud").replace(/\/$/, "") + "/agent-card";
       const res = await fetch(endpoint);
       const data = await res.json();
       setA2aCardData(data);
@@ -295,7 +295,7 @@ export default function RegisterAgentPage() {
     const skillPaths = skills.length > 0 ? skills : [];
     const toolIds = tools.length > 0 ? tools : [];
     const finalUrl = deployMode === "hosted"
-      ? "https://agent-production-f600.up.railway.app"
+      ? "https://agent.moltforge.cloud"
       : (webhookUrl || "");
     writeContract({ address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
       functionName: "registerAgentV2",
@@ -920,7 +920,7 @@ export default function RegisterAgentPage() {
                   <div>
                     <SectionLabel>Deployment Mode</SectionLabel>
                     <div className="space-y-3">
-                      <button onClick={() => { setDeployMode("hosted"); setWebhookUrl("https://agent-production-f600.up.railway.app"); }}
+                      <button onClick={() => { setDeployMode("hosted"); setWebhookUrl("https://agent.moltforge.cloud"); }}
                         className="w-full flex items-start gap-4 p-4 rounded-xl text-left transition-all"
                         style={{ background: deployMode === "hosted" ? "#1db8a815" : "#060c0b",
                           border: `1px solid ${deployMode === "hosted" ? "#1db8a8" : "#1a2e2b"}` }}>
@@ -976,7 +976,7 @@ export default function RegisterAgentPage() {
                     <div className="px-4 py-3 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1db8a820" }}>
                       <div className="text-xs" style={{ color: "#3a5550" }}>
                         Active endpoint: <span style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
-                          https://agent-production-f600.up.railway.app
+                          https://agent.moltforge.cloud
                         </span>
                       </div>
                       <div className="text-xs mt-1" style={{ color: "#3a5550" }}>
@@ -1014,7 +1014,7 @@ export default function RegisterAgentPage() {
               <div>
                 <div className="text-xs font-medium uppercase tracking-widest mb-1" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>Agent URL</div>
                 <div className="text-xs break-all" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#5a807a" }}>
-                  {agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app"}
+                  {agentOnChainUrl || webhookUrl || "https://agent.moltforge.cloud"}
                 </div>
               </div>
             </div>
@@ -1031,7 +1031,7 @@ export default function RegisterAgentPage() {
                   style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f3", fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
                 />
                 <button
-                  onClick={() => runAgentTest(agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app")}
+                  onClick={() => runAgentTest(agentOnChainUrl || webhookUrl || "https://agent.moltforge.cloud")}
                   disabled={testLoading}
                   className="px-5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap"
                   style={{ background: testLoading ? "#0a1a17" : "#f0782822", border: `1px solid ${testLoading ? "#1a2e2b" : "#f07828"}`, color: testLoading ? "#3a5550" : "#f07828", cursor: testLoading ? "wait" : "pointer" }}>
@@ -1059,7 +1059,7 @@ export default function RegisterAgentPage() {
             {/* A2A Card */}
             <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #1a2e2b" }}>
               <button
-                onClick={() => a2aCardData ? setA2aCardOpen(o => !o) : fetchA2aCard(agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app")}
+                onClick={() => a2aCardData ? setA2aCardOpen(o => !o) : fetchA2aCard(agentOnChainUrl || webhookUrl || "https://agent.moltforge.cloud")}
                 className="w-full flex items-center justify-between px-6 py-3 text-sm font-semibold transition-all"
                 style={{ background: "#0a1a17", color: "#1db8a8" }}>
                 <span>📋 {a2aCardData ? (a2aCardOpen ? "Hide" : "View") : "View"} A2A Card (ERC-8004)</span>
@@ -1071,9 +1071,9 @@ export default function RegisterAgentPage() {
                 <div style={{ background: "#060c0b", borderTop: "1px solid #1a2e2b" }}>
                   <div className="flex justify-between items-center px-4 py-2" style={{ borderBottom: "1px solid #1a2e2b10" }}>
                     <span className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
-                      {(agentOnChainUrl || "https://moltforge-agent.vercel.app")}/agent-card
+                      {(agentOnChainUrl || "https://agent.moltforge.cloud")}/agent-card
                     </span>
-                    <a href={`${(agentOnChainUrl || "https://moltforge-agent.vercel.app").replace(/\/$/, "")}/agent-card`}
+                    <a href={`${(agentOnChainUrl || "https://agent.moltforge.cloud").replace(/\/$/, "")}/agent-card`}
                       target="_blank" rel="noopener noreferrer"
                       className="text-xs" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
                       ↗ open
@@ -1186,7 +1186,7 @@ export default function RegisterAgentPage() {
                   style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f3", fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
                 />
                 <button
-                  onClick={() => runAgentTest(agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app")}
+                  onClick={() => runAgentTest(agentOnChainUrl || webhookUrl || "https://agent.moltforge.cloud")}
                   className="px-4 py-2 rounded-lg text-xs font-semibold"
                   style={{ background: "#f0782822", border: "1px solid #f07828", color: "#f07828" }}>
                   Re-run
