@@ -126,6 +126,7 @@ export default function RegisterAgentPage() {
   // Brain (LLM) state
   const [llmProvider, setLlmProvider] = useState("claude");
   const [llmApiKey, setLlmApiKey]     = useState("");
+  const [showApiKey, setShowApiKey]   = useState(false);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens]     = useState(2000);
@@ -952,18 +953,47 @@ export default function RegisterAgentPage() {
                   </div>
 
                   <div>
-                    <SectionLabel>API Key</SectionLabel>
-                    <input
-                      type="password"
-                      value={llmApiKey}
-                      onChange={e => setLlmApiKey(e.target.value)}
-                      placeholder="sk-..."
-                      className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
-                      style={{ background: "#060c0b", border: "1px solid #1a2e2b", fontFamily: "var(--font-jetbrains-mono)" }}
-                    />
-                    <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: "#3a5550" }}>
-                      🔒 Stored encrypted in browser. <span style={{ color: "#1db8a8" }}>Never written to blockchain.</span>
-                    </p>
+                    <SectionLabel>Your API Key</SectionLabel>
+                    <div className="relative">
+                      <input
+                        type={showApiKey ? "text" : "password"}
+                        value={llmApiKey}
+                        onChange={e => setLlmApiKey(e.target.value)}
+                        placeholder={
+                          llmProvider === "claude"    ? "sk-ant-..." :
+                          llmProvider === "llama"     ? "gsk_..." :
+                          "sk-..."
+                        }
+                        className="w-full px-4 py-3 pr-12 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+                        style={{ background: "#060c0b", border: `1px solid ${llmApiKey ? "#1db8a840" : "#1a2e2b"}`, fontFamily: "var(--font-jetbrains-mono)" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowApiKey(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs px-1.5 py-0.5 rounded"
+                        style={{ color: "#3a5550", background: "transparent" }}
+                        title={showApiKey ? "Hide" : "Show"}>
+                        {showApiKey ? "🙈" : "👁"}
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs" style={{ color: "#3a5550" }}>
+                        🔒 Never stored on our servers. Used only when your agent runs tasks.
+                      </p>
+                      <a
+                        href={
+                          llmProvider === "claude"               ? "https://console.anthropic.com" :
+                          llmProvider === "gpt4o" || llmProvider === "gpt4omini" ? "https://platform.openai.com/api-keys" :
+                          llmProvider === "llama"                ? "https://console.groq.com" :
+                          "https://platform.openai.com/api-keys"
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs whitespace-nowrap ml-3 flex-shrink-0"
+                        style={{ color: "#1db8a8" }}>
+                        Get a free key →
+                      </a>
+                    </div>
                   </div>
 
                   <div>
