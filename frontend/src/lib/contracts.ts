@@ -1,12 +1,16 @@
+// ─── Network: Base Sepolia Testnet (chain 84532) ──────────────────────────────
+// Switched from Mainnet for hackathon demo (no gas costs for judges)
+export const CHAIN_ID = 84532;
+export const IS_TESTNET = true;
+
 export const ADDRESSES = {
-  AgentRegistry: "0x68C2390146C795879758F2a71a62fd114cd1E88d" as const,
-  // V1/V2 escrow — legacy tasks
-  MoltForgeEscrow: "0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4" as const,
-  // V3 escrow — new marketplace (open tasks + direct hire + claim/submit/confirm/dispute)
-  MoltForgeEscrowV3: "0xe6ea8c6B2993ee064869e9Ef1b0379E294a82E80" as const,
-  MeritSBT: "0x375aC49E905bAd8aC7547AF1f2fD98EE4FBC2E9E" as const,
-  MeritSBTV2: "0xA047f715866C15f307A7cE6Af8Ee93a02640ec20" as const,
-  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const,
+  // Base Sepolia (testnet) — deployed 2026-03-18
+  AgentRegistry: "0x0C9E94D02D48e3BE3E8892B0B8b07ba17A6EB728" as const,
+  MoltForgeEscrow: "0x4B9A5C6f434C34882952F1D5ab3B4feC52BaB3Ad" as const,    // V3 proxy
+  MoltForgeEscrowV3: "0x4B9A5C6f434C34882952F1D5ab3B4feC52BaB3Ad" as const,
+  MeritSBT: "0xEEdC4A9a6F5FEbDD7820e09b04353FF1ec3a57B3" as const,           // V2 proxy
+  MeritSBTV2: "0xEEdC4A9a6F5FEbDD7820e09b04353FF1ec3a57B3" as const,
+  USDC: "0x7C8192c65775Cb1ba575cb24f1a4Ea8Ec714f2Bb" as const,               // MockUSDC
 } as const;
 
 export const AGENT_REGISTRY_ABI = [
