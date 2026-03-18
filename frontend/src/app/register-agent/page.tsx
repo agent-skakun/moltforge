@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { keccak256, toBytes } from "viem";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
-import { HumanoidFigure } from "@/components/HumanoidFigure";
-import { PRESETS, SKIN_COLORS, FaceParams } from "@/components/AvatarFace";
+import { HumanoidFigure, AVATARS as HUMANOID_AVATARS } from "@/components/HumanoidFigure";
+import { AvatarFace, PRESETS, SKIN_COLORS, FaceParams } from "@/components/AvatarFace";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -72,8 +72,8 @@ export default function RegisterAgentPage() {
   const { address } = useAccount();
 
   // Builder state
-  const [avatarId, setAvatarId]       = useState("developer");
-  const [faceParams, setFaceParams]   = useState<FaceParams>(PRESETS["developer"]);
+  const [avatarId, setAvatarId]       = useState("ai");
+  const [faceParams, setFaceParams]   = useState<FaceParams>(PRESETS["ai"]);
   const [agentName, setAgentName]     = useState("");
   const [spec, setSpec]               = useState("coding");
   const [skills, setSkills]           = useState<string[]>([]);
@@ -111,6 +111,7 @@ export default function RegisterAgentPage() {
   // UI
   const [activeZone, setActiveZone]   = useState<Zone>(null);
   const [hoverZone, setHoverZone]     = useState<Zone>(null);
+  const [warnDismissed, setWarnDismissed] = useState(false);
 
   // Contract
   const { data: owner } = useReadContract({
@@ -173,16 +174,18 @@ export default function RegisterAgentPage() {
         <p className="text-forge-white/40 text-sm">Click on any body part to customize · Changes appear live</p>
       </div>
 
-      {!isOwner && (
-        <div className="max-w-lg mx-auto mb-6 bg-yellow-900/20 border border-yellow-700/40 rounded-xl p-3 text-yellow-400 text-sm flex gap-2">
-          <span>⚠️</span><span>Owner-only on-chain action. Configure and share with the owner to deploy.</span>
+      {!isOwner && !warnDismissed && (
+        <div className="max-w-lg mx-auto mb-4 bg-yellow-900/20 border border-yellow-700/40 rounded-xl p-3 text-yellow-400 text-sm flex gap-2 items-start">
+          <span>⚠️</span>
+          <span className="flex-1">Owner-only on-chain action. Configure and share with the owner to deploy.</span>
+          <button onClick={() => setWarnDismissed(true)} className="ml-2 text-yellow-400/60 hover:text-yellow-400 text-lg leading-none flex-shrink-0" style={{ lineHeight: 1 }}>×</button>
         </div>
       )}
 
       <div className="flex items-start justify-center gap-0 relative max-w-6xl mx-auto px-6" style={{ overflowX: "visible" }}>
 
         {/* ── CENTER: Agent Figure ── */}
-        <div className="flex-shrink-0 flex flex-col items-center" style={{ width: 320, overflow: "visible" }}>
+        <div className="flex-shrink-0 flex flex-col items-center" style={{ width: 320, overflow: "visible", transition: "transform 0.3s ease", transform: activeZone ? "translateX(-16px)" : "translateX(0)" }}>
           {/* Agent name above figure */}
           <div className="mb-4 text-center min-h-[2rem]">
             <span className="text-xl font-bold" style={{ fontFamily: "var(--font-space-grotesk)", color: selectedSpec.color, letterSpacing: "-0.04em", textShadow: `0 0 20px ${selectedSpec.color}60` }}>
@@ -206,7 +209,7 @@ export default function RegisterAgentPage() {
           <div className="flex flex-wrap justify-center gap-2 mt-4">
             {(Object.keys(ZONE_META) as Zone[]).filter(Boolean).map(z => (
               <button key={z} onClick={() => setActiveZone(activeZone === z ? null : z!)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all"
                 style={{ background: activeZone === z ? "#1db8a822" : "#0a1a17", border: `1px solid ${activeZone === z ? "#1db8a8" : "#1a2e2b"}`, color: activeZone === z ? "#1db8a8" : "#6b8f8a" }}>
                 {ZONE_META[z!]!.emoji} {ZONE_META[z!]!.title}
               </button>
@@ -215,7 +218,7 @@ export default function RegisterAgentPage() {
         </div>
 
         {/* ── RIGHT: Panel ── */}
-        <div className="flex-1 ml-8" style={{ minHeight: 520, position: "sticky", top: 72, alignSelf: "flex-start" }}>
+        <div style={{ width: activeZone ? 380 : 0, minWidth: activeZone ? 320 : 0, maxWidth: 420, flexShrink: 0, transition: "width 0.3s ease, min-width 0.3s ease", overflow: "hidden", position: "sticky", top: 72, alignSelf: "flex-start" }}>
           {!activeZone ? (
             <div className="flex flex-col items-center justify-center h-full text-center" style={{ color: "#1a2e2b", minHeight: 400 }}>
               <div className="text-6xl mb-4 opacity-30">👈</div>
@@ -320,18 +323,28 @@ export default function RegisterAgentPage() {
 
                   {/* Preset quick-select */}
                   <div>
-                    <SectionLabel>Preset</SectionLabel>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.keys(PRESETS).map(pid => (
-                        <button key={pid}
-                          onClick={() => { setAvatarId(pid); setFaceParams({...PRESETS[pid]}); }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize"
-                          style={{
-                            background: avatarId === pid ? "#1db8a822" : "#060c0b",
-                            border: `1px solid ${avatarId === pid ? "#1db8a8" : "#1a2e2b"}`,
-                            color: avatarId === pid ? "#1db8a8" : "#6b8f8a"
+                    <SectionLabel>Choose Identity</SectionLabel>
+                    <div className="flex flex-wrap gap-3">
+                      {HUMANOID_AVATARS.map(av => (
+                        <button key={av.id}
+                          onClick={() => { setAvatarId(av.id); setFaceParams({...PRESETS[av.id]}); }}
+                          className="flex flex-col items-center gap-1 transition-all"
+                          style={{ minWidth: 52 }}>
+                          <div style={{
+                            width: 52, height: 52, borderRadius: "50%",
+                            border: `2.5px solid ${avatarId === av.id ? "#1db8a8" : "#1a2e2b"}`,
+                            background: "#060c0b",
+                            boxShadow: avatarId === av.id ? "0 0 14px #1db8a870" : "none",
+                            overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
+                            transition: "all 0.2s",
                           }}>
-                          {pid.replace(/-/g," ")}
+                            <AvatarFace params={PRESETS[av.id] || PRESETS["ai"]} size={52} />
+                          </div>
+                          <span style={{
+                            fontSize: "0.6rem", fontFamily: "var(--font-jetbrains-mono)",
+                            color: avatarId === av.id ? "#1db8a8" : "#5a807a",
+                            textTransform: "uppercase", letterSpacing: "0.06em",
+                          }}>{av.label}</span>
                         </button>
                       ))}
                     </div>
