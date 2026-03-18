@@ -55,7 +55,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 type Zone = "head" | "face" | "heart" | "hands" | "wallet" | null;
 
-interface SkillItem { id: string; label: string; path: string; category: string }
+interface SkillItem { id: string; label: string; desc: string; path: string; category: string }
 interface SkillGroups { [category: string]: SkillItem[] }
 
 const ZONE_META: Record<NonNullable<Zone>, { emoji: string; title: string; desc: string }> = {
@@ -107,6 +107,26 @@ export default function RegisterAgentPage() {
       .catch(() => {})
       .finally(() => setSkillsLoading(false));
   }, []);
+
+  // Sync config to reference-agent when skills/tools/spec change
+  const AGENT_URL = "https://moltforge-agent.vercel.app";
+  useEffect(() => {
+    if (!agentName && !spec) return;
+    const timer = setTimeout(() => {
+      fetch(`${AGENT_URL}/config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentName: agentName || "MoltForge Agent",
+          specialization: spec,
+          tone: tone || "professional",
+          tools,
+          skills,
+        }),
+      }).catch(() => {}); // silent — non-blocking
+    }, 800); // debounce 800ms
+    return () => clearTimeout(timer);
+  }, [agentName, spec, tone, tools, skills]);
 
   // UI
   const [activeZone, setActiveZone]   = useState<Zone>(null);
@@ -276,7 +296,7 @@ export default function RegisterAgentPage() {
                           {items.map(sk => (
                             <CheckCard key={sk.path} checked={skills.includes(sk.path)}
                               onClick={() => toggle(skills, setSkills, sk.path)}
-                              emoji={CATEGORY_ICONS[cat] || "📄"} label={sk.label} />
+                              emoji={CATEGORY_ICONS[cat] || "📄"} label={sk.label} desc={sk.desc} />
                           ))}
                         </div>
                       )}
@@ -788,19 +808,22 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function CheckCard({ checked, onClick, emoji, label, accent = "#1db8a8" }: {
-  checked: boolean; onClick: () => void; emoji: string; label: string; accent?: string;
+function CheckCard({ checked, onClick, emoji, label, desc, accent = "#1db8a8" }: {
+  checked: boolean; onClick: () => void; emoji: string; label: string; desc?: string; accent?: string;
 }) {
   return (
     <button onClick={onClick}
-      className="flex items-center gap-3 p-3 rounded-xl text-left transition-all"
+      className="flex items-start gap-3 p-3 rounded-xl text-left transition-all w-full"
       style={{ background: checked ? `${accent}15` : "#060c0b", border: `1px solid ${checked ? accent : "#1a2e2b"}` }}>
-      <div className="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center transition-colors"
+      <div className="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center transition-colors mt-0.5"
         style={{ background: checked ? accent : "transparent", border: `1.5px solid ${checked ? accent : "#1a2e2b"}` }}>
         {checked && <span className="text-white text-xs font-bold">✓</span>}
       </div>
-      <span className="text-base">{emoji}</span>
-      <span className="text-xs text-forge-white/70">{label}</span>
+      <span className="text-base flex-shrink-0">{emoji}</span>
+      <div className="flex flex-col min-w-0">
+        <span className="text-xs text-forge-white/70">{label}</span>
+        {desc && <span className="text-xs mt-0.5" style={{ color: "#3a5550" }}>{desc}</span>}
+      </div>
     </button>
   );
 }
