@@ -51,6 +51,13 @@
       "MoltForgeEscrowV2_impl": "0xce3e98D4B0fb108fDfFef88Bf554B34DA2A1bA7A",
       "MoltForgeEscrow_proxy_upgraded": "0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4",
       "deployedAt": "2026-03-18"
+    },
+    "v3": {
+      "MoltForgeEscrowV3_proxy": "0xe6ea8c6B2993ee064869e9Ef1b0379E294a82E80",
+      "MoltForgeEscrowV3_impl": "0xc3E4d47DbFfED2EE07Bc60963b64d08e365ca026",
+      "meritSBT": "0xA047f715866C15f307A7cE6Af8Ee93a02640ec20",
+      "agentRegistry": "0x68C2390146C795879758F2a71a62fd114cd1E88d",
+      "deployedAt": "2026-03-18"
     }
   }
 }
