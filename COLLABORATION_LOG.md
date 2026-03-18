@@ -29,154 +29,235 @@
 
 **BigBoss response:** Agreed. Proposed pivoting to partner tracks where competition is lower.
 
-**PROMETHEUS tasked** to research all partner tracks and bounties.
+---
 
-**Key finding by PROMETHEUS:**
-- 4 main tracks: Agents that Pay / Trust / Cooperate / Keep Secrets
-- 20+ partner bounties totaling ~$75K+
-- Largest: Protocol Labs $16,004 (two bounties)
+## March 13, 2026 — MoltForge concept locked
 
-**Decision:** Explore partner tracks instead of main tracks.
+**Pivot to MoltForge:** AI Agent Labor Marketplace on Base blockchain.
+
+**Core insight:** Instead of just a reputation system, build the full marketplace where:
+1. Anyone can register an AI agent with on-chain identity
+2. Clients post tasks with USDC reward locked in escrow
+3. Agents execute and deliver results
+4. Payment releases only after client confirms delivery
+5. Merit SBT (soulbound token) records reputation on-chain
+
+**Stack finalized:**
+- Solidity + Foundry (contracts)
+- Next.js 14 + wagmi v2 + RainbowKit v2 + Tailwind (frontend)
+- Base Mainnet (chainId 8453) — cheap gas, Coinbase ecosystem
+- USDC: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+- Vercel (frontend hosting)
 
 ---
 
-## March 13, 2026 — Identity Problem Discovery
+## March 14–16, 2026 — Smart Contract Development
 
-**SKAKUN asked:** What is an agent? How does an agent on my Mac mini differ from the same agent on my laptop?
+**DEVMUS built and deployed:**
 
-**BigBoss explained:** Currently — no difference. An agent is just a process. No persistent identity.
+### V0 (initial)
+- `AgentRegistry.sol` — wallet → on-chain agent registration
+- `AgentForgeEscrow.sol` — USDC escrow with task lifecycle
+- `MeritSBT.sol` — ERC-5192 soulbound tokens (Bronze/Silver/Gold/Platinum tiers)
 
-**SKAKUN raised the key insight:** "I can give the same private key to 10 agents — they'd all appear as one agent on-chain."
+### V1 (UUPS Upgradeable)
+- `AgentRegistryV1.sol` — initialize() instead of constructor, UUPS proxy
+- `MoltForgeEscrowV1.sol` — non-upgradeable ReentrancyGuard (OZ v5), UUPS proxy
+- `MeritSBTV1.sol` — soulbound tier certificates, UUPS proxy
 
-**BigBoss acknowledged:** This is the fundamental Sybil problem in reverse. It's an unsolved problem — and exactly what this hackathon is about.
+**All deployed to Base Mainnet and Base Sepolia:**
+- AgentRegistryV1 proxy: `0x68C2390146C795879758F2a71a62fd114cd1E88d`
+- MoltForgeEscrowV1 proxy: `0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4`
+- MeritSBTV1 proxy: `0x375aC49E905bAd8aC7547AF1f2fD98EE4FBC2E9E`
 
-**Significance:** SKAKUN independently identified the core problem that ERC-8004 attempts to solve. This became a foundation for our project thinking.
-
----
-
-## March 13–15, 2026 — Marketplace Idea & Validation
-
-**SKAKUN proposed:** "Agent Marketplace" — like Amazon/OLX but for AI agents.
-
-**BigBoss brainstormed:** Why do human marketplaces win? Trust, choice, guarantees, comparison. Agents need the same things.
-
-**PROMETHEUS researched:** 10 existing players found (Google Cloud, AWS, Virtuals, Olas, Fetch.ai, etc.)
-
-**Key gap identified:**
-- All enterprise solutions = walled gardens
-- All crypto solutions = niche, single-ecosystem
-- No cross-platform, trustless, open marketplace exists
-
-**SKAKUN's insight on identity:** "A private key can be shared across 10 agents — making reputation meaningless without a deeper identity layer."
-
-**Pivot:** Not a marketplace UI — but a **protocol** for trustless agent-to-agent commerce (ERC-8004 + escrow + reputation).
+**Test coverage: 84.87%, 72/72 tests passing**
 
 ---
 
-## March 16, 2026 — Rules Analysis & Project Start
+## March 17, 2026 — Frontend Development
 
-**Friend shared hackathon rules summary. Key requirements:**
-1. Working demo/prototype required — not just a concept
-2. Agent must be a real contributor (design, code, research, coordination)
-3. On-chain activity = bonus (ERC-8004 identity, contracts, attestations)
-4. Open source mandatory before deadline
-5. conversationLog required — document the collaboration journey
+**DEVMUS built Next.js 14 frontend with 6 pages:**
+- `/` — landing page (brandbook by LEONARDO)
+- `/register-agent` — Agent Builder
+- `/marketplace` — browse on-chain agents
+- `/create-task` — post task with USDC reward
+- `/dashboard` — manage your agents and tasks
+- `/agent/[id]` — individual agent profile
 
-**BigBoss assessment:**
-- We already have real agent collaboration (this log is proof)
-- Need: working demo, ERC-8004 on-chain component, agent.json, agent_log.json
-- 6 days remaining
-
-**Decision:** Start building today. GitHub repo created: https://github.com/agent-skakun/moltforge
-
-**Open question:** Final project scope — still deciding between full marketplace protocol vs. focused Protocol Labs bounty demo.
+**Tech decisions:**
+- wagmi v2 + RainbowKit v2.2.10 for wallet connection
+- `locale="en"` in RainbowKit
+- AppShell pattern: Navbar on all pages including landing
 
 ---
 
-*Log maintained by BigBoss. Updated in real-time as decisions are made.*
+## March 17, 2026 — Agent Builder (Sims Character Creator concept)
 
-## March 17, 2026 — Project Renamed to MoltForge
+**Core product insight:** MoltForge is not a form — it's a Character Creator for AI agents.
 
-**BigBoss renamed project:** AgentForge → MoltForge
-- Repo: https://github.com/agent-skakun/moltforge
-- Notion HQ: https://www.notion.so/MoltForge-Project-HQ-3261e69ad944814a8c32d6328330134f
-- DEVMUS tasked: contracts Day 1-2 (AgentRegistry.sol + MoltForgeEscrow.sol + MeritSBT.sol)
-- Architecture: BYOI (Bring Your Own Infrastructure), 2.5% protocol fee
-- Deadline: March 22, 2026 23:59 PST
-
----
-
-## March 17, 2026 (evening) — Frontend Sprint & Agent Builder
-
-### What was built today
-
-**DEVMUS shipped the full frontend:**
-- Next.js 14 app deployed to Vercel: https://moltforge.vercel.app
-- Pages: `/` (landing), `/register-agent` (Agent Builder), `/marketplace`, `/dashboard`
-- Smart contracts deployed on Base — AgentRegistry, MoltForgeEscrow, MeritSBT
-- Reference Agent implemented: ERC-8004 compliant ResearchAgent with A2A card, `/agent.json`, real on-chain reads via viem
-
-**LEONARDO shipped the landing page:**
-- Full HTML/CSS landing with MoltForge brand system
-- Sections: Hero, How it Works, Features, Agent Tiers
-- Integrated as the Next.js homepage
-
-**BALABOLIK** wrote all landing copy — Hero, How it Works (Client + Agent Creator flows), Features, Tiers.
-
----
-
-### Key design decision — Agent Builder as Character Creator
-
-**SKAKUN asked:** What is the Agent Builder actually doing? Where do skills go?
-
-**BigBoss explained the full flow:**
-1. User configures agent in UI (avatar, name, specialization, skills, tools, tone, hosting)
-2. Transaction goes to Base blockchain → agent registered in AgentRegistry → gets unique on-chain ID
-3. Docker container spins up with those settings — real bot, not just a database record
-4. Selected skill `.md` files from `moltforge-skills` repo get copied into `/skills/` inside the container
-5. Agent reads its skills at runtime
-
-**SKAKUN's insight:** The more parameters in the avatar, the fewer duplicate agents — each combination becomes unique. Like CryptoPunks but functional.
-
-**This became the core product insight:** MoltForge is not a form — it's a Character Creator for AI agents. Identity is visual + functional + on-chain.
-
----
-
-### moltforge-skills repo discovered & connected
-
-**Repo:** https://github.com/agent-skakun/moltforge-skills
-
-Skills are `.md` files organized by category:
-- `blockchain/` — ERC-8004, ETH
-- `data-analytics/` — CoinGecko, CMC, DeFiLlama, Dune, The Graph
-- `defi-trading/` — Aave, Binance, Polymarket, Uniswap
-- `prediction-markets/` — Polymarket monitor
-- `research/` — Twitter monitor, Web search
-- `ai-compute/` — Venice
-- `infrastructure/` — Bankr, Filecoin/IPFS, x402
-
-**Decision:** Connect skills repo to Agent Builder UI. Selected skills get downloaded into Docker container at agent creation time. Agent reads them as context/instructions.
-
-**DEVMUS tasked** to pull skill list from GitHub API and render it in UI grouped by category.
-
----
-
-### Avatar Builder — evolution of thinking
-
-**Problem:** Initial avatar approach (illustrated SVG portraits, then DiceBear, then real photos) all looked bad or inconsistent.
-
-**SKAKUN's direction:** Build a proper SVG layer-based face constructor — like Sims/Bitmoji.
+**SKAKUN's direction:** Build SVG layer-based face constructor — like Sims/Bitmoji.
 
 **Final spec — 500M+ unique combinations:**
 
-Face layers: faceShape (6), skinColor (8), eyes (8 shapes × 6 colors), eyebrows (6), nose (6), mouth (6), ears (4), aging (3), freckles (3), scar (4)
+Face: faceShape (6), skinColor (8), eyes (8×6), eyebrows (6), nose (6), mouth (6), aging (3), freckles (3)
+Hair: hairstyle (15+), hairColor (8+), beard (8 variants)
+Accessories: glasses (6×8), earrings (5×6), hat (8×6)
 
-Hair: hairstyle (15+), hairColor (8 + highlights), beard (8 variants)
+**Result:** `AvatarFace.tsx` — 20+ parameters, clean illustrated portrait style (Notion/Linear aesthetic), zero external dependencies.
 
-Items with color per item: glasses (6 shapes × 8 frame colors), earrings (5 × 6 colors), hat (8 × 6 colors), clothing top (6 × 8 colors), piercing (4 options), tattoo (6 options), necklace (4 × 4 colors)
+**Layout:** Two-column Sims Character Creator — humanoid SVG figure on left (click body parts to open panels), customization panel on right.
 
-**Why this matters:** Every agent gets a visually unique identity derived from their configuration. The combination is hashed and stored on-chain — verifiable, non-duplicable, meaningful.
+**Zones:** Identity / Knowledge / Specialization / Tools / Settings / Brain / Deploy
 
-**Workflow set:** DEVMUS builds → LEONARDO reviews as designer → DEVMUS implements feedback → deploy.
+---
 
-**BigBoss set up a 10-minute cron** to monitor Avatar Builder progress automatically and trigger LEONARDO review when base version is ready.
+## March 17–18, 2026 — moltforge-skills repo connected
+
+**Repo:** https://github.com/agent-skakun/moltforge-skills
+
+Skills as `.md` files organized by category (blockchain, defi-trading, data-analytics, infrastructure, prediction-markets, research, ai-compute).
+
+**Knowledge zone (Brain/HEAD panel):** GitHub API pulls skill list → renders grouped checkboxes → selected skills stored on-chain in `AgentRegistryV2.skills[]`
+
+---
+
+## March 18, 2026 — Major features shipped
+
+### AgentRegistryV2 — Extended on-chain metadata
+
+Upgraded proxy to V2 (backwards compatible storage):
+- `avatarHash` (bytes32) — keccak256(JSON.stringify(faceParams)) stored on-chain
+- `skills[]` — array of skill paths from moltforge-skills repo
+- `tools[]` — external tool integrations
+- `agentUrl` — public endpoint for the agent
+
+### Reference Agent — Production deployment
+
+A real working AI agent deployed as reference implementation:
+
+**Vercel:** `https://moltforge-agent.vercel.app` (demo, Wikipedia fallback)  
+**Railway:** `https://agent-production-f600.up.railway.app` (production, DDG search works)
+
+**Endpoints:**
+- `GET /health` — status check
+- `POST /tasks` — execute research task, returns structured report
+- `GET /agent.json` — ERC-8004 agent registration card
+- `GET /agent-card` — A2A card per ERC-8004 standard
+- `GET /.well-known/agent-card.json` — standard well-known location
+- `POST /config` — update agent configuration
+- `GET /skills` — list loaded skill files
+
+**Search strategy:** DuckDuckGo lite → DuckDuckGo html → Wikipedia Search API fallback
+
+### Brain + Deploy sections in Agent Builder
+
+**Brain zone (🤖):**
+- LLM Provider selector: Claude 3.5 Sonnet / GPT-4o / GPT-4o Mini / Llama 3.3 70B (Groq) / Custom
+- API Key field (password input, encrypted in localStorage — never on-chain)
+- System Prompt textarea with auto-fill based on specialization
+- Model parameters (collapsed): Temperature slider (0–1), Max tokens
+
+**Deploy zone (🚀):**
+- MoltForge Hosted — Railway deployment, ~$5/mo, auto-configured URL
+- Self-hosted — custom URL, must implement POST /tasks + GET /health
+
+**LLM integration in reference-agent:**
+- Supports OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY env variables
+- `summarizeWithLLM()` — tries OpenAI/Groq (same API format) then Anthropic
+- Falls back to keyword summary if no key or LLM unavailable
+- SYSTEM_PROMPT env variable for custom agent personality
+
+### Task flow (end-to-end)
+
+1. Client creates task: fills description + selects agent + sets USDC reward + deadline
+2. USDC approval → `createTask()` → escrow locks funds
+3. `descriptionCID` = base64(JSON{query, agentId, agentUrl, reward})
+4. After tx confirmed → auto POST `{agentUrl}/tasks` with `{id, query, reward, clientAddress}`
+5. Agent processes and delivers result
+6. Client sees result in Dashboard → confirms delivery with 1–5★ rating
+7. `releasePaymentWithScore(taskId, score)` → USDC released to agent → Merit minted
+
+### MeritSBTV2 + MoltForgeEscrowV2 — Deployed March 18
+
+**MeritSBTV2:** Weighted reputation system (not just SBT tiers)
+- `mintMerit(agentId, taskId, score, rewardAmount)` — only callable by Escrow
+- Weighted average: `sum(score × reward) / sum(reward)` — big jobs matter more
+- Anti-spam: one rating per task, minimum 1 USDC reward
+- `getReputation(agentId)` → (weightedScore, totalJobs, totalVolume, tier)
+- Tiers: Bronze ≥1 job, Silver ≥10 jobs + score≥3.5, Gold ≥50 + score≥4.0 + vol≥100 USDC, Platinum ≥200 + score≥4.5 + vol≥1000 USDC
+
+**MoltForgeEscrowV2:** `releasePaymentWithScore(taskId, score)` → auto-calls `mintMerit()`
+
+**Base Mainnet deployments (March 18, 2026):**
+- MeritSBTV2 proxy: `0xA047f715866C15f307A7cE6Af8Ee93a02640ec20`
+- MeritSBTV2 impl: `0xBEDF9B1390bbC21980057eCdBd7dD5FB54AF78aF`
+- MoltForgeEscrowV2 impl: `0xce3e98D4B0fb108fDfFef88Bf554B34DA2A1bA7A`
+- MoltForgeEscrow proxy (upgraded): `0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4`
+
+### Marketplace — On-chain agent directory
+
+- Reads `agentCount` from AgentRegistry
+- Batch `useReadContracts`: `getAgentExtended` (V2) + `getAgent` (V1) fallback
+- AgentCard: SVG AvatarFace portrait, online status, tier badge, Merit score
+- LLM provider badge: 🟣 Claude / 🟢 GPT-4o / 🟡 Llama / ⚫ Custom
+- Skills tags (first 4 + overflow count)
+- ▶ Test Agent — inline POST /tasks with result preview
+- A2A Card button → `/agent-card` endpoint
+- Filters: specialization tabs + text search
+- Hire button → `/create-task?agentId=N`
+
+### Domain
+
+- Production: **https://moltforge.cloud**
+- Agent endpoint: **https://agent-production-f600.up.railway.app**
+- `agent.moltforge.cloud` → pending DNS CNAME configuration in Namecheap
+
+---
+
+## Architecture Summary
+
+```
+User (browser)
+    ↕ wagmi/RainbowKit
+Next.js 14 Frontend (moltforge.cloud)
+    ↕ viem/ethers
+Base Mainnet Smart Contracts:
+    AgentRegistryV2  0x68C2... (UUPS proxy)
+    MoltForgeEscrowV2  0x85C0... (UUPS proxy, upgraded)
+    MeritSBTV2  0xA047... (new proxy, weighted reputation)
+    USDC  0x8335...
+
+Reference Agent (agent-production-f600.up.railway.app)
+    POST /tasks → DDG search → LLM summary (if API key set)
+    GET /agent-card → ERC-8004 A2A card
+    GET /agent.json → registration data
+```
+
+---
+
+## Key Technical Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| UUPS proxy pattern | Upgradeable contracts without migration |
+| btoa(unescape(encodeURIComponent(str))) | Emoji-safe base64 for metadataURI |
+| `foreignObject` outside `<g opacity>` | Face always renders regardless of panel state |
+| `via_ir = true` in foundry.toml | Fixes stack-too-deep with 8-param functions |
+| Wikipedia API fallback | Works on all hosting (DDG blocks Vercel IPs) |
+| API keys in localStorage only | Security — never on-chain, encrypted (base64) |
+| Weighted merit (reward × score) | Large jobs count more than small ones |
+| Auto POST /tasks after createTask tx | Closes the task flow loop without extra UX step |
+
+---
+
+## What Makes MoltForge Different
+
+1. **Real agents** — not a form that pretends to deploy agents. Reference agent actually runs on Railway, accepts tasks, returns structured reports.
+
+2. **On-chain identity** — avatarHash (keccak256 of SVG params) stored in AgentRegistryV2. Every agent's appearance is cryptographically committed.
+
+3. **Verified reputation** — Merit is earned per task, weighted by reward amount. Can't be gamed (one rating per task, minimum reward, only Escrow can mint).
+
+4. **ERC-8004 compatible** — A2A card follows the emerging standard for AI agent identity and capability declaration.
+
+5. **Skills as context** — selected skill `.md` files from moltforge-skills repo get loaded as agent context at runtime, shaping behavior without hardcoding.

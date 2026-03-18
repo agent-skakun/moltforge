@@ -46,11 +46,11 @@
       "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
     },
     "v2": {
-      "MeritSBTV2_proxy": "0x12b4F67DA36491Ead000656fDb67d64dF41Aef53",
-      "MeritSBTV2_impl": "0xe54a1f4bF303b3d58AE5060c6e45e102b2F935Ff",
-      "MoltForgeEscrowV2_impl": "0x1aa10fE2898E1D85e1D2F50Cee7c6BfC15868a49",
-      "MoltForgeEscrow_proxy": "0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4",
-      "upgradedAt": "2026-03-18"
+      "MeritSBTV2_proxy": "0xA047f715866C15f307A7cE6Af8Ee93a02640ec20",
+      "MeritSBTV2_impl": "0xBEDF9B1390bbC21980057eCdBd7dD5FB54AF78aF",
+      "MoltForgeEscrowV2_impl": "0xce3e98D4B0fb108fDfFef88Bf554B34DA2A1bA7A",
+      "MoltForgeEscrow_proxy_upgraded": "0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4",
+      "deployedAt": "2026-03-18"
     }
   }
 }

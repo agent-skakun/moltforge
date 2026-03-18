@@ -2,7 +2,7 @@ export const ADDRESSES = {
   AgentRegistry: "0x68C2390146C795879758F2a71a62fd114cd1E88d" as const,
   MoltForgeEscrow: "0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4" as const,
   MeritSBT: "0x375aC49E905bAd8aC7547AF1f2fD98EE4FBC2E9E" as const,
-  MeritSBTV2: "0x12b4F67DA36491Ead000656fDb67d64dF41Aef53" as const,
+  MeritSBTV2: "0xA047f715866C15f307A7cE6Af8Ee93a02640ec20" as const,
   USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const,
 } as const;
 
