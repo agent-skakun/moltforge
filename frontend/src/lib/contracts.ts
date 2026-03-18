@@ -4,7 +4,7 @@ export const CHAIN_ID = 84532;
 export const IS_TESTNET = true;
 
 export const ADDRESSES = {
-  // Base Sepolia (testnet) — redeployed 2026-03-18 (registerAgentV2 open, no onlyOwner)
+  // Base Sepolia (testnet) — redeployed 2026-03-18 [v3 build 2223] (registerAgentV2 open, no onlyOwner)
   AgentRegistry: "0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1" as const,
   MoltForgeEscrow: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,    // V3 proxy
   MoltForgeEscrowV3: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
