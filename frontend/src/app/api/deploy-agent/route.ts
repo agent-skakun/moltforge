@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 // ─── Simulated deploy — all agents point to the shared reference agent ────────
 // Real isolated deploy is V2 post-hackathon.
 
-const REFERENCE_AGENT_URL = "https://agent.moltforge.cloud";
+const REFERENCE_AGENT_URL = "https://agent-production-f600.up.railway.app";
 
 interface DeployRequest {
   agentName?: string;
