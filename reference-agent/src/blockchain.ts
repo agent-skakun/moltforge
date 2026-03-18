@@ -1,5 +1,5 @@
 import { createPublicClient, http, type Address } from "viem";
-import { base } from "viem/chains";
+import { base, baseSepolia } from "viem/chains";
 import { type Config } from "./config";
 
 const AGENT_REGISTRY_ABI = [
@@ -10,11 +10,61 @@ const AGENT_REGISTRY_ABI = [
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "getAgentExtended",
+    inputs: [{ name: "numericId", type: "uint256" }],
+    outputs: [
+      {
+        name: "agent",
+        type: "tuple",
+        components: [
+          { name: "wallet", type: "address" },
+          { name: "agentId", type: "bytes32" },
+          { name: "metadataURI", type: "string" },
+          { name: "webhookUrl", type: "string" },
+          { name: "registeredAt", type: "uint64" },
+          { name: "status", type: "uint8" },
+          { name: "score", type: "uint256" },
+          { name: "jobsCompleted", type: "uint32" },
+          { name: "rating", type: "uint32" },
+          { name: "tier", type: "uint8" },
+        ],
+      },
+      { name: "avatarHash", type: "bytes32" },
+      { name: "skills", type: "string[]" },
+      { name: "tools", type: "string[]" },
+      { name: "_agentUrl", type: "string" },
+    ],
+    stateMutability: "view",
+  },
 ] as const;
 
+export interface AgentExtended {
+  numericId: bigint;
+  wallet: Address;
+  agentId: `0x${string}`;
+  metadataURI: string;
+  webhookUrl: string;
+  registeredAt: bigint;
+  status: number;
+  score: bigint;
+  jobsCompleted: number;
+  rating: number;
+  tier: number;
+  avatarHash: `0x${string}`;
+  skills: readonly string[];
+  tools: readonly string[];
+  agentUrl: string;
+}
+
 export function createBlockchainClient(config: Config) {
+  // Support both Base mainnet and Sepolia
+  const isSepolia = config.rpcUrl.includes("sepolia");
+  const chain = isSepolia ? baseSepolia : base;
+
   const client = createPublicClient({
-    chain: base,
+    chain,
     transport: http(config.rpcUrl),
   });
 
@@ -27,5 +77,46 @@ export function createBlockchainClient(config: Config) {
     });
   }
 
-  return { client, getAgentId };
+  async function getAgentExtended(wallet?: Address): Promise<AgentExtended | null> {
+    try {
+      const numericId = await getAgentId(wallet);
+      if (numericId === 0n) return null;
+
+      const result = await client.readContract({
+        address: config.registryAddress,
+        abi: AGENT_REGISTRY_ABI,
+        functionName: "getAgentExtended",
+        args: [numericId],
+      }) as readonly [
+        { wallet: Address; agentId: `0x${string}`; metadataURI: string; webhookUrl: string; registeredAt: bigint; status: number; score: bigint; jobsCompleted: number; rating: number; tier: number },
+        `0x${string}`,
+        readonly string[],
+        readonly string[],
+        string
+      ];
+
+      const [agent, avatarHash, skills, tools, agentUrl] = result;
+      return {
+        numericId,
+        wallet: agent.wallet,
+        agentId: agent.agentId,
+        metadataURI: agent.metadataURI,
+        webhookUrl: agent.webhookUrl,
+        registeredAt: agent.registeredAt,
+        status: agent.status,
+        score: agent.score,
+        jobsCompleted: agent.jobsCompleted,
+        rating: agent.rating,
+        tier: agent.tier,
+        avatarHash,
+        skills,
+        tools,
+        agentUrl,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  return { client, getAgentId, getAgentExtended };
 }

@@ -6,7 +6,7 @@ import { createBlockchainClient } from "./blockchain";
 import { executeResearch, buildMetadataURI } from "./agent";
 
 const config = loadConfig();
-const { getAgentId } = createBlockchainClient(config);
+const { getAgentId, getAgentExtended } = createBlockchainClient(config);
 const app = express();
 
 app.use(express.json());
@@ -73,9 +73,110 @@ let agentConfig: AgentConfig = {
 // ─── Static files ─────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, "..", "public")));
 
-// GET /agent.json — ERC-8004 registration file
-app.get("/agent.json", (_req, res) => {
-  res.sendFile(path.join(__dirname, "..", "agent.json"));
+// GET /agent.json — Dynamic ERC-8004 registration file (merges on-chain + config)
+app.get("/agent.json", async (_req, res) => {
+  try {
+    // Read static base
+    const staticPath = path.join(__dirname, "..", "agent.json");
+    const staticBase = fs.existsSync(staticPath)
+      ? JSON.parse(fs.readFileSync(staticPath, "utf-8"))
+      : {};
+
+    // Enrich with on-chain + in-memory config
+    const onChain = await getAgentExtended(config.walletAddress).catch(() => null);
+    const name = agentConfig.name ?? config.agentName ?? staticBase.name ?? "MoltForge Agent";
+    const skills = onChain?.skills ?? agentConfig.skills ?? config.skills ?? [];
+    const tools = onChain?.tools ?? agentConfig.tools ?? config.tools ?? [];
+    const agentUrl = onChain?.agentUrl ?? staticBase.services?.[0]?.endpoint ?? "";
+    const numericId = onChain?.numericId?.toString() ?? null;
+    const avatarHash = onChain?.avatarHash ?? null;
+
+    const dynamic = {
+      ...staticBase,
+      name,
+      description: staticBase.description ?? `AI agent specialized in ${agentConfig.specialization ?? "research"}.`,
+      agentId: numericId ? `#${numericId}` : staticBase.agentId,
+      agentIdHash: onChain?.agentId ?? null,
+      walletAddress: config.walletAddress,
+      agentUrl: agentUrl || undefined,
+      specialization: agentConfig.specialization ?? config.specialization,
+      skills,
+      tools,
+      avatarHash,
+      updatedAt: new Date().toISOString(),
+      registrations: onChain
+        ? [{ agentId: numericId, numericId: onChain.numericId.toString(), agentRegistry: `eip155:8453:${config.registryAddress}` }]
+        : staticBase.registrations,
+    };
+
+    res.json(dynamic);
+  } catch (err) {
+    // Fallback to static file
+    res.sendFile(path.join(__dirname, "..", "agent.json"));
+  }
+});
+
+// GET /agent-card — A2A card per ERC-8004 standard
+app.get("/agent-card", async (_req, res) => {
+  try {
+    const onChain = await getAgentExtended(config.walletAddress).catch(() => null);
+    const name = agentConfig.name ?? config.agentName ?? "MoltForge Agent";
+    const specialization = agentConfig.specialization ?? config.specialization ?? "research";
+    const skills = onChain?.skills ?? agentConfig.skills ?? config.skills ?? [];
+    const tools = onChain?.tools ?? agentConfig.tools ?? config.tools ?? [];
+    const agentUrl = onChain?.agentUrl ?? "";
+    const numericId = onChain?.numericId?.toString() ?? null;
+
+    const card = {
+      "@type": "https://eips.ethereum.org/EIPS/eip-8004#a2a-card-v1",
+      name,
+      description: `AI agent specialized in ${specialization}. Registered on MoltForge marketplace.`,
+      url: agentUrl || `https://moltforge-agent.vercel.app`,
+      provider: {
+        name: "MoltForge",
+        url: "https://moltforge.vercel.app",
+        registry: `eip155:8453:${config.registryAddress}`,
+      },
+      version: "1.0.0",
+      protocolVersion: "0.3.0",
+      capabilities: {
+        streaming: false,
+        pushNotifications: false,
+        stateTransitionHistory: false,
+      },
+      defaultInputModes: ["text/plain", "application/json"],
+      defaultOutputModes: ["application/json"],
+      skills: skills.map((s: string) => ({
+        id: s,
+        name: s.split("/").pop()?.replace(".md", "") ?? s,
+        description: `Skill from moltforge-skills: ${s}`,
+        tags: [s.split("/")[0] ?? "general"],
+        examples: [`Research using ${s.split("/").pop()?.replace(".md", "") ?? s} knowledge`],
+      })),
+      tools: tools.map((t: string) => ({ id: t, name: t })),
+      authentication: { schemes: [] },
+      onChain: {
+        numericId,
+        wallet: config.walletAddress,
+        registry: config.registryAddress,
+        network: "base",
+        avatarHash: onChain?.avatarHash ?? null,
+      },
+      generatedAt: new Date().toISOString(),
+    };
+
+    // Also serve at standard A2A path
+    res.json(card);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// GET /.well-known/agent-card.json — standard A2A discovery path (proxies to /agent-card)
+app.get("/.well-known/agent-card.json", async (req, res) => {
+  // Forward to /agent-card handler by redirecting internally
+  req.url = "/agent-card";
+  app._router.handle(req, res, () => {});
 });
 
 // GET /health

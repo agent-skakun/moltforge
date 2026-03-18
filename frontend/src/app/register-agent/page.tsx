@@ -158,6 +158,27 @@ export default function RegisterAgentPage() {
   });
   const agentOnChainUrl = extendedData ? (extendedData as unknown as readonly unknown[])[4] as string : "";
 
+  // A2A Card state
+  const [a2aCardOpen, setA2aCardOpen]   = useState(false);
+  const [a2aCardData, setA2aCardData]   = useState<object | null>(null);
+  const [a2aLoading, setA2aLoading]     = useState(false);
+
+  const fetchA2aCard = async (url: string) => {
+    setA2aLoading(true);
+    try {
+      const endpoint = (url || "https://moltforge-agent.vercel.app").replace(/\/$/, "") + "/agent-card";
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      setA2aCardData(data);
+      setA2aCardOpen(true);
+    } catch {
+      setA2aCardData({ error: "Could not fetch A2A card from " + url });
+      setA2aCardOpen(true);
+    } finally {
+      setA2aLoading(false);
+    }
+  };
+
   // Test Agent state
   const [testQuery, setTestQuery]       = useState("Tell me about AI agent reputation systems on blockchain");
   const [testLoading, setTestLoading]   = useState(false);
@@ -809,7 +830,7 @@ export default function RegisterAgentPage() {
               )}
             </div>
 
-            {/* Deploy on Railway */}
+            {/* Deploy on Railway + A2A Card */}
             <div className="flex gap-3">
               <a href="https://railway.app/new?template=github" target="_blank" rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
@@ -820,8 +841,39 @@ export default function RegisterAgentPage() {
                 <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
                   style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550" }}>
-                  🔗 View on BaseScan
+                  🔗 BaseScan
                 </a>
+              )}
+            </div>
+
+            {/* A2A Card */}
+            <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #1a2e2b" }}>
+              <button
+                onClick={() => a2aCardData ? setA2aCardOpen(o => !o) : fetchA2aCard(agentOnChainUrl || webhookUrl || "https://moltforge-agent.vercel.app")}
+                className="w-full flex items-center justify-between px-6 py-3 text-sm font-semibold transition-all"
+                style={{ background: "#0a1a17", color: "#1db8a8" }}>
+                <span>📋 {a2aCardData ? (a2aCardOpen ? "Hide" : "View") : "View"} A2A Card (ERC-8004)</span>
+                <span style={{ fontSize: "0.7rem", color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  {a2aLoading ? "Loading…" : a2aCardOpen ? "▲ collapse" : "▼ expand"}
+                </span>
+              </button>
+              {a2aCardOpen && a2aCardData && (
+                <div style={{ background: "#060c0b", borderTop: "1px solid #1a2e2b" }}>
+                  <div className="flex justify-between items-center px-4 py-2" style={{ borderBottom: "1px solid #1a2e2b10" }}>
+                    <span className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                      {(agentOnChainUrl || "https://moltforge-agent.vercel.app")}/agent-card
+                    </span>
+                    <a href={`${(agentOnChainUrl || "https://moltforge-agent.vercel.app").replace(/\/$/, "")}/agent-card`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="text-xs" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+                      ↗ open
+                    </a>
+                  </div>
+                  <pre className="px-4 py-3 text-xs overflow-x-auto whitespace-pre-wrap break-words no-scrollbar"
+                    style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#5a807a", maxHeight: 320, overflowY: "auto" }}>
+                    {JSON.stringify(a2aCardData, null, 2)}
+                  </pre>
+                </div>
               )}
             </div>
 
