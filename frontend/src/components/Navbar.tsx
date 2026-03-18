@@ -16,7 +16,6 @@ export function Navbar() {
     { href: "/create-task", label: "Create Task" },
     { href: "/register-agent", label: "Register Agent" },
     { href: "/dashboard", label: "Dashboard" },
-    { href: "/architecture", label: "Architecture" },
   ];
 
   const landingLinks = [

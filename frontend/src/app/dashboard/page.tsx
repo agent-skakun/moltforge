@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits } from "viem";
-import { ADDRESSES, AGENT_REGISTRY_ABI, ESCROW_ABI, TIER_NAMES } from "@/lib/contracts";
+import { ADDRESSES, AGENT_REGISTRY_ABI, ESCROW_ABI, ESCROW_V3_ABI, TIER_NAMES, V3_STATUS_COLORS } from "@/lib/contracts";
 import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
 import Link from "next/link";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── V1 Constants ─────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = [
   { label: "Open",       color: "#1db8a8", bg: "#1db8a812", icon: "🔵" },
@@ -17,6 +17,25 @@ const STATUS_CONFIG = [
   { label: "Disputed",   color: "#e63030", bg: "#e6303012", icon: "⚠️" },
   { label: "Cancelled",  color: "#3a5550", bg: "#3a555012", icon: "⛔" },
 ];
+
+// ─── V3 Task Type ─────────────────────────────────────────────────────────────
+
+interface V3Task {
+  id: bigint;
+  client: string;
+  agentId: bigint;
+  token: string;
+  reward: bigint;
+  fee: bigint;
+  description: string;
+  fileUrl: string;
+  resultUrl: string;
+  status: number;
+  claimedBy: string;
+  score: number;
+  createdAt: bigint;
+  deadlineAt: bigint;
+}
 
 // ─── Star Rating ──────────────────────────────────────────────────────────────
 
@@ -38,7 +57,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
-// ─── Task Item ────────────────────────────────────────────────────────────────
+// ─── V1 Task Item (Legacy) ───────────────────────────────────────────────────
 
 function TaskItem({ taskId, address }: { taskId: number; address: string }) {
   const [rating, setRating] = useState(5);
@@ -66,13 +85,12 @@ function TaskItem({ taskId, address }: { taskId: number; address: string }) {
 
   const status = task.status;
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG[0];
-  const isDelivered = status === 2; // Delivered
-  const isOpen = status === 0;      // Open
+  const isDelivered = status === 2;
+  const isOpen = status === 0;
   const now = Math.floor(Date.now() / 1000);
   const deadlinePassed = task.deadlineAt > 0n && Number(task.deadlineAt) < now;
   const noAgent = !task.agent || task.agent === "0x0000000000000000000000000000000000000000";
 
-  // Parse description
   let taskDesc = "";
   try {
     if (task.descriptionCID.startsWith("data:application/json")) {
@@ -84,7 +102,6 @@ function TaskItem({ taskId, address }: { taskId: number; address: string }) {
     }
   } catch { taskDesc = task.descriptionCID; }
 
-  // Parse delivery
   let deliveryText = "";
   try {
     if (task.deliveryCID?.startsWith("data:application/json")) {
@@ -119,8 +136,6 @@ function TaskItem({ taskId, address }: { taskId: number; address: string }) {
   return (
     <div className="rounded-2xl overflow-hidden transition-all"
       style={{ background: "#0a1a17", border: `1px solid ${cfg.color}30` }}>
-
-      {/* Header */}
       <div className="flex items-center justify-between px-5 py-4"
         style={{ borderBottom: "1px solid #1a2e2b" }}>
         <div>
@@ -136,23 +151,18 @@ function TaskItem({ taskId, address }: { taskId: number; address: string }) {
               style={{ background: "#f0782812", color: "#f07828", fontSize: "0.65rem" }}>AGENT</span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs px-2 py-1 rounded-full"
-            style={{ background: cfg.bg, color: cfg.color, fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.7rem" }}>
-            {cfg.icon} {cfg.label}
-          </span>
-        </div>
+        <span className="text-xs px-2 py-1 rounded-full"
+          style={{ background: cfg.bg, color: cfg.color, fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.7rem" }}>
+          {cfg.icon} {cfg.label}
+        </span>
       </div>
 
       <div className="px-5 py-4 space-y-3">
-        {/* Description */}
         {taskDesc && (
           <p className="text-sm" style={{ color: "#5a807a" }}>
             {taskDesc.slice(0, 200)}{taskDesc.length > 200 ? "..." : ""}
           </p>
         )}
-
-        {/* Meta */}
         <div className="grid grid-cols-2 gap-3 text-xs" style={{ fontFamily: "var(--font-jetbrains-mono)" }}>
           <div>
             <span style={{ color: "#3a5550" }}>Reward </span>
@@ -168,8 +178,6 @@ function TaskItem({ taskId, address }: { taskId: number; address: string }) {
             </div>
           )}
         </div>
-
-        {/* Delivery result */}
         {deliveryText && (
           <div className="p-3 rounded-xl text-xs"
             style={{ background: "#060c0b", border: "1px solid #1db8a820",
@@ -177,17 +185,13 @@ function TaskItem({ taskId, address }: { taskId: number; address: string }) {
             <span style={{ color: "#1db8a8" }}>Delivery: </span>{deliveryText}
           </div>
         )}
-
-        {/* Confirm+Rate (client, Delivered) */}
         {isClient && isDelivered && !confirmed && (
           <div>
             {!showRating ? (
-              <button
-                onClick={() => setShowRating(true)}
+              <button onClick={() => setShowRating(true)}
                 className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
-                style={{ background: "#3ec95a18", border: "1px solid #3ec95a", color: "#3ec95a",
-                  fontFamily: "var(--font-space-grotesk)" }}>
-                ✅ Confirm + Rate
+                style={{ background: "#3ec95a18", border: "1px solid #3ec95a", color: "#3ec95a", fontFamily: "var(--font-space-grotesk)" }}>
+                Confirm + Rate
               </button>
             ) : (
               <div className="space-y-3 p-4 rounded-xl" style={{ background: "#060c0b", border: "1px solid #3ec95a30" }}>
@@ -196,15 +200,10 @@ function TaskItem({ taskId, address }: { taskId: number; address: string }) {
                 <div className="flex gap-2">
                   <button onClick={() => setShowRating(false)}
                     className="flex-1 py-2 rounded-xl text-xs transition-all"
-                    style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550" }}>
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleConfirm}
-                    disabled={confirming || waitConfirm}
+                    style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550" }}>Cancel</button>
+                  <button onClick={handleConfirm} disabled={confirming || waitConfirm}
                     className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all"
-                    style={{ background: "#3ec95a", color: "white",
-                      cursor: (confirming || waitConfirm) ? "wait" : "pointer" }}>
+                    style={{ background: "#3ec95a", color: "white", cursor: (confirming || waitConfirm) ? "wait" : "pointer" }}>
                     {confirming || waitConfirm ? "Confirming..." : `Confirm ${rating}★`}
                   </button>
                 </div>
@@ -212,33 +211,23 @@ function TaskItem({ taskId, address }: { taskId: number; address: string }) {
             )}
           </div>
         )}
-
-        {/* Confirmed success */}
         {confirmed && (
-          <div className="py-2 text-sm text-center" style={{ color: "#3ec95a" }}>
-            ✅ Payment released · Merit awarded
-          </div>
+          <div className="py-2 text-sm text-center" style={{ color: "#3ec95a" }}>Payment released</div>
         )}
-
-        {/* Cancel (client, Open, deadline passed or no agent) */}
         {isClient && isOpen && (deadlinePassed || noAgent) && !cancelled && (
           <div>
             {!cancelConfirm ? (
               <button onClick={() => setCancelConfirm(true)}
                 className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
                 style={{ background: "#e6303018", border: "1px solid #e63030", color: "#e63030" }}>
-                ⛔ Cancel Task
+                Cancel Task
               </button>
             ) : (
               <div className="flex gap-2">
                 <button onClick={() => setCancelConfirm(false)}
                   className="flex-1 py-2 rounded-xl text-xs"
-                  style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550" }}>
-                  Keep
-                </button>
-                <button
-                  onClick={handleCancel}
-                  disabled={cancelling || waitCancel}
+                  style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550" }}>Keep</button>
+                <button onClick={handleCancel} disabled={cancelling || waitCancel}
                   className="flex-1 py-2 rounded-xl text-xs font-semibold"
                   style={{ background: "#e63030", color: "white" }}>
                   {cancelling || waitCancel ? "Cancelling..." : "Confirm Cancel"}
@@ -246,6 +235,252 @@ function TaskItem({ taskId, address }: { taskId: number; address: string }) {
               </div>
             )}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── V3 Task Item ─────────────────────────────────────────────────────────────
+
+function V3TaskItem({ task, role }: { task: V3Task; role: "client" | "agent" }) {
+  const [rating, setRating] = useState(5);
+  const [showRating, setShowRating] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [showSubmit, setShowSubmit] = useState(false);
+  const [resultUrlInput, setResultUrlInput] = useState("");
+
+  const { writeContract: confirmDelivery, data: confirmTx, isPending: confirming } = useWriteContract();
+  const { isLoading: waitConfirm, isSuccess: confirmed } = useWaitForTransactionReceipt({ hash: confirmTx });
+
+  const { writeContract: cancelTask, data: cancelTx, isPending: cancelling } = useWriteContract();
+  const { isLoading: waitCancel, isSuccess: cancelled } = useWaitForTransactionReceipt({ hash: cancelTx });
+
+  const { writeContract: disputeTask, data: disputeTx, isPending: disputing } = useWriteContract();
+  const { isLoading: waitDispute, isSuccess: disputed } = useWaitForTransactionReceipt({ hash: disputeTx });
+
+  const { writeContract: submitResult, data: submitTx, isPending: submitting } = useWriteContract();
+  const { isLoading: waitSubmit, isSuccess: submitted } = useWaitForTransactionReceipt({ hash: submitTx });
+
+  const status = task.status;
+  const cfg = V3_STATUS_COLORS[status as keyof typeof V3_STATUS_COLORS] ?? V3_STATUS_COLORS[0];
+  const isOpen = status === 0;
+  const isDelivered = status === 3;
+  const isConfirmed = status === 4;
+  const isClaimed = status === 1;
+  const isInProgress = status === 2;
+  const zero = "0x0000000000000000000000000000000000000000";
+
+  const handleConfirm = () => {
+    confirmDelivery({
+      address: ADDRESSES.MoltForgeEscrowV3,
+      abi: ESCROW_V3_ABI,
+      functionName: "confirmDelivery",
+      args: [task.id, rating],
+    });
+    setShowRating(false);
+  };
+
+  const handleCancel = () => {
+    cancelTask({
+      address: ADDRESSES.MoltForgeEscrowV3,
+      abi: ESCROW_V3_ABI,
+      functionName: "cancelTask",
+      args: [task.id],
+    });
+    setCancelConfirm(false);
+  };
+
+  const handleDispute = () => {
+    disputeTask({
+      address: ADDRESSES.MoltForgeEscrowV3,
+      abi: ESCROW_V3_ABI,
+      functionName: "disputeTask",
+      args: [task.id],
+    });
+  };
+
+  const handleSubmit = () => {
+    submitResult({
+      address: ADDRESSES.MoltForgeEscrowV3,
+      abi: ESCROW_V3_ABI,
+      functionName: "submitResult",
+      args: [task.id, resultUrlInput],
+    });
+    setShowSubmit(false);
+  };
+
+  return (
+    <div className="rounded-2xl overflow-hidden transition-all"
+      style={{ background: "#0a1a17", border: `1px solid ${cfg.color}30` }}>
+      <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid #1a2e2b" }}>
+        <div>
+          <span className="text-xs font-semibold" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+            Task #{task.id.toString()}
+          </span>
+          <span className="ml-2 text-xs px-1.5 py-0.5 rounded"
+            style={{
+              background: role === "client" ? "#1db8a812" : "#f0782812",
+              color: role === "client" ? "#1db8a8" : "#f07828",
+              fontSize: "0.65rem",
+            }}>
+            {role.toUpperCase()}
+          </span>
+        </div>
+        <span className="text-xs px-2 py-1 rounded-full"
+          style={{ background: cfg.bg, color: cfg.color, fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.7rem" }}>
+          {cfg.label}
+        </span>
+      </div>
+
+      <div className="px-5 py-4 space-y-3">
+        <p className="text-sm" style={{ color: "#5a807a" }}>
+          {task.description.slice(0, 200)}{task.description.length > 200 ? "…" : ""}
+        </p>
+
+        <div className="grid grid-cols-2 gap-3 text-xs" style={{ fontFamily: "var(--font-jetbrains-mono)" }}>
+          <div>
+            <span style={{ color: "#3a5550" }}>Reward </span>
+            <span style={{ color: "#f07828" }}>{formatUnits(task.reward, 6)} USDC</span>
+          </div>
+          {role === "client" && task.claimedBy !== zero && (
+            <div>
+              <span style={{ color: "#3a5550" }}>Agent </span>
+              <span style={{ color: "#5a807a" }}>{task.claimedBy.slice(0, 6)}…{task.claimedBy.slice(-4)}</span>
+            </div>
+          )}
+          {role === "agent" && (
+            <div>
+              <span style={{ color: "#3a5550" }}>Client </span>
+              <span style={{ color: "#5a807a" }}>{task.client.slice(0, 6)}…{task.client.slice(-4)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Result URL */}
+        {task.resultUrl && (isDelivered || isConfirmed) && (
+          <div className="p-3 rounded-xl text-xs"
+            style={{ background: "#060c0b", border: "1px solid #1db8a820",
+              color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", maxHeight: 80, overflowY: "auto" }}>
+            <span style={{ color: "#1db8a8" }}>Result: </span>{task.resultUrl}
+          </div>
+        )}
+
+        {/* Agent: confirmed → show score */}
+        {role === "agent" && isConfirmed && (
+          <div className="flex items-center justify-between text-xs" style={{ fontFamily: "var(--font-jetbrains-mono)" }}>
+            <span style={{ color: "#3ec95a" }}>Reward earned: {formatUnits(task.reward, 6)} USDC</span>
+            <span style={{ color: "#e8c842" }}>Score: {task.score}★</span>
+          </div>
+        )}
+
+        {/* CLIENT ACTIONS */}
+        {role === "client" && (
+          <>
+            {/* Cancel (Open only) */}
+            {isOpen && !cancelled && (
+              <div>
+                {!cancelConfirm ? (
+                  <button onClick={() => setCancelConfirm(true)}
+                    className="w-full py-2 rounded-xl text-xs font-semibold transition-all"
+                    style={{ background: "#e6303018", border: "1px solid #e63030", color: "#e63030" }}>
+                    Cancel Task
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button onClick={() => setCancelConfirm(false)}
+                      className="flex-1 py-2 rounded-xl text-xs"
+                      style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550" }}>Keep</button>
+                    <button onClick={handleCancel} disabled={cancelling || waitCancel}
+                      className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                      style={{ background: "#e63030", color: "white" }}>
+                      {cancelling || waitCancel ? "Cancelling…" : "Confirm Cancel"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {cancelled && <div className="py-2 text-sm text-center" style={{ color: "#6b7280" }}>Task cancelled</div>}
+
+            {/* Confirm + Rate (Delivered) */}
+            {isDelivered && !confirmed && (
+              <div>
+                {!showRating ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowRating(true)}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                      style={{ background: "#3ec95a18", border: "1px solid #3ec95a", color: "#3ec95a", fontFamily: "var(--font-space-grotesk)" }}>
+                      Confirm + Rate
+                    </button>
+                    <button onClick={handleDispute} disabled={disputing || waitDispute}
+                      className="py-2.5 px-4 rounded-xl text-sm font-semibold transition-all"
+                      style={{ background: "#e6303018", border: "1px solid #e63030", color: "#e63030" }}>
+                      {disputing || waitDispute ? "…" : "Dispute"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 p-4 rounded-xl" style={{ background: "#060c0b", border: "1px solid #3ec95a30" }}>
+                    <p className="text-xs" style={{ color: "#5a807a" }}>Rate the agent (1–5):</p>
+                    <StarRating value={rating} onChange={setRating} />
+                    <div className="flex gap-2">
+                      <button onClick={() => setShowRating(false)}
+                        className="flex-1 py-2 rounded-xl text-xs"
+                        style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550" }}>Cancel</button>
+                      <button onClick={handleConfirm} disabled={confirming || waitConfirm}
+                        className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                        style={{ background: "#3ec95a", color: "white" }}>
+                        {confirming || waitConfirm ? "Confirming…" : `Confirm ${rating}★`}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {confirmed && <div className="py-2 text-sm text-center" style={{ color: "#3ec95a" }}>Payment released</div>}
+            {disputed && <div className="py-2 text-sm text-center" style={{ color: "#e63030" }}>Dispute opened</div>}
+          </>
+        )}
+
+        {/* AGENT ACTIONS */}
+        {role === "agent" && (
+          <>
+            {/* Submit Result (Claimed/InProgress) */}
+            {(isClaimed || isInProgress) && !submitted && (
+              <div>
+                {!showSubmit ? (
+                  <button onClick={() => setShowSubmit(true)}
+                    className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
+                    style={{ background: "#1db8a818", border: "1px solid #1db8a8", color: "#1db8a8", fontFamily: "var(--font-space-grotesk)" }}>
+                    Submit Result
+                  </button>
+                ) : (
+                  <div className="space-y-3 p-4 rounded-xl" style={{ background: "#060c0b", border: "1px solid #1db8a830" }}>
+                    <p className="text-xs" style={{ color: "#5a807a" }}>Result URL:</p>
+                    <textarea
+                      value={resultUrlInput}
+                      onChange={e => setResultUrlInput(e.target.value)}
+                      rows={2}
+                      placeholder="https://... or paste result"
+                      className="w-full px-3 py-2 rounded-lg text-xs resize-none"
+                      style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#e8f5f3",
+                        fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={() => setShowSubmit(false)}
+                        className="flex-1 py-2 rounded-xl text-xs"
+                        style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550" }}>Cancel</button>
+                      <button onClick={handleSubmit} disabled={submitting || waitSubmit || !resultUrlInput.trim()}
+                        className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                        style={{ background: "#1db8a8", color: "white" }}>
+                        {submitting || waitSubmit ? "Submitting…" : "Submit"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {submitted && <div className="py-2 text-sm text-center" style={{ color: "#3ec95a" }}>Result submitted</div>}
+          </>
         )}
       </div>
     </div>
@@ -355,23 +590,44 @@ function AgentProfile({ address }: { address: `0x${string}` }) {
   );
 }
 
-// ─── My Tasks ────────────────────────────────────────────────────────────────
+// ─── V3 Tasks Section ─────────────────────────────────────────────────────────
 
-function MyTasks({ address }: { address: string }) {
+function MyV3Tasks({ address }: { address: string }) {
   const { data: taskCount } = useReadContract({
-    address: ADDRESSES.MoltForgeEscrow,
-    abi: ESCROW_ABI,
+    address: ADDRESSES.MoltForgeEscrowV3,
+    abi: ESCROW_V3_ABI,
     functionName: "taskCount",
   });
 
   const count = Number(taskCount ?? 0);
+  const batchEnd = Math.min(count, 50);
+
+  const { data: tasksRaw } = useReadContract({
+    address: ADDRESSES.MoltForgeEscrowV3,
+    abi: ESCROW_V3_ABI,
+    functionName: "getTasksBatch",
+    args: count > 0 ? [1n, BigInt(batchEnd)] : undefined,
+    query: { enabled: count > 0 },
+  });
+
+  const { clientTasks, agentTasks } = useMemo(() => {
+    if (!tasksRaw) return { clientTasks: [] as V3Task[], agentTasks: [] as V3Task[] };
+    const all = (tasksRaw as V3Task[]).filter(t => t.id > 0n);
+    const addr = address.toLowerCase();
+    return {
+      clientTasks: all.filter(t => t.client.toLowerCase() === addr).sort((a, b) => Number(b.id) - Number(a.id)),
+      agentTasks: all.filter(t => t.claimedBy.toLowerCase() === addr).sort((a, b) => Number(b.id) - Number(a.id)),
+    };
+  }, [tasksRaw, address]);
+
+  const hasAny = clientTasks.length > 0 || agentTasks.length > 0;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-sm font-semibold uppercase tracking-wider"
           style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
-          My Tasks
+          My Tasks (V3)
         </h2>
         <Link href="/create-task"
           className="text-xs px-3 py-1.5 rounded-lg transition-all"
@@ -380,22 +636,72 @@ function MyTasks({ address }: { address: string }) {
         </Link>
       </div>
 
-      {count === 0 ? (
+      {!hasAny ? (
         <div className="text-center py-12 rounded-2xl"
           style={{ background: "#0a1a17", border: "1px dashed #1a2e2b" }}>
-          <p className="text-sm mb-3" style={{ color: "#3a5550" }}>No tasks yet</p>
-          <Link href="/create-task"
-            className="text-sm" style={{ color: "#1db8a8" }}>
+          <p className="text-sm mb-3" style={{ color: "#3a5550" }}>No V3 tasks yet</p>
+          <Link href="/create-task" className="text-sm" style={{ color: "#1db8a8" }}>
             Create your first task →
           </Link>
         </div>
       ) : (
-        <div className="space-y-4">
-          {Array.from({ length: count }, (_, i) => count - i).map(id => (
-            <TaskItem key={id} taskId={id} address={address} />
-          ))}
+        <div className="space-y-6">
+          {/* Client tasks */}
+          {clientTasks.length > 0 && (
+            <div>
+              <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                Tasks I Created ({clientTasks.length})
+              </h3>
+              <div className="space-y-4">
+                {clientTasks.map(t => (
+                  <V3TaskItem key={t.id.toString()} task={t} role="client" />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Agent tasks */}
+          {agentTasks.length > 0 && (
+            <div>
+              <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                Tasks I Claimed ({agentTasks.length})
+              </h3>
+              <div className="space-y-4">
+                {agentTasks.map(t => (
+                  <V3TaskItem key={t.id.toString()} task={t} role="agent" />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Legacy V1 Tasks ──────────────────────────────────────────────────────────
+
+function MyLegacyTasks({ address }: { address: string }) {
+  const { data: taskCount } = useReadContract({
+    address: ADDRESSES.MoltForgeEscrow,
+    abi: ESCROW_ABI,
+    functionName: "taskCount",
+  });
+
+  const count = Number(taskCount ?? 0);
+  if (count === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <h2 className="text-sm font-semibold uppercase tracking-wider mb-5"
+        style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+        Legacy Tasks (V1)
+      </h2>
+      <div className="space-y-4">
+        {Array.from({ length: count }, (_, i) => count - i).map(id => (
+          <TaskItem key={id} taskId={id} address={address} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -428,7 +734,8 @@ export default function DashboardPage() {
           <AgentProfile address={address} />
         </div>
         <div className="lg:col-span-2">
-          <MyTasks address={address} />
+          <MyV3Tasks address={address} />
+          <MyLegacyTasks address={address} />
         </div>
       </div>
     </div>

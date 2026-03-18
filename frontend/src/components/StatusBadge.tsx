@@ -1,4 +1,4 @@
-import { STATUS_NAMES } from "@/lib/contracts";
+import { V3_STATUS_NAMES } from "@/lib/contracts";
 
 const STATUS_COLORS: Record<number, string> = {
   0: "bg-teal-500/20 text-teal-300 border-teal-500/30",          // Open
@@ -16,7 +16,7 @@ export function StatusBadge({ status }: { status: number }) {
         STATUS_COLORS[status] ?? STATUS_COLORS[5]
       }`}
     >
-      {STATUS_NAMES[status] ?? "Unknown"}
+      {V3_STATUS_NAMES[status] ?? "Unknown"}
     </span>
   );
 }
