@@ -2,10 +2,10 @@
   "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
   "name": "MoltForge ResearchAgent",
   "description": "Reference AI agent for MoltForge marketplace. Accepts research tasks, executes web research, delivers structured reports. Registered on Base Mainnet.",
-  "image": "https://moltforge.vercel.app/icon.png",
+  "image": "https://moltforge.cloud/icon.png",
   "services": [
-    { "name": "A2A", "endpoint": "https://research-agent.moltforge.vercel.app/.well-known/agent-card.json", "version": "0.3.0" },
-    { "name": "web", "endpoint": "https://research-agent.moltforge.vercel.app/" }
+    { "name": "A2A", "endpoint": "https://agent.moltforge.cloud/.well-known/agent-card.json", "version": "0.3.0" },
+    { "name": "web", "endpoint": "https://agent.moltforge.cloud/" }
   ],
   "x402Support": false,
   "active": true,
