@@ -4,13 +4,13 @@ export const CHAIN_ID = 84532;
 export const IS_TESTNET = true;
 
 export const ADDRESSES = {
-  // Base Sepolia (testnet) — deployed 2026-03-18
-  AgentRegistry: "0x0C9E94D02D48e3BE3E8892B0B8b07ba17A6EB728" as const,
-  MoltForgeEscrow: "0x4B9A5C6f434C34882952F1D5ab3B4feC52BaB3Ad" as const,    // V3 proxy
-  MoltForgeEscrowV3: "0x4B9A5C6f434C34882952F1D5ab3B4feC52BaB3Ad" as const,
-  MeritSBT: "0xEEdC4A9a6F5FEbDD7820e09b04353FF1ec3a57B3" as const,           // V2 proxy
-  MeritSBTV2: "0xEEdC4A9a6F5FEbDD7820e09b04353FF1ec3a57B3" as const,
-  USDC: "0x7C8192c65775Cb1ba575cb24f1a4Ea8Ec714f2Bb" as const,               // MockUSDC
+  // Base Sepolia (testnet) — redeployed 2026-03-18 (registerAgentV2 open, no onlyOwner)
+  AgentRegistry: "0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1" as const,
+  MoltForgeEscrow: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,    // V3 proxy
+  MoltForgeEscrowV3: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
+  MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,           // V2 proxy
+  MeritSBTV2: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
+  USDC: "0xF88F8db9C0edF66aCa743F6e64194A11e798941a" as const,               // MockUSDC
 } as const;
 
 export const AGENT_REGISTRY_ABI = [
