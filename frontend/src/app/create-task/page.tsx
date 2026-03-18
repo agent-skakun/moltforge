@@ -144,6 +144,18 @@ function CreateTaskInner() {
     if (!created || tab !== "hire" || !selectedAgent?.agentUrl || !description) return;
     const agentEndpoint = selectedAgent.agentUrl.replace(/\/$/, "") + "/tasks";
     setNotifyStatus("sending");
+
+    // Read user's LLM API key from localStorage (stored encrypted during agent registration)
+    let apiKey: string | undefined;
+    let llmProvider: string | undefined;
+    try {
+      const agentSlug = selectedAgent.name?.toLowerCase().replace(/\s+/g, "_") ?? "";
+      const stored = localStorage.getItem(`mf_apikey_${agentSlug}`);
+      if (stored) apiKey = atob(stored);
+      // Read provider from agent metadata if available
+      llmProvider = (selectedAgent as { llmProvider?: string }).llmProvider ?? undefined;
+    } catch { /* ignore */ }
+
     fetch(agentEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -152,6 +164,8 @@ function CreateTaskInner() {
         query: description,
         reward: reward || "0",
         clientAddress: address,
+        ...(apiKey      && { apiKey }),
+        ...(llmProvider && { llmProvider }),
       }),
     })
       .then(r => r.ok ? setNotifyStatus("ok") : setNotifyStatus("offline"))
