@@ -6,6 +6,40 @@ import { keccak256, toBytes } from "viem";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
 import { HumanoidFigure, AVATARS as HUMANOID_AVATARS } from "@/components/HumanoidFigure";
 import { AvatarFace, PRESETS, SKIN_COLORS, FaceParams } from "@/components/AvatarFace";
+
+// ─── Roll random avatar ────────────────────────────────────────────────────────
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function rollRandomAvatar(): FaceParams {
+  return {
+    faceShape:  pick(["oval","round","square","heart","diamond","oblong"] as FaceParams["faceShape"][]),
+    skinColor:  pick(SKIN_COLORS),
+    aging:      pick(["none","none","none","light","heavy"] as FaceParams["aging"][]),
+    freckles:   pick(["none","none","light","heavy"] as FaceParams["freckles"][]),
+    scar:       pick(["none","none","none","cheek","chin","forehead"] as FaceParams["scar"][]),
+    eyes:       pick(["normal","asian","wide","tired","hooded","deep","almond","round"] as FaceParams["eyes"][]),
+    eyeColor:   pick(["brown","blue","green","gray","hazel","amber"] as FaceParams["eyeColor"][]),
+    eyebrows:   pick(["normal","thick","thin","arched","straight","bushy"] as FaceParams["eyebrows"][]),
+    nose:       pick(["small","medium","wide","upturned","hooked","button"] as FaceParams["nose"][]),
+    mouth:      pick(["smile","neutral","serious","smirk","open","pouty"] as FaceParams["mouth"][]),
+    ears:       pick(["normal","large","small","pointed"] as FaceParams["ears"][]),
+    hair:       pick(["short","long","curly","bald","ponytail","afro","business","mohawk","undercut","buzz","bun","wavy","dreadlocks","braids","pixie","bob"] as FaceParams["hair"][]),
+    hairColor:  pick(["black","brown","blonde","red","gray","white","platinum","auburn"] as FaceParams["hairColor"][]),
+    highlights: Math.random() > 0.7,
+    facialHair: pick(["none","none","none","stubble","short","full","goatee","mustache","viking","thick"] as FaceParams["facialHair"][]),
+    makeup:     pick(["none","none","light","bold","goth","natural"] as FaceParams["makeup"][]),
+    skinDetail: pick(["none","none","freckles","moles","wrinkles"] as FaceParams["skinDetail"][]),
+    glasses:    pick(["none","none","none","round","square","oval","cat-eye","rimless"] as FaceParams["glasses"][]),
+    glassesColor: pick(["#111","#555","#a0522d","#1db8a8","#f07828","#e8e8e8"]),
+    piercing:   pick(["none","none","none","nose","lip","eyebrow","multiple"] as FaceParams["piercing"][]),
+    tattoo:     pick(["none","none","none","neck","face","tear","tribal","circuit"] as FaceParams["tattoo"][]),
+    necklace:   pick(["none","none","chain","pendant","choker","beads"] as FaceParams["necklace"][]),
+    necklaceColor: pick(["#d4a853","#aaa","#e8e8e8","#1db8a8"]),
+    earrings:   pick(["none","none","none","studs","hoops","drops","dangles","cuffs"] as FaceParams["earrings"][]),
+    earringsColor: pick(["#d4a853","#aaa","#e8e8e8","#1db8a8","#f07828"]),
+    hat:        pick(["none","none","none","cap","beanie","fedora","hood","crown","beret","hardhat"] as FaceParams["hat"][]),
+    hatColor:   pick(["#222","#444","#1db8a8","#f07828","#8b5cf6","#e63030","#3ec95a"]),
+  };
+}
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -377,10 +411,21 @@ export default function RegisterAgentPage() {
         {/* ── CENTER: Agent Figure ── */}
         <div className="flex-shrink-0 flex flex-col items-center" style={{ width: 320, overflow: "visible", transition: "transform 0.3s ease", transform: activeZone ? "translateX(-16px)" : "translateX(0)" }}>
           {/* Agent name above figure */}
-          <div className="mb-4 text-center min-h-[2rem]">
+          <div className="mb-2 text-center min-h-[2rem]">
             <span className="text-xl font-bold" style={{ fontFamily: "var(--font-space-grotesk)", color: selectedSpec.color, letterSpacing: "-0.04em", textShadow: `0 0 20px ${selectedSpec.color}60` }}>
               {agentName || "Your Agent"}
             </span>
+          </div>
+
+          {/* 🎲 Roll button */}
+          <div className="mb-3">
+            <button
+              onClick={() => { setFaceParams(rollRandomAvatar()); setAvatarId("custom"); }}
+              className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+              style={{ background: "linear-gradient(135deg,#1db8a820,#f0782820)", border: "1px solid #f07828aa", color: "#f07828", fontFamily: "var(--font-space-grotesk)" }}
+              title="Randomize avatar">
+              🎲 Roll
+            </button>
           </div>
 
           {/* SVG Humanoid Figure + Avatar Selector */}
