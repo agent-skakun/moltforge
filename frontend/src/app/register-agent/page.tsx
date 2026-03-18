@@ -233,9 +233,18 @@ export default function RegisterAgentPage() {
   const [a2aCardData, setA2aCardData]   = useState<object | null>(null);
   const [a2aLoading, setA2aLoading]     = useState(false);
 
-  // Trigger Railway auto-deploy after on-chain registration
+  // After on-chain registration: save API key to Supabase + trigger deploy
   useEffect(() => {
-    if (isSuccess && deployMode === "hosted" && deployStatus === "idle") {
+    if (!isSuccess) return;
+    // Save API key to Supabase (server-side encrypted, AES-256-GCM)
+    if (llmApiKey && address) {
+      fetch("/api/save-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: address, apiKey: llmApiKey, llmProvider }),
+      }).catch(() => { /* non-critical — localStorage is fallback */ });
+    }
+    if (deployMode === "hosted" && deployStatus === "idle") {
       triggerRailwayDeploy(agentOnChainUrl || "");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -347,7 +356,7 @@ export default function RegisterAgentPage() {
 
   const handleDeploy = () => {
     if (!address || !agentIdHash) return;
-    // Save API key encrypted in localStorage (never on-chain)
+    // Save API key encrypted in localStorage (browser fallback)
     if (llmApiKey) {
       try {
         const storageKey = `mf_apikey_${agentName.trim().toLowerCase().replace(/\s+/g,'_')}`;
