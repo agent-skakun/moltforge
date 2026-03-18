@@ -32,7 +32,7 @@ interface HumanoidFigureProps {
   faceParams?: FaceParams;   // optional override — if provided, overrides preset lookup
   onZoneClick: (z: Zone) => void;
   onZoneHover: (z: Zone) => void;
-  onAvatarSelect: (id: string) => void;
+  onAvatarSelect?: (id: string) => void;  // kept for API compat, unused after Choose Identity removal
 }
 
 export function HumanoidFigure({
@@ -43,7 +43,7 @@ export function HumanoidFigure({
   faceParams: faceParamsProp,
   onZoneClick,
   onZoneHover,
-  onAvatarSelect,
+  // onAvatarSelect kept in interface for compat
 }: HumanoidFigureProps) {
   const teal = "#1db8a8";
   const amber = "#f07828";
@@ -344,18 +344,6 @@ export function HumanoidFigure({
           {/* Face opening in skull — dark base */}
           <ellipse cx="145" cy="116" rx="40" ry="48" fill={dark}/>
 
-          {/* Human portrait — AvatarFace SVG builder clipped to face oval */}
-          {/* foreignObject covers full oval area: cx=145,cy=116, rx=40,ry=48 */}
-          {/* so x=105, y=68, w=80, h=96 — matches clip ellipse exactly */}
-          <foreignObject
-            x="105" y="68"
-            width="80" height="96"
-            clipPath="url(#face-clip)"
-            style={{ opacity: fading ? 0 : 1, transition: "opacity 0.18s ease" }}
-          >
-            <AvatarFace params={faceParams} size={80} />
-          </foreignObject>
-
           {/* Teal edge ring around face oval */}
           <ellipse cx="145" cy="116" rx="40" ry="48" fill="none"
             stroke={teal} strokeWidth="2"
@@ -377,6 +365,19 @@ export function HumanoidFigure({
         </g>
 
         {/* ══════════════════════════════════════
+            FACE PORTRAIT — rendered OUTSIDE opacity group
+            so it always stays visible regardless of zone/panel state
+            ══════════════════════════════════════ */}
+        <foreignObject
+          x="105" y="68"
+          width="80" height="96"
+          clipPath="url(#face-clip)"
+          style={{ opacity: fading ? 0 : 1, transition: "opacity 0.18s ease", pointerEvents: "none" }}
+        >
+          <AvatarFace params={faceParams} size={80} />
+        </foreignObject>
+
+        {/* ══════════════════════════════════════
             PLUMBOB — above head
             ══════════════════════════════════════ */}
         <g>
@@ -386,56 +387,6 @@ export function HumanoidFigure({
           <polygon points="145,8 158,26 145,42 132,26" fill="none" stroke="#3ec95a" strokeWidth="0.5"/>
         </g>
       </svg>
-
-      {/* ══════════════════════════════════════
-          AVATAR SELECTOR — 8 archetypes
-          ══════════════════════════════════════ */}
-      <div>
-        <div style={{ fontSize: "0.6rem", fontFamily: "var(--font-jetbrains-mono, JetBrains Mono, monospace)", color: "#5a807a", textTransform: "uppercase", letterSpacing: "0.12em", textAlign: "center", marginBottom: 10 }}>
-          Choose Identity
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 300 }}>
-          {AVATARS.map((av) => {
-            const selected = av.id === selectedAvatarId;
-            const avatarParams: FaceParams = PRESETS[av.id] || PRESETS["ai"];
-            return (
-              <button
-                key={av.id}
-                onClick={() => onAvatarSelect(av.id)}
-                title={av.label}
-                style={{
-                  width: 54,
-                  height: 54,
-                  borderRadius: "50%",
-                  border: `2.5px solid ${selected ? teal : "#1a2e2b"}`,
-                  background: "#060c0b",
-                  boxShadow: selected ? `0 0 14px ${teal}70` : "none",
-                  cursor: "pointer",
-                  padding: 0,
-                  overflow: "hidden",
-                  transition: "all 0.2s",
-                  position: "relative",
-                  flexShrink: 0,
-                }}
-              >
-                <div style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <AvatarFace params={avatarParams} size={54} />
-                </div>
-                {selected && (
-                  <div style={{
-                    position: "absolute",
-                    inset: -3,
-                    borderRadius: "50%",
-                    border: `2.5px solid ${teal}`,
-                    boxShadow: `0 0 10px ${teal}`,
-                    pointerEvents: "none",
-                  }}/>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
