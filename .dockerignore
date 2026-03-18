@@ -1,0 +1,7 @@
+node_modules
+.env*
+*.log
+frontend/node_modules
+frontend/.next
+reference-agent/node_modules
+reference-agent/dist
