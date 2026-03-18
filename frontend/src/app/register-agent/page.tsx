@@ -270,10 +270,26 @@ export default function RegisterAgentPage() {
     setTestModalOpen(true);
     try {
       const endpoint = url.replace(/\/$/, "") + "/tasks";
+      // Pass user's LLM API key from localStorage (never stored on server)
+      let apiKey: string | undefined;
+      try {
+        const storageKey = `mf_apikey_${agentName.trim().toLowerCase().replace(/\s+/g,"_")}`;
+        const stored = localStorage.getItem(storageKey);
+        if (stored) apiKey = atob(stored);
+      } catch { /* ignore */ }
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: testQuery }),
+        body: JSON.stringify({
+          query: testQuery,
+          ...(apiKey      && { apiKey }),
+          ...(llmProvider && llmProvider !== "custom" && { llmProvider:
+            llmProvider === "claude" ? "anthropic" :
+            llmProvider === "gpt4o" || llmProvider === "gpt4omini" ? "openai" :
+            llmProvider === "llama" ? "groq" : llmProvider
+          }),
+          systemPrompt: systemPrompt || undefined,
+        }),
       });
       const data = await res.json();
       const report = data.report ?? data;
