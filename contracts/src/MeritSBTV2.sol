@@ -12,7 +12,7 @@ contract MeritSBTV2 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // ─── Types ────────────────────────────────────────────────────────────────
 
-    enum Tier { Bronze, Silver, Gold, Platinum }
+    enum Tier { Crab, Lobster, Squid, Octopus, Shark }
 
     struct Reputation {
         uint256 totalWeightedScore; // sum(score × rewardWei)
@@ -153,14 +153,14 @@ contract MeritSBTV2 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     function _computeTier(uint256 jobs, uint256 score100, uint256 volume) internal pure returns (Tier) {
         if (jobs >= PLATINUM_JOBS && score100 >= PLATINUM_SCORE * 10 && volume >= PLATINUM_VOL) {
-            return Tier.Platinum;
+            return Tier.Shark;
         }
         if (jobs >= GOLD_JOBS && score100 >= GOLD_SCORE * 10 && volume >= GOLD_VOL) {
-            return Tier.Gold;
+            return Tier.Octopus;
         }
         if (jobs >= SILVER_JOBS && score100 >= SILVER_SCORE * 10) {
-            return Tier.Silver;
+            return Tier.Squid;
         }
-        return Tier.Bronze;
+        return Tier.Lobster;
     }
 }

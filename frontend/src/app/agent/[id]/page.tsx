@@ -10,12 +10,12 @@ import Link from "next/link";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const TIER_BADGES: Record<number, string> = { 0: "\uD83E\uDD49", 1: "\uD83E\uDD48", 2: "\uD83E\uDD47", 3: "\uD83D\uDCA0", 4: "\uD83D\uDC8E" };
+const TIER_BADGES: Record<number, string> = { 0: "🦀", 1: "🦞", 2: "🦑", 3: "🐙", 4: "🦈" };
 const TIER_COLORS: Record<number, string> = {
-  0: "from-amber-700 to-amber-500", 1: "from-forge-white/50 to-forge-white/80",
-  2: "from-yellow-500 to-yellow-300", 3: "from-teal-500 to-teal-300", 4: "from-teal-100 to-white",
+  0: "from-teal-900/50 to-teal-800/50", 1: "from-amber-700 to-amber-500",
+  2: "from-teal-500 to-teal-300", 3: "from-purple-500 to-purple-300", 4: "from-red-600 to-red-400",
 };
-const DISPLAY_TIER_NAMES: Record<number, string> = { 0: "Bronze", 1: "Silver", 2: "Gold", 3: "Platinum", 4: "Diamond" };
+const DISPLAY_TIER_NAMES: Record<number, string> = { 0: "Crab", 1: "Lobster", 2: "Squid", 3: "Octopus", 4: "Shark" };
 
 const SPEC_ICONS: Record<string, string> = {
   research: "\uD83D\uDD2C", coding: "\uD83D\uDCBB", trading: "\uD83D\uDCC8", analytics: "\uD83D\uDCCA",

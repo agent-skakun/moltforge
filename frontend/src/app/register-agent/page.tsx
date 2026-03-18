@@ -125,6 +125,7 @@ export default function RegisterAgentPage() {
 
   // Brain (LLM) state
   const [llmProvider, setLlmProvider] = useState("claude");
+  const [llmModel, setLlmModel]       = useState("");
   const [llmApiKey, setLlmApiKey]     = useState("");
   const [showApiKey, setShowApiKey]   = useState(false);
   const [telegramBotToken, setTelegramBotToken] = useState("");
@@ -370,7 +371,7 @@ export default function RegisterAgentPage() {
     webhookUrl,
     mcpList,
     llmProvider,
-    llmModel: { claude: "claude-3-5-sonnet-20241022", gpt4o: "gpt-4o", gpt4omini: "gpt-4o-mini", llama: "llama-3.3-70b-versatile", custom: "custom" }[llmProvider] ?? llmProvider,
+    llmModel: llmModel || (({ claude: "claude-3-5-sonnet-20241022", gpt4o: "gpt-4o", gpt4omini: "gpt-4o-mini", llama: "llama-3.3-70b-versatile", custom: "custom" } as Record<string,string>)[llmProvider] ?? llmProvider),
     temperature,
     maxTokens,
     systemPrompt: systemPrompt || (skills.length > 0
@@ -981,13 +982,15 @@ export default function RegisterAgentPage() {
                     <SectionLabel>LLM Provider</SectionLabel>
                     <div className="grid grid-cols-1 gap-2">
                       {[
-                        { id: "claude",    label: "Claude 3.5 Sonnet", sub: "Anthropic · claude-3-5-sonnet-20241022", emoji: "🟣", color: "#a855f7" },
-                        { id: "gpt4o",     label: "GPT-4o",            sub: "OpenAI · gpt-4o",                         emoji: "🟢", color: "#22c55e" },
-                        { id: "gpt4omini", label: "GPT-4o Mini",       sub: "OpenAI · gpt-4o-mini · cheaper",          emoji: "🟢", color: "#86efac" },
-                        { id: "llama",     label: "Llama 3.3 70B",     sub: "Groq · llama-3.3-70b-versatile · free tier", emoji: "🟡", color: "#eab308" },
-                        { id: "custom",    label: "Custom Endpoint",   sub: "OpenAI-compatible API",                   emoji: "⚫", color: "#6b7280" },
+                        { id: "claude",    label: "Claude",      sub: "Anthropic", emoji: "🟣", color: "#a855f7" },
+                        { id: "gpt4o",     label: "GPT-4o",      sub: "OpenAI",    emoji: "🟢", color: "#22c55e" },
+                        { id: "gpt4omini", label: "GPT-4o Mini", sub: "OpenAI",    emoji: "🟢", color: "#86efac" },
+                        { id: "llama",     label: "Llama 3.3",   sub: "Groq",      emoji: "🟡", color: "#eab308" },
+                        { id: "grok",      label: "Grok 3",      sub: "xAI",       emoji: "⚫", color: "#6b7280" },
+                        { id: "gemini",    label: "Gemini",      sub: "Google",    emoji: "🔵", color: "#3b82f6" },
+                        { id: "custom",    label: "Custom",      sub: "OpenAI-compatible", emoji: "⚙️", color: "#6b7280" },
                       ].map(p => (
-                        <button key={p.id} onClick={() => setLlmProvider(p.id)}
+                        <button key={p.id} onClick={() => { setLlmProvider(p.id); setLlmModel(""); }}
                           className="flex items-center gap-3 p-3 rounded-xl text-left transition-all"
                           style={{ background: llmProvider === p.id ? `${p.color}15` : "#060c0b",
                             border: `1px solid ${llmProvider === p.id ? p.color : "#1a2e2b"}`,
@@ -1001,6 +1004,41 @@ export default function RegisterAgentPage() {
                         </button>
                       ))}
                     </div>
+
+                    {/* Model selector */}
+                    {llmProvider && llmProvider !== "custom" && (() => {
+                      const MODELS: Record<string, { id: string; label: string }[]> = {
+                        claude:    [
+                          { id: "claude-opus-4",              label: "Claude Opus 4" },
+                          { id: "claude-sonnet-4",            label: "Claude Sonnet 4" },
+                          { id: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet" },
+                          { id: "claude-3-5-haiku-20241022",  label: "Claude 3.5 Haiku" },
+                        ],
+                        gpt4o:     [{ id: "gpt-4o",   label: "GPT-4o" }, { id: "o3", label: "o3" }],
+                        gpt4omini: [{ id: "gpt-4o-mini", label: "GPT-4o Mini" }, { id: "o4-mini", label: "o4-mini" }],
+                        llama:     [{ id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B" }, { id: "llama-3.1-8b-instant", label: "Llama 3.1 8B" }],
+                        grok:      [{ id: "grok-3", label: "Grok 3" }, { id: "grok-3-mini", label: "Grok 3 Mini" }],
+                        gemini:    [{ id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" }, { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" }],
+                      };
+                      const models = MODELS[llmProvider] ?? [];
+                      if (!models.length) return null;
+                      return (
+                        <div className="mt-3">
+                          <SectionLabel>Model</SectionLabel>
+                          <div className="grid grid-cols-2 gap-2">
+                            {models.map(m => (
+                              <button key={m.id} onClick={() => setLlmModel(m.id)}
+                                className="px-3 py-2 rounded-xl text-xs text-left transition-all"
+                                style={{ background: llmModel === m.id ? "#1db8a815" : "#060c0b",
+                                  border: `1px solid ${llmModel === m.id ? "#1db8a8" : "#1a2e2b"}`,
+                                  color: llmModel === m.id ? "#1db8a8" : "#5a807a" }}>
+                                {m.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div>
