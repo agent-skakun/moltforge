@@ -5,7 +5,7 @@
 import React, { useState } from "react";
 import { AvatarFace, PRESETS, FaceParams } from "./AvatarFace";
 
-export type Zone = "head" | "face" | "heart" | "hands" | "wallet" | null;
+export type Zone = "head" | "face" | "heart" | "hands" | "wallet" | "brain" | "deploy" | null;
 
 export interface Avatar {
   id: string;

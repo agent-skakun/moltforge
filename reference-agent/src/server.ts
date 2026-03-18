@@ -228,6 +228,14 @@ app.post("/tasks", async (req, res) => {
     const report = await executeResearch(query, {
       systemPrompt: systemPrompt ?? config.systemPrompt,
       skillsContext: combinedSkills || undefined,
+      llmConfig: {
+        openaiApiKey: config.openaiApiKey,
+        anthropicApiKey: config.anthropicApiKey,
+        groqApiKey: config.groqApiKey,
+        model: config.llmModel,
+        temperature: config.temperature,
+        maxTokens: config.maxTokens,
+      },
     });
     const metadataURI = buildMetadataURI(report);
     res.json({ report, metadataURI });

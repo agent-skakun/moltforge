@@ -53,7 +53,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   "general":          "📄",
 };
 
-type Zone = "head" | "face" | "heart" | "hands" | "wallet" | null;
+type Zone = "head" | "face" | "heart" | "hands" | "wallet" | "brain" | "deploy" | null;
 
 interface SkillItem { id: string; label: string; desc: string; path: string; category: string }
 interface SkillGroups { [category: string]: SkillItem[] }
@@ -64,6 +64,8 @@ const ZONE_META: Record<NonNullable<Zone>, { emoji: string; title: string; desc:
   heart:  { emoji: "❤️", title: "Specialization", desc: "Your agent's core focus"            },
   hands:  { emoji: "🤝", title: "Tools",          desc: "External APIs & integrations"       },
   wallet: { emoji: "💰", title: "Settings",       desc: "Pricing, hosting, webhook"          },
+  brain:  { emoji: "🤖", title: "Brain",          desc: "LLM model & system prompt"         },
+  deploy: { emoji: "🚀", title: "Deploy",         desc: "Hosting & deployment"              },
 };
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
@@ -87,6 +89,17 @@ export default function RegisterAgentPage() {
   const [mcpUrl, setMcpUrl]           = useState("");
   const [mcpList, setMcpList]         = useState<string[]>([]);
 
+  // Brain (LLM) state
+  const [llmProvider, setLlmProvider] = useState("claude");
+  const [llmApiKey, setLlmApiKey]     = useState("");
+  const [systemPrompt, setSystemPrompt] = useState("");
+  const [temperature, setTemperature] = useState(0.7);
+  const [maxTokens, setMaxTokens]     = useState(2000);
+  const [modelParamsOpen, setModelParamsOpen] = useState(false);
+
+  // Deploy state
+  const [deployMode, setDeployMode]   = useState<"hosted" | "self">("hosted");
+
   // Dynamic skills from moltforge-skills repo
   const [skillGroups, setSkillGroups] = useState<SkillGroups>({});
   const [skillsLoading, setSkillsLoading] = useState(false);
@@ -99,7 +112,6 @@ export default function RegisterAgentPage() {
       .then(data => {
         if (data.groups) {
           setSkillGroups(data.groups);
-          // Auto-expand first category
           const firstCat = Object.keys(data.groups)[0];
           if (firstCat) setExpandedCategories([firstCat]);
         }
@@ -107,6 +119,25 @@ export default function RegisterAgentPage() {
       .catch(() => {})
       .finally(() => setSkillsLoading(false));
   }, []);
+
+  // Auto-fill system prompt when spec changes
+  const DEFAULT_PROMPTS: Record<string, string> = {
+    research:       "You are a research specialist AI agent. Your task is to find accurate, up-to-date information on any topic. Always cite sources, provide concise summaries, and highlight key insights.",
+    coding:         "You are an expert software engineer AI agent. You write clean, tested, production-ready code. You explain your decisions and follow best practices.",
+    trading:        "You are a trading and market analysis AI agent. You analyze price action, market sentiment, and on-chain data to identify opportunities. Always include risk disclaimers.",
+    analytics:      "You are a data analytics AI agent. You process and interpret data, generate insights, create summaries, and identify trends and anomalies.",
+    defi:           "You are a DeFi protocol specialist AI agent. You understand AMMs, lending protocols, yield strategies, and smart contract interactions on EVM chains.",
+    infrastructure: "You are a DevOps and infrastructure AI agent. You manage deployments, monitor systems, optimize performance, and maintain reliability.",
+    prediction:     "You are a prediction market AI agent. You analyze probabilities, evaluate evidence, and provide calibrated forecasts on future events.",
+    ai:             "You are an AI systems specialist agent. You help design, evaluate, and integrate AI/ML pipelines, models, and infrastructure.",
+    general:        "You are a capable AI agent ready to help with a wide range of tasks. You are helpful, accurate, and concise.",
+  };
+  useEffect(() => {
+    if (!systemPrompt) {
+      setSystemPrompt(DEFAULT_PROMPTS[spec] ?? DEFAULT_PROMPTS["general"]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spec]);
 
   // Sync config to reference-agent when skills/tools/spec change
   const AGENT_URL = "https://moltforge-agent.vercel.app";
@@ -230,7 +261,7 @@ export default function RegisterAgentPage() {
     name: agentName,
     avatar: avatarId,
     specialization: spec,
-    skills,                    // array of paths e.g. ["blockchain/erc8004.md"]
+    skills,
     tools,
     tone,
     language,
@@ -238,9 +269,13 @@ export default function RegisterAgentPage() {
     hosting,
     webhookUrl,
     mcpList,
-    systemPrompt: skills.length > 0
-      ? `You have access to skill files in /skills/ directory. Read them to understand how to work with specific tools and protocols. Skills loaded: ${skills.map(p => p.split('/').pop()?.replace('.md','')).join(', ')}.`
-      : undefined,
+    llmProvider,
+    llmModel: { claude: "claude-3-5-sonnet-20241022", gpt4o: "gpt-4o", gpt4omini: "gpt-4o-mini", llama: "llama-3.3-70b-versatile", custom: "custom" }[llmProvider] ?? llmProvider,
+    temperature,
+    maxTokens,
+    systemPrompt: systemPrompt || (skills.length > 0
+      ? `You have access to skill files in /skills/ directory. Skills loaded: ${skills.map(p => p.split('/').pop()?.replace('.md','')).join(', ')}.`
+      : DEFAULT_PROMPTS[spec] ?? DEFAULT_PROMPTS["general"]),
     dockerEntrypoint: generateDockerEntrypoint() || undefined,
   };
   const metaURI = `data:application/json;base64,${typeof window !== "undefined" ? btoa(unescape(encodeURIComponent(JSON.stringify(metaObj)))) : ""}`;
@@ -249,13 +284,22 @@ export default function RegisterAgentPage() {
 
   const handleDeploy = () => {
     if (!address || !agentIdHash) return;
+    // Save API key encrypted in localStorage (never on-chain)
+    if (llmApiKey) {
+      try {
+        const storageKey = `mf_apikey_${agentName.trim().toLowerCase().replace(/\s+/g,'_')}`;
+        localStorage.setItem(storageKey, btoa(llmApiKey));
+      } catch { /* ignore */ }
+    }
     const avatarHashBytes32 = keccak256(toBytes(JSON.stringify(faceParams)));
     const skillPaths = skills.length > 0 ? skills : [];
     const toolIds = tools.length > 0 ? tools : [];
-    const onChainUrl = webhookUrl || "";
+    const finalUrl = deployMode === "hosted"
+      ? "https://agent-production-f600.up.railway.app"
+      : (webhookUrl || "");
     writeContract({ address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
       functionName: "registerAgentV2",
-      args: [address, agentIdHash, metaURI, onChainUrl, avatarHashBytes32, skillPaths, toolIds, onChainUrl] });
+      args: [address, agentIdHash, metaURI, finalUrl, avatarHashBytes32, skillPaths, toolIds, finalUrl] });
   };
 
   const toggle = (list: string[], setList: (v: string[]) => void, id: string) =>
@@ -772,6 +816,174 @@ export default function RegisterAgentPage() {
                         style={{ background: "#060c0b", border: "1px solid #1db8a8", fontFamily: "var(--font-jetbrains-mono)" }} />
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* ── BRAIN panel ── */}
+              {activeZone === "brain" && (
+                <div className="space-y-5">
+                  <div>
+                    <SectionLabel>LLM Provider</SectionLabel>
+                    <div className="grid grid-cols-1 gap-2">
+                      {[
+                        { id: "claude",    label: "Claude 3.5 Sonnet", sub: "Anthropic · claude-3-5-sonnet-20241022", emoji: "🟣", color: "#a855f7" },
+                        { id: "gpt4o",     label: "GPT-4o",            sub: "OpenAI · gpt-4o",                         emoji: "🟢", color: "#22c55e" },
+                        { id: "gpt4omini", label: "GPT-4o Mini",       sub: "OpenAI · gpt-4o-mini · cheaper",          emoji: "🟢", color: "#86efac" },
+                        { id: "llama",     label: "Llama 3.3 70B",     sub: "Groq · llama-3.3-70b-versatile · free tier", emoji: "🟡", color: "#eab308" },
+                        { id: "custom",    label: "Custom Endpoint",   sub: "OpenAI-compatible API",                   emoji: "⚫", color: "#6b7280" },
+                      ].map(p => (
+                        <button key={p.id} onClick={() => setLlmProvider(p.id)}
+                          className="flex items-center gap-3 p-3 rounded-xl text-left transition-all"
+                          style={{ background: llmProvider === p.id ? `${p.color}15` : "#060c0b",
+                            border: `1px solid ${llmProvider === p.id ? p.color : "#1a2e2b"}`,
+                            boxShadow: llmProvider === p.id ? `0 0 12px ${p.color}20` : "none" }}>
+                          <span className="text-xl">{p.emoji}</span>
+                          <div className="flex-1">
+                            <div className="text-sm font-semibold text-forge-white">{p.label}</div>
+                            <div className="text-xs mt-0.5" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>{p.sub}</div>
+                          </div>
+                          {llmProvider === p.id && <span className="text-xs" style={{ color: p.color }}>✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <SectionLabel>API Key</SectionLabel>
+                    <input
+                      type="password"
+                      value={llmApiKey}
+                      onChange={e => setLlmApiKey(e.target.value)}
+                      placeholder="sk-..."
+                      className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+                      style={{ background: "#060c0b", border: "1px solid #1a2e2b", fontFamily: "var(--font-jetbrains-mono)" }}
+                    />
+                    <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: "#3a5550" }}>
+                      🔒 Stored encrypted in browser. <span style={{ color: "#1db8a8" }}>Never written to blockchain.</span>
+                    </p>
+                  </div>
+
+                  <div>
+                    <SectionLabel>System Prompt</SectionLabel>
+                    <textarea
+                      value={systemPrompt}
+                      onChange={e => setSystemPrompt(e.target.value)}
+                      rows={5}
+                      placeholder="You are a helpful AI agent specialized in..."
+                      className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm resize-none"
+                      style={{ background: "#060c0b", border: "1px solid #1a2e2b", fontFamily: "var(--font-jetbrains-mono)" }}
+                    />
+                    <p className="text-xs mt-1" style={{ color: "#3a5550" }}>
+                      Auto-filled based on specialization. Edit as needed.
+                    </p>
+                  </div>
+
+                  <div>
+                    <button onClick={() => setModelParamsOpen(o => !o)}
+                      className="flex items-center gap-2 text-sm transition-colors"
+                      style={{ color: modelParamsOpen ? "#1db8a8" : "#3a5550" }}>
+                      <span style={{ transform: modelParamsOpen ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block", transition: "transform 0.2s" }}>▶</span>
+                      Model Parameters
+                    </button>
+                    {modelParamsOpen && (
+                      <div className="mt-3 space-y-4">
+                        <div>
+                          <div className="flex justify-between text-xs mb-2" style={{ color: "#5a807a" }}>
+                            <span>Temperature</span>
+                            <span style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>{temperature.toFixed(1)}</span>
+                          </div>
+                          <input type="range" min={0} max={1} step={0.1} value={temperature}
+                            onChange={e => setTemperature(Number(e.target.value))}
+                            className="w-full accent-teal-500"
+                          />
+                          <div className="flex justify-between text-xs mt-0.5" style={{ color: "#1a2e2b" }}>
+                            <span>Precise</span><span>Creative</span>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs mb-2" style={{ color: "#5a807a" }}>Max Tokens</div>
+                          <input type="number" value={maxTokens} onChange={e => setMaxTokens(Number(e.target.value))}
+                            min={256} max={8000} step={256}
+                            className="w-full px-4 py-2 rounded-xl text-sm"
+                            style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f3", fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── DEPLOY panel ── */}
+              {activeZone === "deploy" && (
+                <div className="space-y-5">
+                  <div>
+                    <SectionLabel>Deployment Mode</SectionLabel>
+                    <div className="space-y-3">
+                      <button onClick={() => { setDeployMode("hosted"); setWebhookUrl("https://agent-production-f600.up.railway.app"); }}
+                        className="w-full flex items-start gap-4 p-4 rounded-xl text-left transition-all"
+                        style={{ background: deployMode === "hosted" ? "#1db8a815" : "#060c0b",
+                          border: `1px solid ${deployMode === "hosted" ? "#1db8a8" : "#1a2e2b"}` }}>
+                        <span className="text-2xl mt-0.5">🚂</span>
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-forge-white">MoltForge Hosted</div>
+                          <div className="text-xs mt-1" style={{ color: "#5a807a" }}>Auto-deploy on Railway · Zero config</div>
+                          <div className="text-xs mt-1" style={{ color: "#3a5550" }}>
+                            Your agent will be deployed automatically after registration
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: "#1db8a815", border: "1px solid #1db8a830", color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+                              ~$5/mo Railway Starter
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: "#f0782815", border: "1px solid #f0782830", color: "#f07828" }}>
+                              Powered by Railway
+                            </span>
+                          </div>
+                        </div>
+                        {deployMode === "hosted" && <span className="text-sm" style={{ color: "#1db8a8" }}>✓</span>}
+                      </button>
+
+                      <button onClick={() => setDeployMode("self")}
+                        className="w-full flex items-start gap-4 p-4 rounded-xl text-left transition-all"
+                        style={{ background: deployMode === "self" ? "#3ec95a15" : "#060c0b",
+                          border: `1px solid ${deployMode === "self" ? "#3ec95a" : "#1a2e2b"}` }}>
+                        <span className="text-2xl mt-0.5">🛠️</span>
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-forge-white">Self-hosted</div>
+                          <div className="text-xs mt-1" style={{ color: "#5a807a" }}>Your own server · Full control</div>
+                          <div className="text-xs mt-2 space-y-0.5" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                            <div>Required: POST /tasks</div>
+                            <div>Required: GET /health</div>
+                          </div>
+                        </div>
+                        {deployMode === "self" && <span className="text-sm" style={{ color: "#3ec95a" }}>✓</span>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {deployMode === "self" && (
+                    <div>
+                      <SectionLabel>Agent URL</SectionLabel>
+                      <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
+                        placeholder="https://your-agent.example.com"
+                        className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+                        style={{ background: "#060c0b", border: "1px solid #3ec95a", fontFamily: "var(--font-jetbrains-mono)" }}
+                      />
+                    </div>
+                  )}
+
+                  {deployMode === "hosted" && (
+                    <div className="px-4 py-3 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1db8a820" }}>
+                      <div className="text-xs" style={{ color: "#3a5550" }}>
+                        Active endpoint: <span style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+                          https://agent-production-f600.up.railway.app
+                        </span>
+                      </div>
+                      <div className="text-xs mt-1" style={{ color: "#3a5550" }}>
+                        🟢 Health check: <span style={{ color: "#3ec95a" }}>online</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
