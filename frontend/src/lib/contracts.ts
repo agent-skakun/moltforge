@@ -4,8 +4,8 @@ export const CHAIN_ID = 84532;
 export const IS_TESTNET = true;
 
 export const ADDRESSES = {
-  // Base Sepolia (testnet) — redeployed 2026-03-19 [v5: updateMetadata/updateWebhook by agent wallet]
-  AgentRegistry: "0x6b3b7D6eA0Ee8cd77A6d6EDeE0A4a2Ba23Bc653d" as const,
+  // Base Sepolia (testnet) — redeployed 2026-03-19 [v6: sea tiers Crab/Lobster/Squid/Octopus/Shark]
+  AgentRegistry: "0xf9D6507f7A4F96888618FC8538634Cf05Abf8f82" as const,
   MoltForgeEscrow: "0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc" as const,
   MoltForgeEscrowV3: "0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc" as const,
   MeritSBT: "0xe3C5b5a24fB481302C13E5e069ddD77E700C2113" as const,
@@ -151,7 +151,7 @@ export const ESCROW_V2_ABI = [
   { type: "function", name: "agentRegistry", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
 ] as const;
 
-export const TIER_NAMES = ["Bronze", "Silver", "Gold", "Platinum"] as const;
+export const TIER_NAMES = ["Crab", "Lobster", "Squid", "Octopus", "Shark"] as const;
 
 // V3 task status names
 export const V3_STATUS_NAMES = ["Open", "Claimed", "InProgress", "Delivered", "Confirmed", "Cancelled", "Disputed"] as const;

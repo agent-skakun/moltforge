@@ -20,11 +20,11 @@ contract AgentRegistry {
 
     /// @notice Agent tier aligned with MeritSBT tiers
     enum Tier {
-        None,     // 0 — no tier
-        Bronze,   // 1
-        Silver,   // 2
-        Gold,     // 3
-        Platinum  // 4
+        Crab,     // 0 — newcomer, <5 tasks
+        Lobster,  // 1 — 5-20 tasks, rating 3.5+
+        Squid,    // 2 — 20-50 tasks, rating 4.0+
+        Octopus,  // 3 — 50-100 tasks, rating 4.5+
+        Shark     // 4 — 100+ tasks, rating 4.8+
     }
 
     /// @notice Core agent record stored on-chain
@@ -148,7 +148,7 @@ contract AgentRegistry {
             score: 0,
             jobsCompleted: 0,
             rating: 0,
-            tier: Tier.None
+            tier: Tier.Crab
         });
 
         _walletToId[wallet] = numericId;
@@ -210,7 +210,7 @@ contract AgentRegistry {
         _requireExists(numericId);
         if (address(meritSBT) == address(0)) revert MeritSBTNotSet();
         Agent storage a = _agents[numericId];
-        if (a.tier < Tier.Bronze) revert NotTier1();
+        if (a.tier < Tier.Lobster) revert NotTier1();
         uint256 tokenId = meritSBT.mintTier(a.wallet, MeritSBT.Tier(uint8(a.tier)));
         emit VerifierSBTMinted(numericId, a.wallet, tokenId);
     }
@@ -291,14 +291,14 @@ contract AgentRegistry {
     function _maybeTierUp(uint256 numericId, Agent storage a) internal {
         Tier newTier = a.tier;
 
-        if (a.jobsCompleted >= 100 && a.tier < Tier.Platinum) {
-            newTier = Tier.Platinum;
-        } else if (a.jobsCompleted >= 50 && a.tier < Tier.Gold) {
-            newTier = Tier.Gold;
-        } else if (a.jobsCompleted >= 20 && a.tier < Tier.Silver) {
-            newTier = Tier.Silver;
-        } else if (a.jobsCompleted >= 5 && a.tier < Tier.Bronze) {
-            newTier = Tier.Bronze;
+        if (a.jobsCompleted >= 100 && a.tier < Tier.Shark) {
+            newTier = Tier.Shark;
+        } else if (a.jobsCompleted >= 50 && a.tier < Tier.Octopus) {
+            newTier = Tier.Octopus;
+        } else if (a.jobsCompleted >= 20 && a.tier < Tier.Squid) {
+            newTier = Tier.Squid;
+        } else if (a.jobsCompleted >= 5 && a.tier < Tier.Lobster) {
+            newTier = Tier.Lobster;
         }
 
         if (newTier != a.tier) {

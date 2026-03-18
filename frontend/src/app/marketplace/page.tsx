@@ -2,7 +2,7 @@
 
 import { useReadContract, useReadContracts } from "wagmi";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
-import { parseMetadataSync, parseMetadataURI, type AgentMetadata } from "@/lib/metadata";
+import { parseMetadataSync, parseMetadataURI, getLLMLabel, LLM_PROVIDERS, type AgentMetadata } from "@/lib/metadata";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
@@ -30,8 +30,8 @@ interface AgentData {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TIER_LABELS = ["—", "Bronze", "Silver", "Gold", "Platinum"] as const;
-const TIER_COLORS = ["#3a5550", "#cd7f32", "#c0c0c0", "#ffd700", "#e5e4e2"] as const;
+const TIER_LABELS = ["🦀 Crab", "🦞 Lobster", "🦑 Squid", "🐙 Octopus", "🦈 Shark"] as const;
+const TIER_COLORS = ["#5a807a", "#cd7f32", "#1db8a8", "#a855f7", "#e63030"] as const;
 
 const SPEC_ICONS: Record<string, string> = {
   research: "🔬", coding: "💻", trading: "📈", analytics: "📊",
@@ -52,14 +52,6 @@ const SPECIALIZATIONS = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const LLM_BADGES: Record<string, { emoji: string; label: string; color: string }> = {
-  claude:    { emoji: "🟣", label: "Claude",    color: "#a855f7" },
-  gpt4o:     { emoji: "🟢", label: "GPT-4o",   color: "#22c55e" },
-  gpt4omini: { emoji: "🟢", label: "GPT-4o Mini", color: "#86efac" },
-  llama:     { emoji: "🟡", label: "Llama",    color: "#eab308" },
-  custom:    { emoji: "⚫", label: "Custom",   color: "#6b7280" },
-};
 
 /** Hook: async-loads full metadata (supports ipfs://, https://, data:) */
 function useAgentMetadata(uri: string): AgentMetadata {
@@ -106,7 +98,8 @@ function AgentCard({ agent }: { agent: AgentData }) {
   const meta = useAgentMetadata(agent.metadataURI);
   const spec = meta.specialization?.toLowerCase() || detectSpecFromSkills(agent);
   const name = meta.name || `Agent #${agent.numericId}`;
-  const llmBadge = meta.llmProvider ? LLM_BADGES[meta.llmProvider] : null;
+  const llmLabel = getLLMLabel(meta.llmProvider, meta.llmModel);
+  const llmColor = meta.llmProvider ? (LLM_PROVIDERS[meta.llmProvider as keyof typeof LLM_PROVIDERS]?.color ?? "#6b7280") : null;
   const preset = specToPreset(spec);
   const faceParams: FaceParams = PRESETS[preset] ?? PRESETS["ai"];
   const tierColor = TIER_COLORS[agent.tier] ?? TIER_COLORS[0];
@@ -175,11 +168,11 @@ function AgentCard({ agent }: { agent: AgentData }) {
               {TIER_LABELS[agent.tier]}
             </div>
           )}
-          {llmBadge && (
+          {llmLabel && llmColor && (
             <div className="px-2 py-0.5 rounded-full text-xs font-semibold"
-              style={{ background: `${llmBadge.color}15`, border: `1px solid ${llmBadge.color}50`, color: llmBadge.color,
-                fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem" }}>
-              {llmBadge.emoji} {llmBadge.label}
+              style={{ background: `${llmColor}15`, border: `1px solid ${llmColor}50`, color: llmColor,
+                fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {llmLabel}
             </div>
           )}
         </div>
