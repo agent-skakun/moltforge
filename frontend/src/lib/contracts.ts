@@ -5,7 +5,7 @@ export const IS_TESTNET = true;
 
 export const ADDRESSES = {
   // Base Sepolia (testnet) — redeployed 2026-03-18 [v4 registerAgent open, no onlyOwner]
-  AgentRegistry: "0x43D130bb89033e9C271aed56ebE636183A59bF11" as const,
+  AgentRegistry: "0x5F46aaA28612Bb3dB280fDbb36198Dc5b608850d" as const,
   MoltForgeEscrow: "0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc" as const,
   MoltForgeEscrowV3: "0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc" as const,
   MeritSBT: "0xe3C5b5a24fB481302C13E5e069ddD77E700C2113" as const,
