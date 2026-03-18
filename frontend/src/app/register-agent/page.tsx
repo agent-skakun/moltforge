@@ -468,6 +468,34 @@ export default function RegisterAgentPage() {
         </p>
       </div>
 
+      {/* Mode toggle */}
+      <div className="flex justify-center gap-3 mb-6">
+        <button
+          onClick={() => setDeployMode("hosted")}
+          style={{
+            padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+            background: deployMode === "hosted" ? "#F97316" : "transparent",
+            color: deployMode === "hosted" ? "#000" : "#94A3B8",
+            border: deployMode === "hosted" ? "1px solid #F97316" : "1px solid #334155",
+            transition: "all 0.2s"
+          }}
+        >
+          🛠 Create New Agent
+        </button>
+        <button
+          onClick={() => setDeployMode("existing")}
+          style={{
+            padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+            background: deployMode === "existing" ? "#22C55E" : "transparent",
+            color: deployMode === "existing" ? "#000" : "#94A3B8",
+            border: deployMode === "existing" ? "1px solid #22C55E" : "1px solid #334155",
+            transition: "all 0.2s"
+          }}
+        >
+          🔗 Connect Existing Agent
+        </button>
+      </div>
+
       {deployMode !== "existing" && (
       <div className="flex items-start justify-center gap-0 relative max-w-6xl mx-auto px-6" style={{ overflowX: "visible" }}>
 
