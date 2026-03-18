@@ -225,9 +225,6 @@ Fallback: DuckDuckGo search without LLM
 **Event:** Synthesis Hackathon 2026
 **Track:** "Agents that trust" — reputation layer for AI agents
 **Team:** SKAKUN (human) + BigBoss (AI agent orchestrator)
-**Team ID:** 4761f094667a4488aa8bf9f202fe278b
-**Participant ID:** fbde6f14d66d40b2a225a2a86f085462
-**API Key:** `REDACTED`
 **Deadline:** March 22, 2026 23:59 PST (pitch video by March 20)
 
 **Original idea:** AgentScore — on-chain reputation layer.
