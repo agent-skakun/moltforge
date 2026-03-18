@@ -133,8 +133,6 @@ export default function RegisterAgentPage() {
 
   // Deploy state
   const [deployMode, setDeployMode]   = useState<"hosted" | "self">("hosted");
-  const [railwayToken, setRailwayToken] = useState("");
-  const [railwayProjectId, setRailwayProjectId] = useState("cb260e6f-8ca6-4f0e-bf99-99f75e70c9ad"); // default: our project
   const [deployStatus, setDeployStatus] = useState<"idle" | "deploying" | "done" | "error">("idle");
   const [deployResult, setDeployResult] = useState<{ agentUrl: string; dashboardUrl: string; domain: string } | null>(null);
   const [deployError, setDeployError] = useState("");
@@ -235,7 +233,7 @@ export default function RegisterAgentPage() {
 
   // Trigger Railway auto-deploy after on-chain registration
   useEffect(() => {
-    if (isSuccess && deployMode === "hosted" && railwayToken && deployStatus === "idle") {
+    if (isSuccess && deployMode === "hosted" && deployStatus === "idle") {
       triggerRailwayDeploy(agentOnChainUrl || "");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -351,7 +349,7 @@ export default function RegisterAgentPage() {
   // Auto-deploy to Railway after on-chain registration succeeds
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const triggerRailwayDeploy = async (_agentUrl?: string) => {
-    if (deployMode !== "hosted" || !railwayToken) return;
+    if (deployMode !== "hosted") return;
     setDeployStatus("deploying");
     setDeployError("");
     try {
@@ -359,9 +357,8 @@ export default function RegisterAgentPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          railwayToken,
-          projectId: railwayProjectId || undefined,
           agentName,
+          agentNumericId: numericId ? numericId.toString() : undefined,
           walletAddress: address,
           registryAddress: ADDRESSES.AgentRegistry,
           escrowAddress: ADDRESSES.MoltForgeEscrowV3 ?? ADDRESSES.MoltForgeEscrow,
@@ -1066,45 +1063,15 @@ export default function RegisterAgentPage() {
                   )}
 
                   {deployMode === "hosted" && (
-                    <div className="space-y-3">
-                      <div>
-                        <SectionLabel>Railway API Token</SectionLabel>
-                        <input
-                          type="password"
-                          value={railwayToken}
-                          onChange={e => setRailwayToken(e.target.value)}
-                          placeholder="Your Railway account token (railway.com/account/tokens)"
-                          className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
-                          style={{ background: "#060c0b", border: `1px solid ${railwayToken ? "#1db8a8" : "#1a2e2b"}`, fontFamily: "var(--font-jetbrains-mono)" }}
-                        />
-                        <p className="text-xs mt-1" style={{ color: "#3a5550" }}>
-                          🔒 Token stays in browser. Get it at{" "}
-                          <a href="https://railway.com/account/tokens" target="_blank" rel="noopener noreferrer" style={{ color: "#1db8a8" }}>
-                            railway.com/account/tokens
-                          </a>
-                        </p>
+                    <div className="px-4 py-3 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1db8a820" }}>
+                      <div className="text-xs font-semibold mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+                        ⚡ MoltForge Hosted — Auto-deploy
                       </div>
-                      {railwayToken && (
-                        <div>
-                          <SectionLabel>Railway Project ID <span style={{ color: "#3a5550" }}>(optional — leave blank to create new)</span></SectionLabel>
-                          <input
-                            value={railwayProjectId}
-                            onChange={e => setRailwayProjectId(e.target.value)}
-                            placeholder="Leave blank to create new project"
-                            className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
-                            style={{ background: "#060c0b", border: "1px solid #1a2e2b", fontFamily: "var(--font-jetbrains-mono)" }}
-                          />
-                        </div>
-                      )}
-                      <div className="px-4 py-3 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1db8a820" }}>
-                        <div className="text-xs" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
-                          ⚡ Auto-deploy flow
-                        </div>
-                        <div className="text-xs mt-1.5 space-y-0.5" style={{ color: "#3a5550" }}>
-                          <div>1. Register agent on-chain → get ID</div>
-                          <div>2. Deploy reference-agent to Railway → get URL</div>
-                          <div>3. Agent URL recorded on-chain automatically</div>
-                        </div>
+                      <div className="text-xs space-y-1" style={{ color: "#3a5550" }}>
+                        <div>1. Submit form → agent registers on-chain</div>
+                        <div>2. Platform deploys your agent to Railway automatically</div>
+                        <div>3. You get a unique URL: <span style={{ color: "#5a807a" }}>mf-agent-[id].up.railway.app</span></div>
+                        <div>4. URL recorded on-chain — no external accounts needed</div>
                       </div>
                     </div>
                   )}
@@ -1144,7 +1111,7 @@ export default function RegisterAgentPage() {
             </div>
 
             {/* ── Railway Auto-Deploy Status ── */}
-            {deployMode === "hosted" && railwayToken && (
+            {deployMode === "hosted" && (
               <div className="px-6 py-4 rounded-xl" style={{ background: "#0a1a17", border: `1px solid ${deployStatus === "done" ? "#3ec95a40" : deployStatus === "error" ? "#e6303040" : "#1a2e2b"}` }}>
                 <div className="text-xs font-medium uppercase tracking-widest mb-3" style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#1db8a8" }}>
                   🚂 Railway Auto-Deploy
