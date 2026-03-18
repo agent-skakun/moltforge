@@ -56,7 +56,7 @@ contract MoltForgeEscrowV1 is
 
     address public feeRecipient;
     uint256 public taskCount;
-    mapping(uint256 => Task) private _tasks;
+    mapping(uint256 => Task) internal _tasks;
     mapping(address => bool) public isArbiter;
 
     // -------------------------------------------------------------------------
