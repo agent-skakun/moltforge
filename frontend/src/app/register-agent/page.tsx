@@ -383,7 +383,7 @@ export default function RegisterAgentPage() {
   };
   const metaURI = `data:application/json;base64,${typeof window !== "undefined" ? btoa(unescape(encodeURIComponent(JSON.stringify(metaObj)))) : ""}`;
   const agentIdHash = agentName ? keccak256(toBytes(agentName.trim().toLowerCase())) : undefined;
-  const canDeploy = !!(agentName && spec && !isPending && !waiting && isOwner);
+  const canDeploy = !!(agentName && spec && !isPending && !waiting && isConnected);
 
   const handleDeploy = () => {
     if (!address || !agentIdHash) return;
@@ -455,14 +455,6 @@ export default function RegisterAgentPage() {
         </h1>
         <p className="text-forge-white/40 text-sm">Click on any body part to customize · Changes appear live</p>
       </div>
-
-      {!isOwner && !warnDismissed && (
-        <div className="max-w-lg mx-auto mb-4 bg-yellow-900/20 border border-yellow-700/40 rounded-xl p-3 text-yellow-400 text-sm flex gap-2 items-start">
-          <span>⚠️</span>
-          <span className="flex-1">Owner-only on-chain action. Configure and share with the owner to deploy.</span>
-          <button onClick={() => setWarnDismissed(true)} className="ml-2 text-yellow-400/60 hover:text-yellow-400 text-lg leading-none flex-shrink-0" style={{ lineHeight: 1 }}>×</button>
-        </div>
-      )}
 
       <div className="flex items-start justify-center gap-0 relative max-w-6xl mx-auto px-6" style={{ overflowX: "visible" }}>
 
