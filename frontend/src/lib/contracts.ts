@@ -6,6 +6,7 @@ export const ADDRESSES = {
 } as const;
 
 export const AGENT_REGISTRY_ABI = [
+  // V1 functions
   { type: "function", name: "agentCount", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
   { type: "function", name: "getAgent", inputs: [{ name: "numericId", type: "uint256" }], outputs: [{ name: "", type: "tuple", components: [{ name: "wallet", type: "address" }, { name: "agentId", type: "bytes32" }, { name: "metadataURI", type: "string" }, { name: "webhookUrl", type: "string" }, { name: "registeredAt", type: "uint64" }, { name: "status", type: "uint8" }, { name: "score", type: "uint256" }, { name: "jobsCompleted", type: "uint32" }, { name: "rating", type: "uint32" }, { name: "tier", type: "uint8" }] }], stateMutability: "view" },
   { type: "function", name: "getAgentIdByWallet", inputs: [{ name: "wallet", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
@@ -14,6 +15,17 @@ export const AGENT_REGISTRY_ABI = [
   { type: "function", name: "registerAgent", inputs: [{ name: "wallet", type: "address" }, { name: "agentId", type: "bytes32" }, { name: "metadataURI", type: "string" }, { name: "webhookUrl", type: "string" }], outputs: [{ name: "numericId", type: "uint256" }], stateMutability: "nonpayable" },
   { type: "function", name: "owner", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
   { type: "function", name: "isActive", inputs: [{ name: "numericId", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
+  // V2 functions
+  { type: "function", name: "registerAgentV2", inputs: [{ name: "wallet", type: "address" }, { name: "agentId", type: "bytes32" }, { name: "metadataURI", type: "string" }, { name: "webhookUrl", type: "string" }, { name: "avatarHash", type: "bytes32" }, { name: "skills", type: "string[]" }, { name: "tools", type: "string[]" }, { name: "_agentUrl", type: "string" }], outputs: [{ name: "numericId", type: "uint256" }], stateMutability: "nonpayable" },
+  { type: "function", name: "getAgentExtended", inputs: [{ name: "numericId", type: "uint256" }], outputs: [{ name: "agent", type: "tuple", components: [{ name: "wallet", type: "address" }, { name: "agentId", type: "bytes32" }, { name: "metadataURI", type: "string" }, { name: "webhookUrl", type: "string" }, { name: "registeredAt", type: "uint64" }, { name: "status", type: "uint8" }, { name: "score", type: "uint256" }, { name: "jobsCompleted", type: "uint32" }, { name: "rating", type: "uint32" }, { name: "tier", type: "uint8" }], { name: "avatarHash", type: "bytes32" }, { name: "skills", type: "string[]" }, { name: "tools", type: "string[]" }, { name: "_agentUrl", type: "string" }], stateMutability: "view" },
+  { type: "function", name: "agentAvatarHash", inputs: [{ name: "", type: "uint256" }], outputs: [{ name: "", type: "bytes32" }], stateMutability: "view" },
+  { type: "function", name: "agentUrl", inputs: [{ name: "", type: "uint256" }], outputs: [{ name: "", type: "string" }], stateMutability: "view" },
+  { type: "function", name: "getAgentSkills", inputs: [{ name: "numericId", type: "uint256" }], outputs: [{ name: "", type: "string[]" }], stateMutability: "view" },
+  { type: "function", name: "getAgentTools", inputs: [{ name: "numericId", type: "uint256" }], outputs: [{ name: "", type: "string[]" }], stateMutability: "view" },
+  { type: "function", name: "updateAgentUrl", inputs: [{ name: "numericId", type: "uint256" }, { name: "_agentUrl", type: "string" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "updateAgentSkills", inputs: [{ name: "numericId", type: "uint256" }, { name: "skills", type: "string[]" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "updateAgentTools", inputs: [{ name: "numericId", type: "uint256" }, { name: "tools", type: "string[]" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "updateAvatarHash", inputs: [{ name: "numericId", type: "uint256" }, { name: "avatarHash", type: "bytes32" }], outputs: [], stateMutability: "nonpayable" },
 ] as const;
 
 export const ESCROW_ABI = [

@@ -38,9 +38,9 @@ contract AgentRegistryV1 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     MeritSBTV1 public meritSBT;
     uint256 public agentCount;
 
-    mapping(uint256 => Agent) private _agents;
-    mapping(address => uint256) private _walletToId;
-    mapping(bytes32 => uint256) private _agentIdToId;
+    mapping(uint256 => Agent) internal _agents;
+    mapping(address => uint256) internal _walletToId;
+    mapping(bytes32 => uint256) internal _agentIdToId;
 
     // --- Merit 2.0 ---
 
