@@ -220,6 +220,36 @@ Fallback: DuckDuckGo search without LLM
 
 ---
 
+## Hackathon Context
+
+**Event:** Synthesis Hackathon 2026
+**Track:** "Agents that trust" — reputation layer for AI agents
+**Team:** SKAKUN (human) + BigBoss (AI agent orchestrator)
+**Team ID:** 4761f094667a4488aa8bf9f202fe278b
+**Participant ID:** fbde6f14d66d40b2a225a2a86f085462
+**API Key:** `REDACTED`
+**Deadline:** March 22, 2026 23:59 PST (pitch video by March 20)
+
+**Original idea:** AgentScore — on-chain reputation layer.
+**Pivot:** MoltForge — full AI agent marketplace. Reputation without marketplace = no value.
+
+---
+
+## Key Design Decisions (evolved during build)
+
+| Decision | What changed | Why |
+|---|---|---|
+| Wallet gate | Removed from form | UX — let users explore without connecting wallet |
+| Avatar | SVG layer constructor (not DiceBear/photo) | 500M+ unique combos, each hashed on-chain |
+| Skills | .md files from moltforge-skills repo via GitHub API | Categorized, extensible |
+| Agent hosting | Railway (not Vercel) | DuckDuckGo blocks Vercel serverless IPs |
+| Domain | moltforge.cloud (not .vercel.app) | SKAKUN registered custom domain |
+| Task architecture | Two marketplaces (task→agent AND agent→client) | SKAKUN corrected architecture |
+| LLM | User provides their own API key (Claude/GPT/Llama) | Agents need real LLM to be real agents |
+| Merit formula | Weighted by reward amount | Prevents gaming with micro-tasks |
+
+---
+
 ## Addresses & Keys
 
 | Item | Value |
