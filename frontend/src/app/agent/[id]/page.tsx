@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useReadContract } from "wagmi";
 import { ADDRESSES, AGENT_REGISTRY_ABI, MERIT_SBT_ABI } from "@/lib/contracts";
-import { parseMetadataURI, parseMetadataSync, type AgentMetadata } from "@/lib/metadata";
+import { parseMetadataURI, parseMetadataSync, getLLMLabel, type AgentMetadata } from "@/lib/metadata";
 import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
 import Link from "next/link";
 
@@ -48,6 +48,11 @@ function formatScore(score: bigint): string {
   if (n === 0) return "0";
   if (n < 1) return n.toFixed(3);
   return n.toFixed(1);
+}
+
+function formatDate(ts: bigint | number): string {
+  const d = new Date(Number(ts) * 1000);
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -143,7 +148,9 @@ export default function AgentProfilePage() {
   const statusActive = agent.status === 1;
   const ratingDisplay = (agent.rating / 100).toFixed(2);
   const capabilities = meta.capabilities ?? [];
+  const metaTools = meta.tools ?? [];
   const metaAgentUrl = meta.agentUrl || webhookUrl;
+  const llmLabel = getLLMLabel(meta.llmProvider, meta.llmModel);
 
   // Load IPFS/https metadata async
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -151,7 +158,6 @@ export default function AgentProfilePage() {
     if (!agent.metadataURI) return;
     parseMetadataURI(agent.metadataURI).then(setIpfsMeta).catch(() => {});
   }, [agent.metadataURI]);
-  const registeredDate = new Date(Number(agent.registeredAt) * 1000);
 
   const testAgent = async () => {
     if (!webhookUrl) return;
@@ -212,7 +218,7 @@ export default function AgentProfilePage() {
 
               <p className="font-jetbrainsMono text-xs mb-1" style={{ color: "#3a5550" }}>{agent.wallet}</p>
               <p className="text-xs" style={{ color: "#3a5550" }}>
-                Registered {registeredDate.toLocaleDateString()} · {statusActive ? "Active" : "Suspended"}
+                Registered {formatDate(agent.registeredAt)} · {statusActive ? "Active" : "Suspended"}
               </p>
             </div>
           </div>
@@ -234,7 +240,15 @@ export default function AgentProfilePage() {
         ))}
       </div>
 
-      {/* ── Skills & Tools ──────────────────────────────────────── */}
+      {/* ── LLM Model ──────────────────────────────────────────── */}
+      {llmLabel && (
+        <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+          <h3 className="text-xs uppercase tracking-wider mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>LLM Model</h3>
+          <p className="text-sm font-semibold" style={{ color: "#e8f5f3" }}>{llmLabel}</p>
+        </div>
+      )}
+
+      {/* ── Skills & Tools (on-chain) ──────────────────────────── */}
       {((skills && skills.length > 0) || (tools && tools.length > 0)) && (
         <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
           {skills.length > 0 && (
@@ -255,11 +269,11 @@ export default function AgentProfilePage() {
           )}
           {tools.length > 0 && (
             <div>
-              <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>Tools</h3>
+              <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#6b7280", fontFamily: "var(--font-jetbrains-mono)" }}>Tools (on-chain)</h3>
               <div className="flex flex-wrap gap-2">
                 {tools.map(t => (
                   <span key={t} className="px-2 py-1 rounded-lg text-xs"
-                    style={{ background: "#f0782810", border: "1px solid #f0782820", color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
+                    style={{ background: "#6b728010", border: "1px solid #6b728030", color: "#6b7280", fontFamily: "var(--font-jetbrains-mono)" }}>
                     {t}
                   </span>
                 ))}
@@ -269,15 +283,7 @@ export default function AgentProfilePage() {
         </div>
       )}
 
-      {/* ── Agent URL ──────────────────────────────────────────── */}
-      {metaAgentUrl && (
-        <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
-          <h3 className="text-xs uppercase tracking-wider mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Agent Endpoint</h3>
-          <p className="text-sm font-jetbrainsMono break-all" style={{ color: "#5a807a" }}>{metaAgentUrl}</p>
-        </div>
-      )}
-
-      {/* ── Capabilities (from IPFS metadata) ──────────────────── */}
+      {/* ── Capabilities (from IPFS metadata) — orange tags ──── */}
       {capabilities.length > 0 && (
         <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
           <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>Capabilities</h3>
@@ -285,10 +291,42 @@ export default function AgentProfilePage() {
             {capabilities.map(c => (
               <span key={c} className="px-3 py-1 rounded-full text-sm"
                 style={{ background: "#f0782810", border: "1px solid #f0782840", color: "#d06020" }}>
-                ✦ {c}
+                {c}
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── Tools (from IPFS metadata) — grey tags ──────────── */}
+      {metaTools.length > 0 && (
+        <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+          <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#6b7280", fontFamily: "var(--font-jetbrains-mono)" }}>Tools</h3>
+          <div className="flex flex-wrap gap-2">
+            {metaTools.map(t => (
+              <span key={t} className="px-3 py-1 rounded-full text-sm"
+                style={{ background: "#6b728010", border: "1px solid #6b728030", color: "#6b7280" }}>
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Agent URL (clickable) ──────────────────────────────── */}
+      {metaAgentUrl && (
+        <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+          <h3 className="text-xs uppercase tracking-wider mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Agent Endpoint</h3>
+          <a href={metaAgentUrl} target="_blank" rel="noopener noreferrer"
+            className="text-sm font-jetbrainsMono break-all inline-flex items-center gap-1.5 hover:underline"
+            style={{ color: "#1db8a8" }}>
+            {metaAgentUrl}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
         </div>
       )}
 
@@ -300,6 +338,63 @@ export default function AgentProfilePage() {
         </div>
       )}
 
+      {/* ── LLM Info ──────────────────────────────────────────── */}
+      {(meta.llmProvider || meta.llmModel || meta.tone) && (
+        <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+          <h3 className="text-xs uppercase tracking-wider mb-4" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>AI Configuration</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {meta.llmProvider && (
+              <div>
+                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Provider</p>
+                <p className="text-sm font-semibold capitalize" style={{ color: "#e8f5f3" }}>
+                  {meta.llmProvider === "claude" ? "🟣 Anthropic" :
+                   meta.llmProvider === "gpt4o" || meta.llmProvider === "gpt4omini" ? "🟢 OpenAI" :
+                   meta.llmProvider === "llama" ? "🟠 Groq / Llama" :
+                   meta.llmProvider}
+                </p>
+              </div>
+            )}
+            {meta.llmModel && (
+              <div>
+                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Model</p>
+                <p className="text-sm font-jetbrainsMono" style={{ color: "#5a807a" }}>{meta.llmModel}</p>
+              </div>
+            )}
+            {meta.tone && (
+              <div>
+                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Tone</p>
+                <p className="text-sm capitalize" style={{ color: "#e8f5f3" }}>{meta.tone}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── On-chain Info ─────────────────────────────────────── */}
+      <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+        <h3 className="text-xs uppercase tracking-wider mb-4" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>On-Chain Info</h3>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Wallet</span>
+            <span className="text-xs font-jetbrainsMono break-all" style={{ color: "#5a807a" }}>{agent.wallet}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Registered</span>
+            <span className="text-xs" style={{ color: "#5a807a" }}>{formatDate(agent.registeredAt)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Status</span>
+            <span className="text-xs font-semibold" style={{ color: statusActive ? "#3ec95a" : "#e63030" }}>
+              {statusActive ? "● Active" : "● Suspended"}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Network</span>
+            <span className="text-xs" style={{ color: "#5a807a" }}>Base Sepolia (84532)</span>
+          </div>
+        </div>
+      </div>
+
       {/* ── Action Buttons ─────────────────────────────────────── */}
       <div className="flex gap-4 mb-8">
         <Link href={`/create-task?agentId=${id}`}
@@ -308,7 +403,7 @@ export default function AgentProfilePage() {
             background: "linear-gradient(135deg, #f07828, #d05e10)", color: "white",
             fontFamily: "var(--font-space-grotesk)", boxShadow: "0 0 30px #f0782840",
           }}>
-          Hire Agent
+          Hire this Agent
         </Link>
         {webhookUrl && (
           <a href={`${webhookUrl.replace(/\/$/, "")}/agent-card`} target="_blank" rel="noopener noreferrer"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, Suspense } from "react";
-import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt, useReadContracts } from "wagmi";
+import { useAccount, useWriteContract, useReadContract, useReadContracts, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits } from "viem";
 import { useSearchParams } from "next/navigation";
 import { ADDRESSES, ESCROW_V3_ABI, ERC20_ABI, AGENT_REGISTRY_ABI, V3_STATUS_COLORS } from "@/lib/contracts";
@@ -18,6 +18,28 @@ interface AgentOption {
 
 type Tab = "open" | "hire";
 
+const CATEGORIES = ["Research", "Coding", "Trading", "Analytics", "DeFi", "Infrastructure", "Prediction", "AI", "Content", "Other"] as const;
+
+const TIER_OPTIONS = [
+  { value: 0, label: "Any" },
+  { value: 1, label: "🦞 Lobster+" },
+  { value: 2, label: "🦑 Squid+" },
+  { value: 3, label: "🐙 Octopus+" },
+  { value: 4, label: "🦈 Shark only" },
+] as const;
+
+const RATING_OPTIONS = [
+  { value: 0, label: "Any" },
+  { value: 350, label: "3.5+" },
+  { value: 400, label: "4.0+" },
+  { value: 450, label: "4.5+" },
+  { value: 480, label: "4.8+" },
+] as const;
+
+const SKILL_OPTIONS = ["Research", "Coding", "Trading", "Content", "DeFi", "Analytics", "Infrastructure", "Prediction", "AI", "Other"] as const;
+
+const EVALUATION_METHODS = ["Client Approval", "Manual Review", "Resolver Vote", "Automated"] as const;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseAgentName(metadataURI: string, id: number): string {
@@ -31,6 +53,10 @@ function parseAgentName(metadataURI: string, id: number): string {
   return `Agent #${id}`;
 }
 
+// Shared input style
+const inputStyle = { background: "#0a1a17", border: "1px solid #1a2e2b", color: "#e8f5f3", fontFamily: "var(--font-jetbrains-mono)", outline: "none" };
+const labelStyle = { color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" };
+
 // ─── Inner component (uses useSearchParams) ───────────────────────────────────
 
 function CreateTaskInner() {
@@ -42,10 +68,26 @@ function CreateTaskInner() {
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(
     presetAgentId ? Number(presetAgentId) : null
   );
+
+  // Core fields
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<string>("Research");
   const [fileUrl, setFileUrl] = useState("");
   const [reward, setReward] = useState("");
   const [deadline, setDeadline] = useState("");
+
+  // Requirements (collapsible)
+  const [showRequirements, setShowRequirements] = useState(false);
+  const [requiredTier, setRequiredTier] = useState(0);
+  const [requiredRating, setRequiredRating] = useState(0);
+  const [requiredSkills, setRequiredSkills] = useState<string[]>([]);
+
+  // Resolution (required)
+  const [deliverables, setDeliverables] = useState("");
+  const [acceptanceCriteria, setAcceptanceCriteria] = useState("");
+  const [evaluationMethod, setEvaluationMethod] = useState<string>("Client Approval");
+
   const [notifyStatus, setNotifyStatus] = useState<"idle" | "sending" | "ok" | "offline">("idle");
   const [createdTaskId, setCreatedTaskId] = useState<bigint | null>(null);
 
@@ -146,11 +188,9 @@ function CreateTaskInner() {
     setNotifyStatus("sending");
 
     const sendToAgent = async () => {
-      // Try Supabase first, fall back to localStorage
       let apiKey: string | undefined;
       let llmProvider: string | undefined;
       try {
-        // Get agent owner wallet from agent data
         const agentWallet = (selectedAgent as { wallet?: string }).wallet ?? "";
         if (agentWallet) {
           const res = await fetch("/api/get-key", {
@@ -164,7 +204,6 @@ function CreateTaskInner() {
           }
         }
       } catch { /* ignore */ }
-      // localStorage fallback
       if (!apiKey) {
         try {
           const agentSlug = selectedAgent.name?.toLowerCase().replace(/\s+/g, "_") ?? "";
@@ -194,7 +233,40 @@ function CreateTaskInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [created]);
 
-  const canSubmit = description.trim() && reward && (tab === "open" || selectedAgentId);
+  // Resolution fields are required
+  const resolutionComplete = deliverables.trim() && acceptanceCriteria.trim();
+  const canSubmit = title.trim() && description.trim() && reward && resolutionComplete && (tab === "open" || selectedAgentId);
+
+  // Build full IPFS JSON for on-chain description
+  const buildTaskJSON = () => {
+    const taskObj: Record<string, unknown> = {
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      reward: reward || "0",
+      deadline: deadline || null,
+      fileUrl: fileUrl || null,
+      requirements: {
+        requiredTier,
+        requiredRating,
+        requiredSkills,
+      },
+      resolution: {
+        deliverables: deliverables.trim(),
+        acceptanceCriteria: acceptanceCriteria.trim(),
+        evaluationMethod,
+      },
+      createdAt: new Date().toISOString(),
+      version: "2",
+    };
+    return JSON.stringify(taskObj);
+  };
+
+  const toggleSkill = (skill: string) => {
+    setRequiredSkills(prev =>
+      prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]
+    );
+  };
 
   if (!address) {
     return (
@@ -341,8 +413,8 @@ function CreateTaskInner() {
                     value={selectedAgentId ?? ""}
                     onChange={e => setSelectedAgentId(e.target.value ? Number(e.target.value) : null)}
                     className="w-full px-4 py-3 rounded-xl text-sm"
-                    style={{ background: "#0a1a17", border: `1px solid ${selectedAgentId ? "#f07828" : "#1a2e2b"}`,
-                      color: selectedAgentId ? "#e8f5f3" : "#3a5550", fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}>
+                    style={{ ...inputStyle, border: `1px solid ${selectedAgentId ? "#f07828" : "#1a2e2b"}`,
+                      color: selectedAgentId ? "#e8f5f3" : "#3a5550" }}>
                     <option value="">— Choose an agent —</option>
                     {agents.map(a => (
                       <option key={a.numericId} value={a.numericId}>
@@ -360,11 +432,25 @@ function CreateTaskInner() {
               </div>
             )}
 
-            {/* Task description */}
+            {/* ── Title ── */}
             <div>
-              <label className="block text-xs uppercase tracking-wider mb-2"
-                style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
-                Task Description
+              <label className="block text-xs uppercase tracking-wider mb-2" style={labelStyle}>
+                Title <span style={{ color: "#f07828" }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="e.g. Analyze DeFi yield strategies on Base"
+                className="w-full px-4 py-3 rounded-xl text-sm"
+                style={inputStyle}
+              />
+            </div>
+
+            {/* ── Task Description ── */}
+            <div>
+              <label className="block text-xs uppercase tracking-wider mb-2" style={labelStyle}>
+                Description <span style={{ color: "#f07828" }}>*</span>
               </label>
               <textarea
                 value={description}
@@ -372,15 +458,29 @@ function CreateTaskInner() {
                 rows={4}
                 placeholder="Describe what you need done…"
                 className="w-full px-4 py-3 rounded-xl text-sm resize-none"
-                style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#e8f5f3",
-                  fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
+                style={inputStyle}
               />
+            </div>
+
+            {/* ── Category ── */}
+            <div>
+              <label className="block text-xs uppercase tracking-wider mb-2" style={labelStyle}>
+                Category
+              </label>
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl text-sm"
+                style={inputStyle}>
+                {CATEGORIES.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
 
             {/* File URL */}
             <div>
-              <label className="block text-xs uppercase tracking-wider mb-2"
-                style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+              <label className="block text-xs uppercase tracking-wider mb-2" style={labelStyle}>
                 File / Context URL <span style={{ color: "#1a2e2b" }}>(optional)</span>
               </label>
               <input
@@ -389,16 +489,14 @@ function CreateTaskInner() {
                 onChange={e => setFileUrl(e.target.value)}
                 placeholder="https://..."
                 className="w-full px-4 py-3 rounded-xl text-sm"
-                style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#e8f5f3",
-                  fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
+                style={inputStyle}
               />
             </div>
 
             {/* Reward */}
             <div>
-              <label className="block text-xs uppercase tracking-wider mb-2"
-                style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
-                Reward (USDC)
+              <label className="block text-xs uppercase tracking-wider mb-2" style={labelStyle}>
+                Reward (USDC) <span style={{ color: "#f07828" }}>*</span>
               </label>
               <div className="relative">
                 <input
@@ -409,8 +507,7 @@ function CreateTaskInner() {
                   min="1"
                   step="0.01"
                   className="w-full px-4 py-3 rounded-xl text-sm"
-                  style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#e8f5f3",
-                    fontFamily: "var(--font-jetbrains-mono)", outline: "none" }}
+                  style={inputStyle}
                 />
                 <span className="absolute right-4 top-3 text-sm" style={{ color: "#3a5550" }}>USDC</span>
               </div>
@@ -421,8 +518,7 @@ function CreateTaskInner() {
 
             {/* Deadline */}
             <div>
-              <label className="block text-xs uppercase tracking-wider mb-2"
-                style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+              <label className="block text-xs uppercase tracking-wider mb-2" style={labelStyle}>
                 Deadline
               </label>
               <input
@@ -430,9 +526,136 @@ function CreateTaskInner() {
                 value={deadline}
                 onChange={e => setDeadline(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl text-sm"
-                style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#e8f5f3",
-                  fontFamily: "var(--font-jetbrains-mono)", outline: "none", colorScheme: "dark" }}
+                style={{ ...inputStyle, colorScheme: "dark" }}
               />
+            </div>
+
+            {/* ── Requirements (collapsible) ── */}
+            <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #1a2e2b" }}>
+              <button
+                type="button"
+                onClick={() => setShowRequirements(!showRequirements)}
+                className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold"
+                style={{ background: "#0a1a17", color: "#1db8a8", fontFamily: "var(--font-space-grotesk)" }}>
+                <span>Requirements</span>
+                <span style={{ color: "#3a5550", fontSize: "0.75rem", transition: "transform 0.2s", transform: showRequirements ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
+              </button>
+              {showRequirements && (
+                <div className="px-4 pb-4 space-y-4" style={{ background: "#0a1a17" }}>
+                  {/* Required Tier */}
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
+                      Minimum Tier
+                    </label>
+                    <select
+                      value={requiredTier}
+                      onChange={e => setRequiredTier(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 rounded-xl text-sm"
+                      style={inputStyle}>
+                      {TIER_OPTIONS.map(t => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Required Rating */}
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
+                      Minimum Rating
+                    </label>
+                    <select
+                      value={requiredRating}
+                      onChange={e => setRequiredRating(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 rounded-xl text-sm"
+                      style={inputStyle}>
+                      {RATING_OPTIONS.map(r => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Required Skills */}
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
+                      Required Skills
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {SKILL_OPTIONS.map(skill => {
+                        const selected = requiredSkills.includes(skill);
+                        return (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => toggleSkill(skill)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                            style={{
+                              background: selected ? "#1db8a820" : "#060c0b",
+                              border: `1px solid ${selected ? "#1db8a8" : "#1a2e2b"}`,
+                              color: selected ? "#1db8a8" : "#3a5550",
+                            }}>
+                            {skill}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Resolution (required) ── */}
+            <div className="rounded-xl p-4 space-y-4" style={{ background: "#0a1a17", border: `1px solid ${resolutionComplete ? "#1a2e2b" : "#f0782840"}` }}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs uppercase tracking-wider font-semibold" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  Resolution <span style={{ color: "#f07828" }}>*</span>
+                </h3>
+                {!resolutionComplete && (
+                  <span className="text-xs" style={{ color: "#f0782880" }}>Required to submit</span>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  Deliverables <span style={{ color: "#f07828" }}>*</span>
+                </label>
+                <textarea
+                  value={deliverables}
+                  onChange={e => setDeliverables(e.target.value)}
+                  rows={2}
+                  placeholder='e.g. "PDF report + JSON data", "Deployed contract + address"'
+                  className="w-full px-4 py-2.5 rounded-xl text-sm resize-none"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  Acceptance Criteria <span style={{ color: "#f07828" }}>*</span>
+                </label>
+                <textarea
+                  value={acceptanceCriteria}
+                  onChange={e => setAcceptanceCriteria(e.target.value)}
+                  rows={2}
+                  placeholder="Measurable conditions for dispute resolution…"
+                  className="w-full px-4 py-2.5 rounded-xl text-sm resize-none"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  Evaluation Method
+                </label>
+                <select
+                  value={evaluationMethod}
+                  onChange={e => setEvaluationMethod(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm"
+                  style={inputStyle}>
+                  {EVALUATION_METHODS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* CTA */}
@@ -451,11 +674,14 @@ function CreateTaskInner() {
                 {approving || waitingApproval ? "Approving…" : (approved || !needsApproval) ? "Approved" : "Approve USDC"}
               </button>
               <button
-                onClick={() => createTask({
-                  address: ADDRESSES.MoltForgeEscrowV3, abi: ESCROW_V3_ABI,
-                  functionName: "createTask",
-                  args: [ADDRESSES.USDC, rewardWei, agentIdArg, description, fileUrl, deadlineTs],
-                })}
+                onClick={() => {
+                  const taskJSON = buildTaskJSON();
+                  createTask({
+                    address: ADDRESSES.MoltForgeEscrowV3, abi: ESCROW_V3_ABI,
+                    functionName: "createTask",
+                    args: [ADDRESSES.USDC, rewardWei, agentIdArg, taskJSON, fileUrl, deadlineTs],
+                  });
+                }}
                 disabled={(needsApproval && !approved) || creating || waitingCreate || !canSubmit}
                 className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all"
                 style={{
