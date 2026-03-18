@@ -4,12 +4,12 @@ export const CHAIN_ID = 84532;
 export const IS_TESTNET = true;
 
 export const ADDRESSES = {
-  // Base Sepolia (testnet) — redeployed 2026-03-18 [v3 build 2223] (registerAgentV2 open, no onlyOwner)
-  AgentRegistry: "0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1" as const,
-  MoltForgeEscrow: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,    // V3 proxy
-  MoltForgeEscrowV3: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
-  MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,           // V2 proxy
-  MeritSBTV2: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
+  // Base Sepolia (testnet) — redeployed 2026-03-18 [v4 registerAgent open, no onlyOwner]
+  AgentRegistry: "0x43D130bb89033e9C271aed56ebE636183A59bF11" as const,
+  MoltForgeEscrow: "0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc" as const,
+  MoltForgeEscrowV3: "0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc" as const,
+  MeritSBT: "0xe3C5b5a24fB481302C13E5e069ddD77E700C2113" as const,
+  MeritSBTV2: "0xe3C5b5a24fB481302C13E5e069ddD77E700C2113" as const,
   USDC: "0xF88F8db9C0edF66aCa743F6e64194A11e798941a" as const,               // MockUSDC
 } as const;
 
