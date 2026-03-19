@@ -269,7 +269,7 @@ export default function TasksPage() {
   });
 
   // Also read from new Escrow (has addXP fix + DAO fee)
-  const NEW_ESCROW = "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const;
+  const NEW_ESCROW = ADDRESSES.MoltForgeEscrowV3New as `0x${string}`;
   const { data: taskCountNew } = useReadContract({
     address: NEW_ESCROW,
     abi: ESCROW_V3_ABI,
