@@ -97,13 +97,17 @@ function AgentCard({ agent }: { agent: AgentData }) {
   const [testResult, setTestResult] = useState<string>("");
   const meta = useAgentMetadata(agent.metadataURI);
   const spec = meta.specialization?.toLowerCase() || detectSpecFromSkills(agent);
-  const name = meta.name || `Agent #${agent.numericId}`;
+  // Fallback chain: IPFS name → wallet short → Agent #N
+  const name = meta.name
+    || (agent.wallet ? `${agent.wallet.slice(0, 6)}…${agent.wallet.slice(-4)}` : `Agent #${agent.numericId}`);
   const llmLabel = getLLMLabel(meta.llmProvider, meta.llmModel);
   const llmColor = meta.llmProvider ? (LLM_PROVIDERS[meta.llmProvider as keyof typeof LLM_PROVIDERS]?.color ?? "#6b7280") : null;
   const preset = specToPreset(spec);
   const faceParams: FaceParams = PRESETS[preset] ?? PRESETS["ai"];
-  const tierColor = TIER_COLORS[agent.tier] ?? TIER_COLORS[0];
-  const statusActive = agent.status === 1;
+  // tier may come as bigint from wagmi — normalize to number
+  const tierNum = Number(agent.tier ?? 0);
+  const tierColor = TIER_COLORS[tierNum] ?? TIER_COLORS[0];
+  const statusActive = Number(agent.status) === 1;
   const agentUrl = meta.agentUrl || agent.agentUrl || agent.webhookUrl || "";
   const capabilities = meta.capabilities ?? [];
 
@@ -161,11 +165,11 @@ function AgentCard({ agent }: { agent: AgentData }) {
 
         {/* Tier + LLM badges */}
         <div className="flex flex-col gap-1 flex-shrink-0 items-end">
-          {agent.tier > 0 && (
+          {TIER_LABELS[tierNum] && (
             <div className="px-2 py-0.5 rounded-full text-xs font-semibold"
               style={{ background: `${tierColor}20`, border: `1px solid ${tierColor}60`, color: tierColor,
                 fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem" }}>
-              {TIER_LABELS[agent.tier]}
+              {TIER_LABELS[tierNum]}
             </div>
           )}
           {llmLabel && llmColor && (
@@ -238,12 +242,25 @@ function AgentCard({ agent }: { agent: AgentData }) {
 
       {/* Actions */}
       <div className="p-3 flex gap-2">
-        <Link href={`/create-task?agentId=${agent.numericId}`}
-          className="flex-1 py-2 rounded-lg text-xs font-semibold text-center transition-all"
-          style={{ background: "linear-gradient(135deg, #f07828, #d05e10)", color: "white",
-            fontFamily: "var(--font-space-grotesk)" }}>
-          Hire
-        </Link>
+        {agentUrl ? (
+          <Link href={`/create-task?agentId=${agent.numericId}`}
+            className="flex-1 py-2 rounded-lg text-xs font-semibold text-center transition-all"
+            style={{ background: "linear-gradient(135deg, #f07828, #d05e10)", color: "white",
+              fontFamily: "var(--font-space-grotesk)" }}>
+            Hire
+          </Link>
+        ) : (
+          <div className="flex-1 py-2 rounded-lg text-xs font-semibold text-center relative group"
+            title="No endpoint configured"
+            style={{ background: "#1a2e2b", color: "#3a5550", cursor: "not-allowed",
+              fontFamily: "var(--font-space-grotesk)" }}>
+            Hire
+            <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ background: "#1a2e2b", border: "1px solid #3a5550", color: "#5a807a" }}>
+              No endpoint configured
+            </span>
+          </div>
+        )}
         {agentUrl ? (
           <button onClick={testAgent} disabled={testing}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
