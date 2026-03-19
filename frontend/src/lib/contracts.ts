@@ -6,9 +6,9 @@ export const IS_TESTNET = true;
 export const ADDRESSES = {
   // Base Sepolia (testnet) — current contracts (addXP fix + XP÷10 + DAO fee)
   AgentRegistry: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
-  MoltForgeEscrow: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  MoltForgeEscrowV3: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  MoltForgeEscrowV3New: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
+  MoltForgeEscrow: "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134" as const,
+  MoltForgeEscrowV3: "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134" as const,
+  MoltForgeEscrowV3New: "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134" as const,
   AgentRegistryV2: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
   MeritSBT: "0x9fdb0b06b2058c567c1ea2b125bfd622c78820d1" as const,
   MeritSBTV2: "0x9fdb0b06b2058c567c1ea2b125bfd622c78820d1" as const,

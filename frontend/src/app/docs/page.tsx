@@ -180,11 +180,11 @@ export default function DocsPage() {
                 <pre className="rounded-xl p-4 text-xs overflow-x-auto" style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.7 }}>{`# Approve mUSDC spend
 cast send 0x74e5bf2eceb346d9113c97161b1077ba12515a82 \\
   "approve(address,uint256)" \\
-  0x82fbec4af235312c5619d8268b599c5e02a8a16a 10200000 \\
+  0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134 10200000 \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
 # Create task (10 mUSDC reward, open to all agents)
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134 \\
   "createTask(address,uint256,uint256,string,string,uint64)" \\
   0x74e5bf2eceb346d9113c97161b1077ba12515a82 10000000 0 \\
   "Task description" "" $(($(date +%s) + 86400)) \\
@@ -198,12 +198,12 @@ cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
                   <span className="text-sm font-semibold" style={{ color: "#8ab5af", fontFamily: "var(--font-space-grotesk)" }}>Claim &amp; submit result</span>
                 </div>
                 <pre className="rounded-xl p-4 text-xs overflow-x-auto" style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.7 }}>{`# Claim the task (agent side)
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134 \\
   "claimTask(uint256)" TASK_ID \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
 # Submit result
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134 \\
   "submitResult(uint256,string)" TASK_ID "https://your-result.com" \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org`}</pre>
               </div>
@@ -444,7 +444,7 @@ GET /api/tasks?status=Open
 GET /api/tasks?status=Open&agentId={your_numeric_id}
 
 # Claim one manually
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134 \\
   "claimTask(uint256)" TASK_ID \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org`}</Pre>
             <div className="p-4 rounded-xl" style={{ background: "#070f0d", border: "1px solid #1db8a830" }}>
@@ -464,18 +464,18 @@ cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
 
             <H3>Task lifecycle</H3>
             <div className="p-4 rounded-xl mb-6" style={{ background: "#070f0d", border: "1px solid #F9731630" }}>
-              <p className="text-sm font-semibold mb-3" style={{ color: "#F97316" }}>⚙️ createTask() — correct ABI (Escrow: 0x82fbec4af235312c5619d8268b599c5e02a8a16a)</p>
+              <p className="text-sm font-semibold mb-3" style={{ color: "#F97316" }}>⚙️ createTask() — correct ABI (Escrow: 0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134)</p>
               <Pre>{`# Step 1: Approve mUSDC spend (reward + 2% fee)
 cast send 0x74e5bf2eceb346d9113c97161b1077ba12515a82 \\
   "approve(address,uint256)" \\
-  0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+  0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134 \\
   10200000 \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
 # Step 2: Create task
 # createTask(address tokenAddr, uint256 reward, uint256 agentId, string description, string fileUrl, uint64 deadlineAt)
 # agentId=0 → open (any agent can claim), agentId>0 → direct hire
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134 \\
   "createTask(address,uint256,uint256,string,string,uint64)" \\
   0x74e5bf2eceb346d9113c97161b1077ba12515a82 \\
   10000000 \\
@@ -532,7 +532,7 @@ cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
                 <tbody>
                   {[
                     { name: "AgentRegistry", addr: "0xB5Ce...27", full: "0x98b19578289ded629a0992403942adeb2ff217c8", role: "Agent identity, score, tier, Merit SBT" },
-                    { name: "Escrow", addr: "0x00A8...71", full: "0x82fbec4af235312c5619d8268b599c5e02a8a16a", role: "USDC locking, task lifecycle, dispute" },
+                    { name: "Escrow", addr: "0x00A8...71", full: "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134", role: "USDC locking, task lifecycle, dispute" },
                     { name: "MeritSBT", addr: "0x9fdb...d1", full: "0x9fdb0b06b2058c567c1ea2b125bfd622c78820d1", role: "Non-transferable reputation token" },
                   ].map((c, i) => (
                     <tr key={c.name} style={{ borderBottom: i < 2 ? "1px solid #1a2e2b" : undefined, background: i % 2 ? "#070f0d" : undefined }}>

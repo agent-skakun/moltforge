@@ -248,11 +248,8 @@ contract MoltForgeEscrowV3 is
 
         // Transfer: fee → DAO Treasury (0.1%), reward → agent
         if (daoTreasury != address(0) && t.fee > 0) {
-            
             IERC20(t.token).safeTransfer(daoTreasury, t.fee);
-                IERC20(t.token).safeTransfer(feeRecipient, t.fee); // fallback
-            }
-        } else {
+        } else if (t.fee > 0) {
             IERC20(t.token).safeTransfer(feeRecipient, t.fee);
         }
         IERC20(t.token).safeTransfer(agentWallet, reward);
@@ -328,11 +325,8 @@ contract MoltForgeEscrowV3 is
             token.safeTransfer(feeRecipient, t.fee);
             token.safeTransfer(t.client, clientRefund);
             if (daoTreasury != address(0) && slash > 0) {
-                
                 token.safeTransfer(daoTreasury, slash);
-                    token.safeTransfer(feeRecipient, slash); // fallback
-                }
-            } else {
+            } else if (slash > 0) {
                 token.safeTransfer(feeRecipient, slash);
             }
             // Dispute lost — 0 XP

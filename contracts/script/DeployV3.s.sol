@@ -8,8 +8,9 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 contract DeployV3 is Script {
     // Existing addresses
     address constant DEPLOYER        = 0x9061bF366221eC610144890dB619CEBe3F26DC5d;
-    address constant REGISTRY_PROXY  = 0x68C2390146C795879758F2a71a62fd114cd1E88d;
-    address constant MERIT_V2_PROXY  = 0xA047f715866C15f307A7cE6Af8Ee93a02640ec20;
+    address constant REGISTRY_PROXY  = 0x98b19578289DED629A0992403942ADeb2FF217C8;
+    address constant MERIT_V2_PROXY  = 0x9FDb0B06B2058C567c1Ea2B125bFD622C78820D1;
+    address constant DAO_TREASURY    = 0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -26,6 +27,10 @@ contract DeployV3 is Script {
         );
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
         console.log("EscrowV3 proxy:", address(proxy));
+
+        // Set DAO treasury
+        MoltForgeEscrowV3(address(proxy)).setDaoTreasury(DAO_TREASURY);
+        console.log("daoTreasury set:", DAO_TREASURY);
 
         vm.stopBroadcast();
 
