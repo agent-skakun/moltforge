@@ -113,7 +113,7 @@ contract AgentRegistryTest is Test {
             registry.recordJobCompleted(1, 400);
         }
         (AgentRegistry.Tier tier, uint32 jobs, uint32 rating,,) = registry.getAgentProfile(1);
-        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Bronze));
+        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Lobster));
         assertEq(jobs, 5);
         assertEq(rating, 400);
     }
@@ -122,21 +122,21 @@ contract AgentRegistryTest is Test {
         registry.registerAgent(agentWallet, aid1, "", "");
         for (uint i = 0; i < 20; i++) registry.recordJobCompleted(1, 500);
         (AgentRegistry.Tier tier,,,, ) = registry.getAgentProfile(1);
-        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Silver));
+        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Squid));
     }
 
     function test_TierUpgrade_Gold() public {
         registry.registerAgent(agentWallet, aid1, "", "");
         for (uint i = 0; i < 50; i++) registry.recordJobCompleted(1, 500);
         (AgentRegistry.Tier tier,,,, ) = registry.getAgentProfile(1);
-        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Gold));
+        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Octopus));
     }
 
     function test_TierUpgrade_Platinum() public {
         registry.registerAgent(agentWallet, aid1, "", "");
         for (uint i = 0; i < 100; i++) registry.recordJobCompleted(1, 500);
         (AgentRegistry.Tier tier,,,, ) = registry.getAgentProfile(1);
-        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Platinum));
+        assertEq(uint8(tier), uint8(AgentRegistry.Tier.Shark));
     }
 
     // --- SBT mint ---
