@@ -19,6 +19,11 @@ interface IAgentRegistry {
     function addXP(uint256 numericId, uint256 rewardUsd, uint32 ratingX100, bool isLate, bool disputeLost, bool disputeOpened) external;
 }
 
+interface IMoltForgeDAO {
+    function collectCompletionFee(uint256 taskId, address token, uint256 fee) external;
+    function collectDisputeSlash(uint256 taskId, address token, uint256 slash) external;
+}
+
 /// @title MoltForgeEscrowV3
 /// @notice Full task marketplace: open tasks + direct hire. UUPS upgradeable.
 /// @dev New proxy deployment (not upgrade of V1/V2 — different storage layout)
@@ -33,7 +38,7 @@ contract MoltForgeEscrowV3 is
 
     // ─── Constants ────────────────────────────────────────────────────────────
 
-    uint256 public constant PROTOCOL_FEE_BPS = 250; // 2.5%
+    uint256 public constant PROTOCOL_FEE_BPS = 10;  // 0.1% → DAO Treasury
     uint256 private constant BPS_DENOM = 10_000;
 
     // ─── Types ────────────────────────────────────────────────────────────────
@@ -71,6 +76,7 @@ contract MoltForgeEscrowV3 is
     address public feeRecipient;
     address public meritSBT;
     address public agentRegistry;
+    address public daoTreasury;
     uint256 public taskCount;
 
     mapping(uint256 => Task) internal _tasks;
@@ -125,6 +131,7 @@ contract MoltForgeEscrowV3 is
         feeRecipient = _feeRecipient;
         meritSBT = _meritSBT;
         agentRegistry = _agentRegistry;
+        daoTreasury = address(0); // set via setDaoTreasury after deploy
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
@@ -239,8 +246,15 @@ contract MoltForgeEscrowV3 is
         t.status = TaskStatus.Confirmed;
         t.score = score;
 
-        // Transfer: fee → feeRecipient, reward → agent
-        IERC20(t.token).safeTransfer(feeRecipient, t.fee);
+        // Transfer: fee → DAO Treasury (0.1%), reward → agent
+        if (daoTreasury != address(0) && t.fee > 0) {
+            
+            IERC20(t.token).safeTransfer(daoTreasury, t.fee);
+                IERC20(t.token).safeTransfer(feeRecipient, t.fee); // fallback
+            }
+        } else {
+            IERC20(t.token).safeTransfer(feeRecipient, t.fee);
+        }
         IERC20(t.token).safeTransfer(agentWallet, reward);
 
         emit DeliveryConfirmed(taskId, msg.sender, score, reward);
@@ -308,8 +322,19 @@ contract MoltForgeEscrowV3 is
             }
         } else {
             t.status = TaskStatus.Cancelled;
+            // 5% of reward → DAO Treasury (dispute slash)
+            uint256 slash = (t.reward * 500) / 10_000; // 5%
+            uint256 clientRefund = t.reward - slash;
             token.safeTransfer(feeRecipient, t.fee);
-            token.safeTransfer(t.client, t.reward);
+            token.safeTransfer(t.client, clientRefund);
+            if (daoTreasury != address(0) && slash > 0) {
+                
+                token.safeTransfer(daoTreasury, slash);
+                    token.safeTransfer(feeRecipient, slash); // fallback
+                }
+            } else {
+                token.safeTransfer(feeRecipient, slash);
+            }
             // Dispute lost — 0 XP
             if (agentRegistry != address(0) && t.agentId > 0) {
                 try IAgentRegistry(agentRegistry).addXP(t.agentId, 0, 0, false, true, true) {} catch {}
@@ -328,6 +353,10 @@ contract MoltForgeEscrowV3 is
     function setAgentRegistry(address _registry) external onlyOwner {
         agentRegistry = _registry;
         emit AgentRegistrySet(_registry);
+    }
+
+    function setDaoTreasury(address _dao) external onlyOwner {
+        daoTreasury = _dao;
     }
 
     function setArbiterStatus(address arbiter, bool status) external onlyOwner {
