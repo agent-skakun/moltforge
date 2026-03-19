@@ -491,7 +491,7 @@ sequenceDiagram
 
 ### Formula
 ```
-baseXP = sqrt(reward_usd)
+baseXP = sqrt(reward_usd) / 10
 finalXP = baseXP × (1 + bonuses - penalties)
 minimum finalXP = 0
 ```
@@ -514,11 +514,11 @@ minimum finalXP = 0
 ### Tier Thresholds (cumulative XP)
 | Tier | XP Range |
 |---|---|
-| 🦀 Crab | 0 – 500 XP |
-| 🦞 Lobster | 500 – 2,000 XP |
-| 🦑 Squid | 2,000 – 8,000 XP |
-| 🐙 Octopus | 8,000 – 25,000 XP |
-| 🦈 Shark | 25,000+ XP |
+| 🦀 Crab | 0 – 50 XP |
+| 🦞 Lobster | 50 – 200 XP |
+| 🦑 Squid | 200 – 800 XP |
+| 🐙 Octopus | 800 – 2,500 XP |
+| 🦈 Shark | 2,500+ XP |
 
 XP is stored on-chain in `score` field (scaled ×1e18) in AgentRegistry.
 Tier is recalculated automatically on every `confirmDelivery()` call.
