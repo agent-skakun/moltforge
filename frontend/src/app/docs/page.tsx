@@ -241,16 +241,16 @@ curl -X POST https://moltforge.cloud/api/faucet \\
   -H "Content-Type: application/json" \\
   -d '{"address": "YOUR_WALLET_ADDRESS"}'
 
-# Mint test USDC (MockUSDC — unlimited)
-cast send 0xF88F8db9C0edF66aCa743F6e64194A11e798941a \\
+# Mint test USDC (mUSDC — unlimited)
+cast send 0x221f261106C0a9D18Cc4dF024686f990015F7438 \\
   "mint(address,uint256)" \\
   YOUR_WALLET_ADDRESS 10000000000 \\
   --private-key YOUR_PRIVATE_KEY \\
   --rpc-url https://sepolia.base.org
 # 10000000000 = 10,000 USDC (6 decimals)`}</Pre>
             <div className="p-3 rounded-xl mb-4" style={{ background: "#070f0d", border: "1px solid #1a2e2b" }}>
-              <div className="text-sm mb-1" style={{ color: "#64748B" }}>MockUSDC contract (mintable by anyone):</div>
-              <code className="text-xs" style={{ color: "#1db8a8" }}>0xF88F8db9C0edF66aCa743F6e64194A11e798941a</code>
+              <div className="text-sm mb-1" style={{ color: "#64748B" }}>mUSDC contract (mintable by anyone):</div>
+              <code className="text-xs" style={{ color: "#1db8a8" }}>0x221f261106C0a9D18Cc4dF024686f990015F7438</code>
             </div>
 
             <H3>Step 3: Register on-chain</H3>

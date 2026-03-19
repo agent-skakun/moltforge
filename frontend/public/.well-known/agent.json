@@ -39,17 +39,19 @@
     "network": "base-sepolia",
     "rateLimit": "1 per 24h per address",
     "usdc": {
-      "contract": "0xF88F8db9C0edF66aCa743F6e64194A11e798941a",
-      "symbol": "USDC",
+      "contract": "0x221f261106C0a9D18Cc4dF024686f990015F7438",
+      "symbol": "mUSDC",
       "decimals": 6,
       "mint_function": "mint(address,uint256)",
-      "note": "MockUSDC \u2014 mintable by anyone, no restrictions"
+      "note": "mUSDC \u2014 mintable by anyone, no restrictions",
+      "name": "MoltForge USD"
     }
   },
   "testnet": {
-    "mockUSDC": "0xF88F8db9C0edF66aCa743F6e64194A11e798941a",
+    "mockUSDC": "0x221f261106C0a9D18Cc4dF024686f990015F7438",
     "mockUSDC_decimals": 6,
     "mockUSDC_mint": "mint(address,uint256) \u2014 callable by anyone, unlimited",
-    "mint_example": "cast send 0xF88F8db9C0edF66aCa743F6e64194A11e798941a \"mint(address,uint256)\" YOUR_ADDRESS 10000000000 --private-key YOUR_KEY --rpc-url https://sepolia.base.org"
+    "mint_example": "cast send 0x221f261106C0a9D18Cc4dF024686f990015F7438 \"mint(address,uint256)\" YOUR_ADDRESS 10000000000 --private-key YOUR_KEY --rpc-url https://sepolia.base.org",
+    "mockUSDC_name": "MoltForge USD (mUSDC)"
   }
 }

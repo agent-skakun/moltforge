@@ -3,14 +3,14 @@ import { createWalletClient, createPublicClient, http, parseEther, isAddress } f
 import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
-const FAUCET_AMOUNT = parseEther("0.005");
 const FAUCET_KEY = (process.env.FAUCET_PRIVATE_KEY || "") as `0x${string}`;
-const MOCK_USDC = "0xF88F8db9C0edF66aCa743F6e64194A11e798941a" as `0x${string}`;
-const USDC_MINT_AMOUNT = BigInt(10_000 * 1_000_000); // 10,000 USDC (6 decimals)
+const MOLT_USDC = "0x221f261106C0a9D18Cc4dF024686f990015F7438" as `0x${string}`;
+const ETH_AMOUNT = parseEther("0.005");
+const USDC_AMOUNT = BigInt(10_000 * 1_000_000); // 10,000 mUSDC
 const MINT_ABI = [{ name: "mint", type: "function", inputs: [{ name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [], stateMutability: "nonpayable" }] as const;
 
-// Simple in-memory rate limit (per address, 1 per 24h)
-const claimed = new Map<string, number>();
+const claimedEth = new Map<string, number>();
+const claimedUsdc = new Map<string, number>();
 
 export async function POST(req: Request) {
   try {
@@ -18,57 +18,57 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Faucet not configured" }, { status: 503 });
     }
 
-    const { address } = await req.json();
+    const body = await req.json();
+    const { address, token } = body; // token: "ETH" | "mUSDC" | undefined (both)
+
     if (!address || !isAddress(address)) {
       return NextResponse.json({ error: "Invalid address" }, { status: 400 });
-    }
-
-    // Rate limit: 1 per 24h per address
-    const lastClaim = claimed.get(address.toLowerCase());
-    const now = Date.now();
-    if (lastClaim && now - lastClaim < 24 * 60 * 60 * 1000) {
-      const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - (now - lastClaim)) / 3600000);
-      return NextResponse.json({ error: `Already claimed. Try again in ${hoursLeft}h` }, { status: 429 });
     }
 
     const account = privateKeyToAccount(FAUCET_KEY);
     const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http("https://sepolia.base.org") });
     const publicClient = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") });
+    const now = Date.now();
+    const result: Record<string, unknown> = { address, network: "base-sepolia", chainId: 84532 };
 
-    // Check faucet balance
-    const balance = await publicClient.getBalance({ address: account.address });
-    if (balance < FAUCET_AMOUNT) {
-      return NextResponse.json({ error: "Faucet empty. Contact team." }, { status: 503 });
+    const wantEth = !token || token === "ETH";
+    const wantUsdc = !token || token === "mUSDC";
+
+    // ETH
+    if (wantEth) {
+      const last = claimedEth.get(address.toLowerCase());
+      if (last && now - last < 24 * 3600 * 1000) {
+        const h = Math.ceil((24 * 3600 * 1000 - (now - last)) / 3600000);
+        result.eth = { error: `Already claimed ETH. Try again in ${h}h` };
+      } else {
+        const balance = await publicClient.getBalance({ address: account.address });
+        if (balance < ETH_AMOUNT) {
+          result.eth = { error: "ETH faucet empty" };
+        } else {
+          const hash = await walletClient.sendTransaction({ to: address as `0x${string}`, value: ETH_AMOUNT });
+          claimedEth.set(address.toLowerCase(), now);
+          result.eth = { amount: "0.005 ETH", txHash: hash, explorerUrl: `https://sepolia.basescan.org/tx/${hash}` };
+        }
+      }
     }
 
-    // Send ETH
-    const ethTx = await walletClient.sendTransaction({
-      to: address as `0x${string}`,
-      value: FAUCET_AMOUNT,
-    });
+    // mUSDC — независимо от ETH
+    if (wantUsdc) {
+      const last = claimedUsdc.get(address.toLowerCase());
+      if (last && now - last < 24 * 3600 * 1000) {
+        const h = Math.ceil((24 * 3600 * 1000 - (now - last)) / 3600000);
+        result.usdc = { error: `Already claimed mUSDC. Try again in ${h}h` };
+      } else {
+        const hash = await walletClient.writeContract({
+          address: MOLT_USDC, abi: MINT_ABI, functionName: "mint",
+          args: [address as `0x${string}`, USDC_AMOUNT],
+        });
+        claimedUsdc.set(address.toLowerCase(), now);
+        result.usdc = { amount: "10,000 mUSDC", contract: MOLT_USDC, txHash: hash, explorerUrl: `https://sepolia.basescan.org/tx/${hash}` };
+      }
+    }
 
-    // Mint MockUSDC
-    let usdcTx: string | null = null;
-    try {
-      usdcTx = await walletClient.writeContract({
-        address: MOCK_USDC,
-        abi: MINT_ABI,
-        functionName: "mint",
-        args: [address as `0x${string}`, USDC_MINT_AMOUNT],
-      });
-    } catch { /* USDC mint failure is non-fatal */ }
-
-    claimed.set(address.toLowerCase(), now);
-
-    return NextResponse.json({
-      success: true,
-      eth: { amount: "0.005 ETH", txHash: ethTx, explorerUrl: `https://sepolia.basescan.org/tx/${ethTx}` },
-      usdc: usdcTx
-        ? { amount: "10,000 USDC", contract: MOCK_USDC, txHash: usdcTx, explorerUrl: `https://sepolia.basescan.org/tx/${usdcTx}` }
-        : { error: "USDC mint failed — mint manually", contract: MOCK_USDC, mintFunction: "mint(address,uint256)" },
-      network: "base-sepolia",
-      chainId: 84532,
-    });
+    return NextResponse.json({ success: true, ...result });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
