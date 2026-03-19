@@ -93,7 +93,7 @@ interface SkillItem { id: string; label: string; desc: string; path: string; cat
 interface SkillGroups { [category: string]: SkillItem[] }
 
 const ZONE_META: Record<NonNullable<Zone>, { emoji: string; title: string; desc: string }> = {
-  head:   { emoji: "🧠", title: "Knowledge",      desc: "Skills from moltforge-skills repo"  },
+  head:   { emoji: "🧠", title: "Knowledge",      desc: "Standard skill library"              },
   face:   { emoji: "👁️", title: "Identity",       desc: "Avatar, name, tone"                 },
   heart:  { emoji: "❤️", title: "Specialization", desc: "Your agent's core focus"            },
   hands:  { emoji: "🤝", title: "Tools",          desc: "External APIs & integrations"       },
@@ -145,7 +145,7 @@ export default function RegisterAgentPage() {
   // "Connect Existing Agent" mode — agent already lives somewhere
   const [existingMetaURI, setExistingMetaURI] = useState("");
 
-  // Dynamic skills from moltforge-skills repo
+  // Dynamic skills from standard skill library
   const [skillGroups, setSkillGroups] = useState<SkillGroups>({});
   const [skillsLoading, setSkillsLoading] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
@@ -351,7 +351,7 @@ export default function RegisterAgentPage() {
   // Generate docker entrypoint snippet for selected skills
   const generateDockerEntrypoint = () => {
     if (skills.length === 0) return "";
-    const RAW_BASE = "https://raw.githubusercontent.com/agent-skakun/moltforge-skills/main";
+    const RAW_BASE = "https://raw.githubusercontent.com/moltforge/skills/main";
     const skillDownloads = skills.map(path =>
       `curl -s "${RAW_BASE}/${path}" -o "/skills/${path.replace(/\//g, '_')}"`
     ).join(" && \\\n  ");
@@ -565,11 +565,11 @@ export default function RegisterAgentPage() {
                   style={{ background: "#060c0b", border: "1px solid #1a2e2b" }}>✕</button>
               </div>
 
-              {/* ── HEAD panel — moltforge-skills repo ── */}
+              {/* ── HEAD panel — standard skill library ── */}
               {activeZone === "head" && (
                 <div className="space-y-4">
                   <div className="text-xs mb-3" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
-                    From <span style={{color:"#1db8a8"}}>agent-skakun/moltforge-skills</span> repo
+                    Standard skill library
                   </div>
                   {skillsLoading && (
                     <div className="text-xs text-center py-4" style={{color:"#3a5550"}}>Loading skills…</div>
@@ -1564,10 +1564,10 @@ export default function RegisterAgentPage() {
   -e ESCROW_ADDRESS=0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4 \\
   -e RPC_URL=https://mainnet.base.org \\
   -e AGENT_NAME=${agentName || "<agent-name>"} \\
-  ghcr.io/agent-skakun/moltforge-agent:latest`
+  ghcr.io/moltforge/agent:latest`
               }</pre>
               <button
-                onClick={() => { const cmd = `docker run -d -p 3000:3000 \\\n  -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\\n  -e REGISTRY_ADDRESS=0x68C2390146C795879758F2a71a62fd114cd1E88d \\\n  -e ESCROW_ADDRESS=0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4 \\\n  -e RPC_URL=https://mainnet.base.org \\\n  -e AGENT_NAME=${agentName || "<agent-name>"} \\\n  ghcr.io/agent-skakun/moltforge-agent:latest`; navigator.clipboard.writeText(cmd); }}
+                onClick={() => { const cmd = `docker run -d -p 3000:3000 \\\n  -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\\n  -e REGISTRY_ADDRESS=0x68C2390146C795879758F2a71a62fd114cd1E88d \\\n  -e ESCROW_ADDRESS=0x85C00d51E61C8D986e0A5Ba34c9E95841f3151c4 \\\n  -e RPC_URL=https://mainnet.base.org \\\n  -e AGENT_NAME=${agentName || "<agent-name>"} \\\n  ghcr.io/moltforge/agent:latest`; navigator.clipboard.writeText(cmd); }}
                 className="mt-3 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
                 style={{ background: "#1db8a815", border: "1px solid #1db8a840", color: "#1db8a8" }}>
                 Copy
