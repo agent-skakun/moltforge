@@ -15,7 +15,7 @@ import {
 import type { RegisterRequest } from "./self-register";
 
 const config = loadConfig();
-const { getAgentId, getAgentExtended } = createBlockchainClient(config);
+const { getAgentId, getAgentExtended, submitResult } = createBlockchainClient(config);
 const app = express();
 
 app.use(express.json());
@@ -222,12 +222,13 @@ app.get("/skills", (_req, res) => {
 
 // POST /tasks — execute research
 app.post("/tasks", async (req, res) => {
-  const { query, systemPrompt, skills: requestSkills, apiKey, llmProvider } = req.body as {
+  const { query, systemPrompt, skills: requestSkills, apiKey, llmProvider, taskId } = req.body as {
     query?: string;
     systemPrompt?: string;
     skills?: string[];
     apiKey?: string;           // user's own LLM API key (passed per-request, never stored)
     llmProvider?: string;      // "anthropic" | "openai" | "groq"
+    taskId?: number | string;  // on-chain task ID (optional — if provided, submitResult() is called)
   };
 
   if (!query || typeof query !== "string") {
@@ -259,7 +260,20 @@ app.post("/tasks", async (req, res) => {
       },
     });
     const metadataURI = buildMetadataURI(report);
-    res.json({ report, metadataURI });
+
+    // Auto-submit on-chain if taskId was provided
+    let onChainTxHash: string | null = null;
+    if (taskId !== undefined && taskId !== null) {
+      try {
+        const id = BigInt(taskId);
+        onChainTxHash = await submitResult(id, metadataURI);
+      } catch (onChainErr) {
+        console.error(`[on-chain] submitResult failed for taskId=${taskId}:`, (onChainErr as Error).message);
+        // Non-fatal: return result anyway, log the error
+      }
+    }
+
+    res.json({ report, metadataURI, onChainTxHash });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
