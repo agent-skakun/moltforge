@@ -34,14 +34,14 @@ function decodeDescription(raw: string): string {
     if (raw.startsWith("data:application/json;base64,")) {
       const decoded = atob(raw.replace("data:application/json;base64,", ""));
       const parsed = JSON.parse(decoded) as Record<string, unknown>;
-      return (parsed.description as string) || (parsed.title as string) || decoded;
+      return (parsed.title as string) || (parsed.description as string) || decoded;
     }
     if (raw.startsWith("data:text/markdown;base64,")) {
       return atob(raw.replace("data:text/markdown;base64,", ""));
     }
     if (raw.startsWith("{")) {
       const parsed = JSON.parse(raw) as Record<string, unknown>;
-      return (parsed.description as string) || raw;
+      return (parsed.title as string) || (parsed.description as string) || raw;
     }
   } catch { /* ignore */ }
   return raw;
@@ -378,7 +378,8 @@ export default function TasksPage() {
                 const date = task.deadlineAt && Number(task.deadlineAt) > 0
                   ? new Date(Number(task.deadlineAt) * 1000).toLocaleDateString("uk-UA", { day: "2-digit", month: "2-digit" })
                   : "—";
-                const desc = task.description?.length > 60 ? task.description.slice(0, 60) + "…" : (task.description || "—");
+                const rawDesc = decodeDescription(task.description || "");
+                const desc = rawDesc.length > 60 ? rawDesc.slice(0, 60) + "…" : (rawDesc || "—");
                 const isEven = idx % 2 === 0;
                 return (
                   <div key={task.id.toString()} style={{
