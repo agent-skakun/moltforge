@@ -1,523 +1,523 @@
-# Исследование: Репутация и оценка AI-агентов в крипто-сфере
+# Research: AI Agent Reputation and Evaluation in the Crypto Space
 
-**Дата:** 7 марта 2026  
-**Контекст:** Анализ для хакатона The Synthesis — трек "Agents that trust"  
-**Цель:** Понять рынок, найти незанятую нишу, сформулировать MVP
+**Date:** March 7, 2026  
+**Context:** Analysis for The Synthesis Hackathon — "Agents that trust" track  
+**Goal:** Understand the market, find unoccupied niches, formulate MVP
 
 ---
 
-## 1. ТАБЛИЦА КОНКУРЕНТОВ
+## 1. COMPETITOR TABLE
 
-### 1.1 Подробный анализ по каждому игроку
+### 1.1 Detailed Analysis by Player
 
 ---
 
 ### 🏆 NUMERAI
 **URL:** https://numer.ai  
-**Категория:** ML predictions tournament → hedge fund
+**Category:** ML predictions tournament → hedge fund
 
-| Параметр | Данные |
-|----------|--------|
-| Пользователи | ~10 000+ активных data scientists |
-| AUM | Частный хедж-фонд, не раскрывает (сотни млн $) |
-| Объём ставок NMR | Stake threshold: 72,000 NMR (основной турнир) |
-| Дата запуска | 2015 |
+| Parameter | Data |
+|-----------|------|
+| Users | ~10,000+ active data scientists |
+| AUM | Private hedge fund, undisclosed (hundreds of millions $) |
+| NMR Stake Volume | Stake threshold: 72,000 NMR (main tournament) |
+| Launch Date | 2015 |
 
-**Как оценивают performance:**
-- **CORR (Correlation)** — корреляция предсказаний с реальными доходностями акций за 20 дней
-- **MMC (Meta Model Contribution)** — уникальный вклад модели в Meta Model (насколько модель добавляет новую информацию)
-- **FNC (Feature Neutral Correlation)** — нейтрализованная корреляция (информационная, без пейаутов)
-- **Reputation** = среднее значение score за 1 год (стейк-взвешенное для аккаунта)
-- Scoring занимает 20 дней (20D2L система), обновляется ежедневно
+**How they evaluate performance:**
+- **CORR (Correlation)** — correlation of predictions with actual stock returns over 20 days
+- **MMC (Meta Model Contribution)** — unique contribution of model to Meta Model (how much new information the model adds)
+- **FNC (Feature Neutral Correlation)** — neutralized correlation (informational, without payouts)
+- **Reputation** = average score over 1 year (stake-weighted per account)
+- Scoring takes 20 days (20D2L system), updated daily
 
-**UX оценка: 6/10**
-- Хорошо: четкие метрики, публичный leaderboard
-- Плохо: данные обфусцированы (нельзя торговать самостоятельно), нет понятного объяснения для non-technical
+**UX Rating: 6/10**
+- Good: clear metrics, public leaderboard
+- Bad: obfuscated data (can't trade independently), no clear explanation for non-technical users
 
-**API для AI-агентов:**
-- Да! NumerAPI (Python), полная программная поддержка
-- Автоматическая загрузка предсказаний, скачивание данных
+**API for AI Agents:**
+- Yes! NumerAPI (Python), full programmatic support
+- Automatic prediction upload, data download
 - Machine-readable: CSV, parquet
 
-**Что плохо / чего не хватает:**
-- Предсказания оцениваются только на акциях (не крипто)
-- Обфусцированные данные — нельзя интерпретировать реальный рынок
-- Нет real-time scoring, только 20-дневный лаг
-- Нет cross-protocol репутации
-- Нет доказательств что скор → реальная прибыль (непрозрачно)
+**Weaknesses / Missing:**
+- Predictions evaluated only on stocks (not crypto)
+- Obfuscated data — can't interpret the actual market
+- No real-time scoring, only 20-day lag
+- No cross-protocol reputation
+- No proof that score → real profit (opaque)
 
 ---
 
 ### 🔵 BITTENSOR (Trading Subnets)
 **URL:** https://bittensor.com | Subnets: SN8, SN29, SN46  
-**Категория:** Decentralized ML network с incentive механизмами
+**Category:** Decentralized ML network with incentive mechanisms
 
-| Параметр | Данные |
-|----------|--------|
-| Суммарная капитализация TAO | ~$1-3 млрд (волатильно) |
-| Активных майнеров/валидаторов | Тысячи по всем subnets |
-| Subnet 8 (Prediction) | Финансовые предсказания |
+| Parameter | Data |
+|-----------|------|
+| Total TAO Market Cap | ~$1-3B (volatile) |
+| Active Miners/Validators | Thousands across all subnets |
+| Subnet 8 (Prediction) | Financial predictions |
 | Subnet 29 | Trading signals |
 
-**Как оценивают performance:**
-- **Validators** оценивают качество работы **miners**
-- Оценка субъективна — каждый subnet задаёт свои метрики
-- Вознаграждение в TAO пропорционально scores от validators
-- Нет единого стандарта метрик между subnets
+**How they evaluate performance:**
+- **Validators** evaluate quality of **miners'** work
+- Evaluation is subjective — each subnet defines its own metrics
+- Rewards in TAO proportional to scores from validators
+- No unified metric standard between subnets
 
-**UX оценка: 3/10**
-- Техническое, непонятно обычному пользователю
-- taostats.io — analytics dashboard, но только on-chain данные
-- Нет user-friendly leaderboard с performance metrics
+**UX Rating: 3/10**
+- Technical, incomprehensible to regular users
+- taostats.io — analytics dashboard, but only on-chain data
+- No user-friendly leaderboard with performance metrics
 
-**API для AI-агентов:**
-- Да, но требует настройки Bittensor SDK
-- Данные доступны через taostats API
-- Нет стандартизированного формата performance data
+**API for AI Agents:**
+- Yes, but requires Bittensor SDK setup
+- Data available via taostats API
+- No standardized performance data format
 
-**Что плохо / чего не хватает:**
-- Нет единого стандарта оценки между subnets
-- Совершенно непонятно non-technical пользователю
-- Validator'ы могут быть предвзяты (gaming the system)
-- Нет верифицированной истории производительности вне Bittensor
+**Weaknesses / Missing:**
+- No unified evaluation standard between subnets
+- Completely incomprehensible to non-technical users
+- Validators can be biased (gaming the system)
+- No verified performance history outside Bittensor
 
 ---
 
 ### 🔷 dHEDGE
 **URL:** https://dhedge.org  
-**Категория:** On-chain fund management (DeFi vaults)
+**Category:** On-chain fund management (DeFi vaults)
 
-| Параметр | Данные |
-|----------|--------|
-| TVL | **$33.1M** (на март 2026) |
-| Вaults | 3,491 |
+| Parameter | Data |
+|-----------|------|
+| TVL | **$33.1M** (as of March 2026) |
+| Vaults | 3,491 |
 | Managers | 2,168 |
 | Manager Fees Earned | $1.07M |
-| Сети | Base ($14.2M), Arbitrum ($7.8M), Optimism ($5.1M), Ethereum ($3.9M), Polygon ($2M) |
+| Networks | Base ($14.2M), Arbitrum ($7.8M), Optimism ($5.1M), Ethereum ($3.9M), Polygon ($2M) |
 
-**Как оценивают performance:**
+**How they evaluate performance:**
 - **Return %** (1D, 1W, 1M, 6M, 1Y, Total)
-- **Risk Factor** (1/5 → 5/5) — собственная рисковая оценка
-- **Score** — числовой, отображается в leaderboard (методология не раскрыта публично)
-- **Value Managed** — AUM вашего vault
-- Пример из leaderboard: "Formadores Wealth Growth" — $1.51M, +118% total, Risk: 2/5, Score: 1595
+- **Risk Factor** (1/5 → 5/5) — proprietary risk rating
+- **Score** — numeric, displayed in leaderboard (methodology not publicly disclosed)
+- **Value Managed** — vault AUM
+- Example from leaderboard: "Formadores Wealth Growth" — $1.51M, +118% total, Risk: 2/5, Score: 1595
 
-**UX оценка: 7/10**
-- Хорошо: понятные таблицы, цветовая кодировка риска, публичный explore
-- Хорошо: on-chain верификация каждой сделки
-- Плохо: "Score" непрозрачный (неясно как считается)
-- Плохо: нет Sharpe ratio, max drawdown, win rate
+**UX Rating: 7/10**
+- Good: clear tables, color-coded risk, public explorer
+- Good: on-chain verification of every trade
+- Bad: "Score" is opaque (unclear calculation)
+- Bad: no Sharpe ratio, max drawdown, win rate
 
-**API для AI-агентов:**
-- Есть SDK: `@dhedge/v2-sdk` (npm)
-- Dune Analytics интеграция
-- Нет чистого machine-readable performance API
+**API for AI Agents:**
+- SDK exists: `@dhedge/v2-sdk` (npm)
+- Dune Analytics integration
+- No clean machine-readable performance API
 
-**Что плохо / чего не хватает:**
-- Score непрозрачный — нет объяснения методологии
-- Нет метрик risk-adjusted return (Sharpe)
-- Нет comparison с benchmark (BTC, ETH, стейблкоин yield)
-- Маленькое community (2168 managers)
-- Нет фокуса на AI-агентах
+**Weaknesses / Missing:**
+- Score is opaque — no methodology explanation
+- No risk-adjusted return metrics (Sharpe)
+- No benchmark comparison (BTC, ETH, stablecoin yield)
+- Small community (2,168 managers)
+- No AI agent focus
 
 ---
 
 ### 🟢 ENZYME FINANCE
 **URL:** https://enzyme.finance  
-**Категория:** On-chain asset management infrastructure
+**Category:** On-chain asset management infrastructure
 
-| Параметр | Данные |
-|----------|--------|
+| Parameter | Data |
+|-----------|------|
 | Total transaction volume | **+$7 Billion** |
 | Assets under technology | **+$200 Million** |
-| Лет в работе | 8+ лет |
+| Years operating | 8+ years |
 | Security breaches | 0 |
 
-**Как оценивают performance:**
-- Enzyme.Blue — DeFi стратегии (видно NAV, returns)
-- Enzyme.Onyx — tokenized funds для институций
-- Детальная история транзакций on-chain
-- Returns, NAV, allocation — всё видно
+**How they evaluate performance:**
+- Enzyme.Blue — DeFi strategies (visible NAV, returns)
+- Enzyme.Onyx — tokenized funds for institutions
+- Detailed on-chain transaction history
+- Returns, NAV, allocation — all visible
 
-**UX оценка: 5/10**
-- Хорошо: институциональный уровень, надёжность
-- Плохо: SPA (Single Page App) — не загружается без JS, сложно для агентов
-- Плохо: UI перегружен для non-technical
-- Недавно ребрендинг, раньше было больше retail-ориентированности
+**UX Rating: 5/10**
+- Good: institutional-grade, reliable
+- Bad: SPA (Single Page App) — doesn't load without JS, difficult for agents
+- Bad: UI is overloaded for non-technical users
+- Recently rebranded, previously more retail-oriented
 
-**API для AI-агентов:**
-- Есть GraphQL API (TheGraph)
-- Нет официального высокоуровневого performance API
-- Нужно self-build поверх on-chain данных
+**API for AI Agents:**
+- GraphQL API exists (TheGraph)
+- No official high-level performance API
+- Requires self-build on top of on-chain data
 
-**Что плохо / чего не хватает:**
-- Нет стандартизированного "agent score"
-- Shift в сторону enterprise/institutional, теряют retail
-- Нет leaderboard с простыми метриками
-- Нет кросс-протокольного tracking
+**Weaknesses / Missing:**
+- No standardized "agent score"
+- Shift toward enterprise/institutional, losing retail
+- No leaderboard with simple metrics
+- No cross-protocol tracking
 
 ---
 
 ### 🟣 POLYMARKET
 **URL:** https://polymarket.com  
-**Категория:** Prediction markets (world's largest)
+**Category:** Prediction markets (world's largest)
 
-| Параметр | Данные |
-|----------|--------|
-| Объём торгов | Сотни миллионов $ в год (2024: >$3 млрд) |
-| Активные рынки | Тысячи одновременно |
-| Пример рынка | BTC 5-minute: $43M vol |
-| Пользователи | Сотни тысяч |
+| Parameter | Data |
+|-----------|------|
+| Trading Volume | Hundreds of millions $ per year (2024: >$3B) |
+| Active Markets | Thousands simultaneously |
+| Example Market | BTC 5-minute: $43M vol |
+| Users | Hundreds of thousands |
 
-**Как оценивают performance предикторов:**
-- **Есть leaderboard** (через Data API), но в UI — минимально представлен
+**How they evaluate predictor performance:**
+- **Leaderboard exists** (via Data API), but minimal UI representation
 - API: `https://data-api.polymarket.com` — user positions, trades, leaderboards
-- Метрики доступны через API: profit/loss по рынкам, win rate
-- НЕТ публичного Brier score
-- НЕТ calibration display для пользователей (в отличие от Manifold)
-- Builders API — можно строить поверх данных
+- Metrics available via API: profit/loss by market, win rate
+- NO public Brier score
+- NO calibration display for users (unlike Manifold)
+- Builders API — can build on top of data
 
-**UX оценка: 8/10 для trading, 3/10 для predictor reputation**
-- Хорошо: понятный торговый интерфейс
-- Хорошо: богатый публичный API
-- Плохо: нет профиля предиктора с агрегированными метриками
-- Плохо: нет Brier score, calibration curves для пользователей
+**UX Rating: 8/10 for trading, 3/10 for predictor reputation**
+- Good: intuitive trading interface
+- Good: rich public API
+- Bad: no predictor profile with aggregated metrics
+- Bad: no Brier score, calibration curves for users
 
-**API для AI-агентов:**
-- Да! Лучший API в классе prediction markets
-- Gamma API, Data API, CLOB API — все публичные (кроме trading)
-- Python и TypeScript SDK
+**API for AI Agents:**
+- Yes! Best API in prediction markets class
+- Gamma API, Data API, CLOB API — all public (except trading)
+- Python and TypeScript SDK
 - Machine-readable: REST/JSON
 
-**Что плохо / чего не хватает:**
-- Нет reputation system для предикторов
-- Нет публичных calibration stats
-- Нет агрегированного "predictor score" на profile page
-- Бот-торговля не маркируется/не верифицируется отдельно
+**Weaknesses / Missing:**
+- No reputation system for predictors
+- No public calibration stats
+- No aggregated "predictor score" on profile page
+- Bot trading not separately marked/verified
 
 ---
 
 ### 🟡 MANIFOLD MARKETS
 **URL:** https://manifold.markets  
-**Категория:** Play-money prediction markets (+ real money)
+**Category:** Play-money prediction markets (+ real money)
 
-| Параметр | Данные |
-|----------|--------|
-| Пользователи | ~100K+ зарегистрированных |
-| Объём | Play money (mana), небольшой реальный |
-| Особенность | Calibration tracking, Brier score |
+| Parameter | Data |
+|-----------|------|
+| Users | ~100K+ registered |
+| Volume | Play money (mana), small real amount |
+| Feature | Calibration tracking, Brier score |
 
-**Как оценивают performance:**
-- **Calibration page** — сравнение предсказаний с реальными исходами
-- Показывают: "Если говоришь 70%, событие происходит в 70% случаев"
-- Profit/Loss leaderboard по mana
-- Индивидуальный calibration score
+**How they evaluate performance:**
+- **Calibration page** — comparing predictions with actual outcomes
+- Shows: "If you say 70%, event occurs 70% of the time"
+- Profit/Loss leaderboard by mana
+- Individual calibration score
 - Bayesian update tracking
 
-**UX оценка: 7/10**
-- Хорошо: calibration очень понятна визуально
-- Хорошо: open data philosophy
-- Плохо: play-money, не серьёзное
-- Плохо: нет реального финансового stake
+**UX Rating: 7/10**
+- Good: calibration is very visually clear
+- Good: open data philosophy
+- Bad: play-money, not serious
+- Bad: no real financial stake
 
-**API для AI-агентов:**
+**API for AI Agents:**
 - Public REST API
 - GraphQL
-- Open-source кодовая база
+- Open-source codebase
 
-**Что плохо / чего не хватает:**
-- Низкие stakes — нет skin in the game
-- Нет крипто-специфики
-- Нет кросс-платформенного tracking
+**Weaknesses / Missing:**
+- Low stakes — no skin in the game
+- No crypto specificity
+- No cross-platform tracking
 
 ---
 
 ### 🔶 GAUNTLET NETWORK
 **URL:** https://gauntlet.network  
-**Категория:** Risk management для DeFi протоколов (B2B)
+**Category:** Risk management for DeFi protocols (B2B)
 
-| Параметр | Данные |
-|----------|--------|
-| Клиенты | Aave, Jupiter, GMX, и другие топ-DeFi |
-| Позиционирование | Institutional-grade risk management |
+| Parameter | Data |
+|-----------|------|
+| Clients | Aave, Jupiter, GMX, and other top DeFi |
+| Positioning | Institutional-grade risk management |
 
-**Как оценивают performance:**
-- Агентное моделирование (simulation-based)
-- Stress testing параметров протоколов
-- Выдают рекомендации по collateral ratios, liquidation thresholds
-- **Не публичные** оценки — B2B, закрытые отчёты
+**How they evaluate performance:**
+- Agent-based modeling (simulation-based)
+- Stress testing protocol parameters
+- Issue recommendations on collateral ratios, liquidation thresholds
+- **Not public** evaluations — B2B, closed reports
 
-**UX оценка: N/A (B2B)**
-- Не для retail пользователей
-- Не имеет public leaderboard
+**UX Rating: N/A (B2B)**
+- Not for retail users
+- No public leaderboard
 
-**API для AI-агентов:**
-- Нет публичного API
-- Только для клиентов протоколов
+**API for AI Agents:**
+- No public API
+- Protocol clients only
 
-**Что плохо / чего не хватает:**
-- Нет публичного reputation layer
-- Нет оценки отдельных агентов/менеджеров
-- Полностью closed/enterprise
+**Weaknesses / Missing:**
+- No public reputation layer
+- No individual agent/manager evaluation
+- Completely closed/enterprise
 
 ---
 
 ### 🔴 CHAOS LABS
 **URL:** https://chaoslabs.xyz  
-**Категория:** Risk analytics и oracle risk для DeFi
+**Category:** Risk analytics and oracle risk for DeFi
 
-| Параметр | Данные |
-|----------|--------|
-| Transactioned processed | **$5 Trillion** |
+| Parameter | Data |
+|-----------|------|
+| Transactions processed | **$5 Trillion** |
 | Total Value Secured | **$10 Billion** |
-| Клиенты | Aave, Jupiter, GMX |
+| Clients | Aave, Jupiter, GMX |
 
-**Как оценивают performance:**
-- AI-driven risk engine для DeFi протоколов
+**How they evaluate performance:**
+- AI-driven risk engine for DeFi protocols
 - Real-time parameter recommendations
 - Oracle manipulation detection
-- **Закрытая система** — нет публичных agent scores
+- **Closed system** — no public agent scores
 
-**UX оценка: N/A (B2B)**
+**UX Rating: N/A (B2B)**
 
-**Что плохо / чего не хватает:**
-- Нет публичного reputation layer
-- Только enterprise клиенты
+**Weaknesses / Missing:**
+- No public reputation layer
+- Enterprise clients only
 
 ---
 
 ### Augur (Rebooting)
-- Статус: "Rebooting" — фактически мёртв в текущей форме
-- Исторически: первый decentralized prediction market, но проблемы с UX
-- Нет активных данных
+- Status: "Rebooting" — effectively dead in current form
+- Historically: first decentralized prediction market, but UX problems
+- No active data
 
 ---
 
 ### TokenSets / Set Protocol
-- Был популярен в 2019-2021 (DeFi Summer)
-- Сейчас: очень низкая активность, tokensets.com недоступен
-- Идея: automated rebalancing strategies (ETHBTC 50/50, momentum, etc.)
-- Проблема: не масштабировался, нет performance tracking
+- Popular in 2019-2021 (DeFi Summer)
+- Current: very low activity, tokensets.com unavailable
+- Concept: automated rebalancing strategies (ETHBTC 50/50, momentum, etc.)
+- Problem: didn't scale, no performance tracking
 
 ---
 
-## 2. СВОДНАЯ ТАБЛИЦА КОНКУРЕНТОВ
+## 2. COMPETITOR SUMMARY TABLE
 
-| Платформа | Пользователи/AUM | Метрики | UX (1-10) | API для агентов | Главный недостаток |
-|-----------|-----------------|---------|-----------|-----------------|-------------------|
-| Numerai | ~10k users, private hedge fund | CORR, MMC, Reputation (1Y avg) | 6 | ✅ Отличный (NumerAPI) | Только акции, обфусцировано |
-| Bittensor Subnets | тысячи miners/validators | Subnet-specific, TAO rewards | 3 | ⚠️ Технический | Нет стандарта, непонятно |
-| dHEDGE | $33M TVL, 2168 managers | Return%, Risk 1-5, Score | 7 | ⚠️ SDK есть | Score непрозрачный |
-| Enzyme Finance | $200M AUM, $7B volume | NAV, Returns | 5 | ⚠️ GraphQL | Enterprise shift, нет leaderboard |
-| Polymarket | $3B+ объём/год | P&L (через API), нет Brier | 8/3 | ✅ Лучший API | Нет predictor reputation |
-| Manifold | ~100K users | Calibration, P&L mana | 7 | ✅ Public API | Play-money, нет крипто |
-| Gauntlet | Top DeFi (Aave etc.) | Simulation-based risk | B2B | ❌ Нет | Закрытый B2B |
-| Chaos Labs | $10B secured | Oracle/liquidation risk | B2B | ❌ Нет | Закрытый B2B |
-| Augur | Мёртв | — | — | — | Умер |
-| TokenSets | Мёртв | — | — | — | Умер |
+| Platform | Users/AUM | Metrics | UX (1-10) | API for Agents | Main Weakness |
+|----------|-----------|---------|-----------|----------------|---------------|
+| Numerai | ~10k users, private hedge fund | CORR, MMC, Reputation (1Y avg) | 6 | ✅ Excellent (NumerAPI) | Stocks only, obfuscated |
+| Bittensor Subnets | thousands miners/validators | Subnet-specific, TAO rewards | 3 | ⚠️ Technical | No standard, confusing |
+| dHEDGE | $33M TVL, 2168 managers | Return%, Risk 1-5, Score | 7 | ⚠️ SDK exists | Opaque score |
+| Enzyme Finance | $200M AUM, $7B volume | NAV, Returns | 5 | ⚠️ GraphQL | Enterprise shift, no leaderboard |
+| Polymarket | $3B+ volume/year | P&L (via API), no Brier | 8/3 | ✅ Best API | No predictor reputation |
+| Manifold | ~100K users | Calibration, P&L mana | 7 | ✅ Public API | Play-money, no crypto |
+| Gauntlet | Top DeFi (Aave etc.) | Simulation-based risk | B2B | ❌ No | Closed B2B |
+| Chaos Labs | $10B secured | Oracle/liquidation risk | B2B | ❌ No | Closed B2B |
+| Augur | Dead | — | — | — | Dead |
+| TokenSets | Dead | — | — | — | Dead |
 
 ---
 
-## 3. МЕТРИКИ ОЦЕНКИ В КРИПТО-СПЕЦИФИКЕ
+## 3. CRYPTO-SPECIFIC EVALUATION METRICS
 
 ### 3.1 Trading Performance
 
-| Метрика | Описание | Важность | Сложность |
-|---------|---------|----------|-----------|
-| **Sharpe Ratio** | (Ret - RF) / σ(Ret), годовой | 🔴 Критично | Средняя |
-| **Sortino Ratio** | Только downside vol | 🔶 Важно | Средняя |
-| **Max Drawdown** | Максимальное падение от пика | 🔴 Критично | Низкая |
-| **Win Rate** | % прибыльных сделок | 🟡 Полезно | Низкая |
-| **PnL (абсолют)** | Чистая прибыль $ | 🔴 Критично | Низкая |
-| **PnL (%)** | % от начального капитала | 🔴 Критично | Низкая |
-| **Alpha vs benchmark** | Превышение над BTC/ETH/index | 🔶 Важно | Средняя |
-| **Calmar Ratio** | Annual Return / Max Drawdown | 🔶 Важно | Низкая |
-| **Trade count** | Количество сделок | 🟡 Контекст | Низкая |
-| **Avg hold time** | Средняя длительность позиции | 🟡 Контекст | Низкая |
-| **Slippage** | Средний slippage при execution | 🟡 Полезно | Средняя |
+| Metric | Description | Importance | Complexity |
+|--------|-------------|------------|------------|
+| **Sharpe Ratio** | (Ret - RF) / σ(Ret), annualized | 🔴 Critical | Medium |
+| **Sortino Ratio** | Downside volatility only | 🔶 Important | Medium |
+| **Max Drawdown** | Maximum decline from peak | 🔴 Critical | Low |
+| **Win Rate** | % profitable trades | 🟡 Useful | Low |
+| **PnL (absolute)** | Net profit $ | 🔴 Critical | Low |
+| **PnL (%)** | % of initial capital | 🔴 Critical | Low |
+| **Alpha vs benchmark** | Outperformance over BTC/ETH/index | 🔶 Important | Medium |
+| **Calmar Ratio** | Annual Return / Max Drawdown | 🔶 Important | Low |
+| **Trade count** | Number of trades | 🟡 Context | Low |
+| **Avg hold time** | Average position duration | 🟡 Context | Low |
+| **Slippage** | Average execution slippage | 🟡 Useful | Medium |
 
-**Крипто-специфика:**
-- Бенчмарк: BTC или ETH (не risk-free rate)
-- Crypto Sharpe отличается от TradFi (24/7 рынок, нет risk-free)
-- Важно разделять: spot, perps, DeFi
-- Gas costs как реальные издержки
+**Crypto-specific notes:**
+- Benchmark: BTC or ETH (not risk-free rate)
+- Crypto Sharpe differs from TradFi (24/7 market, no risk-free rate)
+- Important to separate: spot, perps, DeFi
+- Gas costs as real expenses
 
 ### 3.2 Prediction Markets
 
-| Метрика | Описание | Важность |
-|---------|---------|----------|
-| **Brier Score** | Mean squared error предсказаний (0-1, ниже = лучше) | 🔴 Критично |
-| **Calibration** | Соответствие % предсказаний реальным исходам | 🔴 Критично |
-| **Log Score** | Логарифмическая оценка, штрафует за уверенные ошибки | 🔶 Важно |
-| **ROI per prediction** | $ прибыли / $ вложено per bet | 🔴 Критично |
-| **Kelly Criterion adherence** | Насколько optimal sizing | 🟡 Экспертное |
-| **Resolution rate** | % рынков, где участвовал | 🟡 Контекст |
-| **Market selection bias** | Easy markets vs hard markets | 🔶 Важно |
-| **Edge (EV)** | Expected value от позиций | 🔶 Важно |
+| Metric | Description | Importance |
+|--------|-------------|------------|
+| **Brier Score** | Mean squared error of predictions (0-1, lower = better) | 🔴 Critical |
+| **Calibration** | Correspondence of % predictions to actual outcomes | 🔴 Critical |
+| **Log Score** | Logarithmic scoring, penalizes confident errors | 🔶 Important |
+| **ROI per prediction** | $ profit / $ invested per bet | 🔴 Critical |
+| **Kelly Criterion adherence** | How optimal the sizing is | 🟡 Expert |
+| **Resolution rate** | % of markets participated in | 🟡 Context |
+| **Market selection bias** | Easy markets vs hard markets | 🔶 Important |
+| **Edge (EV)** | Expected value of positions | 🔶 Important |
 
-**Крипто-специфика prediction markets:**
-- Ликвидность важна (нельзя сравнивать $100 bet vs $100K bet)
-- Crypto markets коррелируют между собой — нужна диверсификация
-- Timing (ранний вход vs поздний) влияет на прибыльность
+**Crypto-specific prediction market notes:**
+- Liquidity matters (can't compare $100 bet vs $100K bet)
+- Crypto markets are correlated — diversification needed
+- Timing (early entry vs late) affects profitability
 
 ### 3.3 Yield / APR Management
 
-| Метрика | Описание | Важность |
-|---------|---------|----------|
-| **Actual APR** | Реальный годовой доход % | 🔴 Критично |
-| **APR vs benchmark** | vs stablecoin yield, vs holding ETH | 🔴 Критично |
-| **Gas efficiency** | Gas / Total yield ratio | 🔶 Важно |
-| **Rebalance frequency** | Кол-во rebalance в месяц | 🟡 Контекст |
-| **Impermanent Loss** | Для LP позиций | 🔴 Критично |
-| **Net APR (after gas)** | APR минус все издержки | 🔴 Критично |
-| **IL-adjusted APR** | APR с учётом IL | 🔶 Важно |
-| **Uptime %** | % времени агент активен | 🟡 Полезно |
-| **Protocol risk** | Диверсификация по протоколам | 🔶 Важно |
+| Metric | Description | Importance |
+|--------|-------------|------------|
+| **Actual APR** | Real annual yield % | 🔴 Critical |
+| **APR vs benchmark** | vs stablecoin yield, vs holding ETH | 🔴 Critical |
+| **Gas efficiency** | Gas / Total yield ratio | 🔶 Important |
+| **Rebalance frequency** | Rebalances per month | 🟡 Context |
+| **Impermanent Loss** | For LP positions | 🔴 Critical |
+| **Net APR (after gas)** | APR minus all costs | 🔴 Critical |
+| **IL-adjusted APR** | APR accounting for IL | 🔶 Important |
+| **Uptime %** | % time agent is active | 🟡 Useful |
+| **Protocol risk** | Diversification across protocols | 🔶 Important |
 
-**Крипто-специфика yield:**
-- Gas стоимость может съесть весь yield на мелких позициях
-- Impermanent Loss — главный враг LP стратегий
-- Protocol risk (Aave, Compound, etc.) — нужна диверсификация
+**Crypto-specific yield notes:**
+- Gas costs can consume all yield on small positions
+- Impermanent Loss is the main enemy of LP strategies
+- Protocol risk (Aave, Compound, etc.) — diversification needed
 - "Real yield" vs "Inflationary yield" (token emissions)
 
 ### 3.4 Risk Management
 
-| Метрика | Описание | Важность |
-|---------|---------|----------|
-| **Adherence to risk parameters** | % времени в заданных лимитах | 🔴 Критично |
-| **Max drawdown vs target** | Реальный drawdown vs установленный лимит | 🔴 Критично |
-| **VaR (Value at Risk)** | Максимальный убыток с заданной вероятностью | 🔶 Важно |
-| **Liquidation proximity** | Близость к ликвидации | 🔴 Критично |
-| **Concentration risk** | Диверсификация позиций | 🔶 Важно |
-| **Slippage on exits** | Execution качество при аварийных выходах | 🔶 Важно |
-| **Circuit breaker activations** | Кол-во раз агент остановился сам | 🟡 Контекст |
+| Metric | Description | Importance |
+|--------|-------------|------------|
+| **Adherence to risk parameters** | % time within declared limits | 🔴 Critical |
+| **Max drawdown vs target** | Actual drawdown vs declared limit | 🔴 Critical |
+| **VaR (Value at Risk)** | Maximum loss at given probability | 🔶 Important |
+| **Liquidation proximity** | Closeness to liquidation | 🔴 Critical |
+| **Concentration risk** | Position diversification | 🔶 Important |
+| **Slippage on exits** | Execution quality during emergency exits | 🔶 Important |
+| **Circuit breaker activations** | Number of times agent stopped itself | 🟡 Context |
 
 ---
 
-## 4. ЧТО НЕ СУЩЕСТВУЕТ (НЕЗАНЯТЫЕ НИШИ)
+## 4. WHAT DOESN'T EXIST (UNOCCUPIED NICHES)
 
-### 4.1 Главный gap: Единый Reputation Score для крипто-агентов
+### 4.1 Main Gap: Unified Reputation Score for Crypto Agents
 
-**НЕТ** единой платформы, которая бы:
-1. Агрегировала performance агента **поперёк нескольких протоколов**
-2. Давала единый score, понятный как человеку, так и машине
-3. Верифицировала историю on-chain (не self-reported)
-4. Покрывала все 4 домена: trading + predictions + yield + risk mgmt
+**NO** single platform exists that:
+1. Aggregates agent performance **across multiple protocols**
+2. Provides a unified score understandable by both humans and machines
+3. Verifies history on-chain (not self-reported)
+4. Covers all 4 domains: trading + predictions + yield + risk management
 
-**Почему этого нет:**
-- dHEDGE покрывает только своих vault managers
-- Numerai работает только с ML-предсказаниями на акциях
-- Polymarket имеет данные, но не показывает reputation
-- Нет стандарта описания capabilities AI-агента
+**Why it doesn't exist:**
+- dHEDGE covers only its own vault managers
+- Numerai works only with ML predictions on stocks
+- Polymarket has the data but doesn't show reputation
+- No standard for describing AI agent capabilities
 
-### 4.2 Нет верифицированной кросс-протокольной истории
+### 4.2 No Verified Cross-Protocol History
 
-Сейчас агент может:
-- Показать хорошую историю на dHEDGE
-- Иметь плохую историю на Enzyme (другой аккаунт)
-- Торговать на Polymarket без связи с DeFi историей
+Currently an agent can:
+- Show good history on dHEDGE
+- Have poor history on Enzyme (different account)
+- Trade on Polymarket with no connection to DeFi history
 
-**Gap:** Нет способа связать wallets/accounts агента в единый verified record
+**Gap:** No way to link an agent's wallets/accounts into a single verified record
 
-### 4.3 Нет стандарта описания AI-агента
+### 4.3 No Standard for AI Agent Description
 
-Нет аналога "резюме" для агентов:
-- Что умеет (capabilities)
-- На чём специализируется (trading / yield / predictions)
-- Какой risk profile
-- Проверяемая история (verifiable track record)
-- Какие протоколы поддерживает
+No equivalent of a "resume" for agents:
+- Capabilities
+- Specialization (trading / yield / predictions)
+- Risk profile
+- Verifiable track record
+- Supported protocols
 
-**Сравнение:** В TradFi есть GIPS (Global Investment Performance Standards), в крипто — ничего подобного.
+**Comparison:** In TradFi there's GIPS (Global Investment Performance Standards), in crypto — nothing similar.
 
-### 4.4 UX Gap: нет bridge между human и machine
+### 4.4 UX Gap: No Bridge Between Human and Machine
 
-Существующие платформы:
-- Либо удобны людям (Polymarket UI, dHEDGE UI)
-- Либо для разработчиков (Bittensor, NumerAPI)
-- **НЕТ** платформы, где один и тот же score одновременно: понятен человеку визуально + machine-readable через API
+Existing platforms:
+- Either convenient for humans (Polymarket UI, dHEDGE UI)
+- Or for developers (Bittensor, NumerAPI)
+- **NO** platform where the same score is simultaneously: visually clear for humans + machine-readable via API
 
-### 4.5 UX анализ существующих платформ
+### 4.5 UX Analysis of Existing Platforms
 
-**Как показывают performance:**
+**How they display performance:**
 
-| Платформа | Формат | Human-friendly | Machine-readable |
-|-----------|--------|----------------|-----------------|
-| Numerai | Числа + графики CORR/MMC | Средне (требует знания метрик) | ✅ API + parquet |
-| dHEDGE | Return %, Risk 1-5, Score, таблица | ✅ Хорошо | ⚠️ Частично (SDK) |
-| Enzyme | NAV chart, portfolio allocation | ⚠️ Средне | ⚠️ GraphQL |
-| Polymarket | Цены, объём | ✅ Понятно для торговли | ✅ Отличный API |
-| Manifold | Calibration curve, P&L | ✅ Визуально красиво | ✅ Public API |
-| Bittensor | Raw on-chain числа | ❌ Непонятно | ⚠️ Технический |
+| Platform | Format | Human-friendly | Machine-readable |
+|----------|--------|----------------|-----------------|
+| Numerai | Numbers + CORR/MMC charts | Medium (requires metric knowledge) | ✅ API + parquet |
+| dHEDGE | Return %, Risk 1-5, Score, table | ✅ Good | ⚠️ Partially (SDK) |
+| Enzyme | NAV chart, portfolio allocation | ⚠️ Medium | ⚠️ GraphQL |
+| Polymarket | Prices, volume | ✅ Clear for trading | ✅ Excellent API |
+| Manifold | Calibration curve, P&L | ✅ Visually appealing | ✅ Public API |
+| Bittensor | Raw on-chain numbers | ❌ Incomprehensible | ⚠️ Technical |
 
-**Вывод:** Лучший human UX — Polymarket и dHEDGE. Лучший machine API — Polymarket и Numerai. Никто не делает обе одновременно через единую reputation метрику.
+**Conclusion:** Best human UX — Polymarket and dHEDGE. Best machine API — Polymarket and Numerai. Nobody does both simultaneously through a unified reputation metric.
 
 ---
 
-## 5. MVP РЕКОМЕНДАЦИЯ
+## 5. MVP RECOMMENDATION
 
-### 5.1 Ниша: AgentScore — Open Reputation Layer для крипто-агентов
+### 5.1 Niche: AgentScore — Open Reputation Layer for Crypto Agents
 
-**Формулировка позиционирования:**
-> "Единый, верифицированный, понятный score для AI-агентов в крипто — торговля, предсказания, DeFi yield. Для людей — визуально. Для агентов — JSON API."
+**Positioning statement:**
+> "A unified, verified, understandable score for AI agents in crypto — trading, predictions, DeFi yield. For humans — visual. For agents — JSON API."
 
-**Почему это WIN:**
-- Прямо в теме хакатона "Agents that trust"
-- Нет прямых конкурентов с таким positioning
-- On-chain верификация — нельзя подделать
-- Dual UX (human + machine) — инновационно
-- Реально нужно крипто-рынку (DeFi растёт, AI agents растут)
+**Why this wins:**
+- Directly aligned with hackathon theme "Agents that trust"
+- No direct competitors with this positioning
+- On-chain verification — can't be faked
+- Dual UX (human + machine) — innovative
+- Genuinely needed by crypto market (DeFi growing, AI agents growing)
 
-### 5.2 Ключевые метрики MVP Score (5 метрик)
+### 5.2 Key MVP Score Metrics (5 metrics)
 
-**AgentScore = взвешенная сумма 5 компонентов (каждый 0-100)**
+**AgentScore = weighted sum of 5 components (each 0-100)**
 
-#### Метрика 1: Performance Score (вес 30%)
+#### Metric 1: Performance Score (weight 30%)
 ```
 Performance = weighted average of:
   - PnL % (risk-adjusted, vs benchmark) — 50%
   - Sharpe Ratio (annualized) — 30%
   - Win Rate — 20%
 ```
-*Нормализация: Sharpe 2+ → 100, Sharpe < 0 → 0*
+*Normalization: Sharpe 2+ → 100, Sharpe < 0 → 0*
 
-#### Метрика 2: Risk Discipline Score (вес 25%)
+#### Metric 2: Risk Discipline Score (weight 25%)
 ```
 Risk = adherence to declared parameters:
   - Max Drawdown actual vs declared limit — 40%
   - Position sizing adherence — 30%
   - Protocol diversification — 30%
 ```
-*Ключевая инновация: агент ДЕКЛАРИРУЕТ параметры, мы проверяем соблюдение*
+*Key innovation: agent DECLARES parameters, we verify compliance*
 
-#### Метрика 3: Prediction Accuracy Score (вес 20%)
+#### Metric 3: Prediction Accuracy Score (weight 20%)
 ```
 Prediction = for prediction market agents:
   - Brier Score (normalized) — 50%
   - Calibration score — 30%
   - ROI per prediction — 20%
 ```
-*Для агентов без prediction markets — нейтральный компонент*
+*For agents without prediction markets — neutral component*
 
-#### Метрика 4: Consistency Score (вес 15%)
+#### Metric 4: Consistency Score (weight 15%)
 ```
 Consistency = stability over time:
   - Rolling 30D / 90D / 365D score stability
   - % rounds/periods with positive performance
   - Recency weight (last 90D = 50% weight)
 ```
-*Важно: защита от cherry-picking — нельзя показать 1 удачный месяц*
+*Important: protection against cherry-picking — can't show 1 lucky month*
 
-#### Метрика 5: Transparency Score (вес 10%)
+#### Metric 5: Transparency Score (weight 10%)
 ```
 Transparency = verifiability:
-  - % сделок on-chain (верифицируемы) — 50%
+  - % of trades on-chain (verifiable) — 50%
   - Declared parameters documented — 25%
   - Minimum activity threshold met — 25%
 ```
-*Бонус за полную on-chain историю*
+*Bonus for full on-chain history*
 
-**Итоговая формула:**
+**Final formula:**
 ```
 AgentScore = 0.30 * Performance 
            + 0.25 * RiskDiscipline 
@@ -526,16 +526,16 @@ AgentScore = 0.30 * Performance
            + 0.10 * Transparency
 ```
 
-**Диапазон:** 0-100 с уровнями:
-- 0-20: Unproven / новый агент
+**Range:** 0-100 with levels:
+- 0-20: Unproven / new agent
 - 21-40: Emerging
 - 41-60: Established  
 - 61-80: Trusted
 - 81-100: Elite
 
-### 5.3 UX Подход: Dual-Layer Design
+### 5.3 UX Approach: Dual-Layer Design
 
-#### Human Layer (визуально)
+#### Human Layer (visual)
 
 **Agent Profile Page:**
 ```
@@ -555,10 +555,10 @@ AgentScore = 0.30 * Performance
 ```
 
 **Leaderboard:**
-- Фильтры: по категории (trading / yield / predictions)
-- Сортировка: по AgentScore, по PnL, по Risk Score
-- Временные фреймы: 30D, 90D, 1Y, All Time
-- Визуализация: bar charts, radar chart по 5 метрикам
+- Filters: by category (trading / yield / predictions)
+- Sorting: by AgentScore, by PnL, by Risk Score
+- Timeframes: 30D, 90D, 1Y, All Time
+- Visualization: bar charts, radar chart by 5 metrics
 
 #### Machine Layer (API/Schema)
 
@@ -605,24 +605,7 @@ Response (JSON):
 }
 ```
 
-**Schema (OpenAPI / JSON-LD):**
-```yaml
-AgentCapabilities:
-  type: object
-  properties:
-    supported_domains:
-      type: array
-      items:
-        enum: [trading, yield_farming, prediction_markets, risk_management]
-    supported_protocols:
-      type: array
-    risk_parameters:
-      $ref: '#/components/schemas/RiskParameters'
-    track_record:
-      $ref: '#/components/schemas/TrackRecord'
-```
-
-### 5.4 Data Sources для MVP
+### 5.4 Data Sources for MVP
 
 **On-chain (primary):**
 - dHEDGE subgraph (GraphQL) — vault performance
@@ -635,73 +618,73 @@ AgentCapabilities:
 - Numerai API — ML tournament scores
 - Bittensor taostats API — subnet performance
 
-**Агрегация:**
-- Кросс-протокольный matching по wallet address
-- Нормализация метрик (разные timezones, единицы)
+**Aggregation:**
+- Cross-protocol matching by wallet address
+- Metric normalization (different timezones, units)
 - Weighted scoring per domain
 
-### 5.5 Дифференциаторы от конкурентов
+### 5.5 Differentiators from Competitors
 
-| Фича | dHEDGE | Numerai | Polymarket | AgentScore (наш) |
-|------|--------|---------|------------|------------------|
-| Единый cross-protocol score | ❌ | ❌ | ❌ | ✅ |
-| On-chain верификация | ✅ | ❌ | ⚠️ | ✅ |
+| Feature | dHEDGE | Numerai | Polymarket | AgentScore (ours) |
+|---------|--------|---------|------------|-------------------|
+| Unified cross-protocol score | ❌ | ❌ | ❌ | ✅ |
+| On-chain verification | ✅ | ❌ | ⚠️ | ✅ |
 | Machine-readable API | ⚠️ | ✅ | ✅ | ✅ |
 | Human-friendly UI | ✅ | ⚠️ | ✅ | ✅ |
-| AI-агент специфика | ❌ | ❌ | ❌ | ✅ |
+| AI agent specific | ❌ | ❌ | ❌ | ✅ |
 | Risk adherence tracking | ❌ | ❌ | ❌ | ✅ |
-| Prediction markets включены | ❌ | ❌ | ⚠️ | ✅ |
+| Prediction markets included | ❌ | ❌ | ⚠️ | ✅ |
 | Open standard | ❌ | ❌ | ❌ | ✅ |
 
 ---
 
-## 6. ВЫВОДЫ И СТРАТЕГИЯ
+## 6. CONCLUSIONS AND STRATEGY
 
-### Ключевые инсайты:
+### Key Insights:
 
-1. **Ниша реально свободна** — никто не делает кросс-протокольный reputation layer для AI-агентов в крипто
+1. **The niche is genuinely vacant** — nobody is building a cross-protocol reputation layer for AI agents in crypto
 
-2. **Data доступны** — Polymarket, dHEDGE, Enzyme имеют публичные API/subgraphs — можно строить поверх них
+2. **Data is available** — Polymarket, dHEDGE, Enzyme have public APIs/subgraphs — can build on top of them
 
-3. **Timing идеальный** — AI agents в крипто растут, проблема доверия к агентам становится актуальной (DeFAI тренд 2025-2026)
+3. **Timing is ideal** — AI agents in crypto are growing, the trust problem is becoming acute (DeFAI trend 2025-2026)
 
-4. **Хакатон тема совпадает** — "Agents that trust" = именно про это
+4. **Hackathon theme aligns** — "Agents that trust" = exactly this
 
-5. **Risk Discipline Score = ключевая инновация** — никто не проверяет следует ли агент собственным заявленным параметрам риска
+5. **Risk Discipline Score = key innovation** — nobody checks whether an agent follows its own declared risk parameters
 
-### Риски проекта:
+### Project Risks:
 
-- **Data quality:** On-chain данных может быть недостаточно для Sharpe/Brier за короткое время
-- **Gaming:** Агенты могут создавать fake history через множество аккаунтов → нужно minimum stake requirement
-- **Complexity:** 5 метрик сложно объяснить за pitch → упростить до 3 для первого показа
-- **Cold start:** Нет агентов в базе → нужно seed data (Polymarket top traders, dHEDGE top vaults)
+- **Data quality:** On-chain data may be insufficient for Sharpe/Brier over short periods
+- **Gaming:** Agents can create fake history through multiple accounts → need minimum stake requirement
+- **Complexity:** 5 metrics are hard to explain in a pitch → simplify to 3 for initial presentation
+- **Cold start:** No agents in database → need seed data (Polymarket top traders, dHEDGE top vaults)
 
-### Рекомендованный MVP фокус для хакатона:
+### Recommended MVP Focus for Hackathon:
 
-**Минимально жизнеспособный продукт:**
-1. AgentScore = 3 метрики (Performance + Risk Discipline + Consistency)
-2. Data из 2 источников: Polymarket + dHEDGE
-3. Human UI: простой leaderboard + agent profile
+**Minimum viable product:**
+1. AgentScore = 3 metrics (Performance + Risk Discipline + Consistency)
+2. Data from 2 sources: Polymarket + dHEDGE
+3. Human UI: simple leaderboard + agent profile
 4. Machine API: `/api/v1/agents/{id}/score` → JSON
 5. Demo: 10-20 real agents (top Polymarket traders + top dHEDGE vaults)
 
 **Pitch narrative:**
-> "Прежде чем дать AI-агенту доступ к твоим деньгам — узнай, заслужил ли он это. AgentScore — первый верифицированный, on-chain, кросс-протокольный reputation layer для крипто-агентов. Понятен тебе. Понятен другим агентам."
+> "Before giving an AI agent access to your money — find out if it earned the trust. AgentScore is the first verified, on-chain, cross-protocol reputation layer for crypto agents. Understandable to you. Understandable to other agents."
 
 ---
 
-## ПРИЛОЖЕНИЕ: Ссылки и ресурсы
+## APPENDIX: Links and Resources
 
-### APIs доступные для интеграции:
+### APIs Available for Integration:
 - Polymarket Data API: `https://data-api.polymarket.com`
 - Polymarket Gamma API: `https://gamma-api.polymarket.com`
 - dHEDGE SDK: `npm install @dhedge/v2-sdk`
 - dHEDGE Dune: `https://dune.com/dhedge`
 - Numerai API: `pip install numerapi`
-- Enzyme TheGraph: субграф на The Graph Protocol
+- Enzyme TheGraph: subgraph on The Graph Protocol
 - Bittensor taostats API: `https://dash.taostats.io/`
 
-### Документация:
+### Documentation:
 - Numerai Docs: https://docs.numer.ai
 - Polymarket Docs: https://docs.polymarket.com
 - dHEDGE Docs: https://docs.dhedge.org
@@ -710,4 +693,4 @@ AgentCapabilities:
 
 ---
 
-*Отчёт составлен: 7 марта 2026 | Субагент synthesis-crypto-research*
+*Report compiled: March 7, 2026 | Sub-agent synthesis-crypto-research*
