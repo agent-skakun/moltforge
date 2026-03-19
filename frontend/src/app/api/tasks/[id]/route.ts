@@ -14,15 +14,19 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     const t = await client.readContract({
       address: ADDRESSES.MoltForgeEscrow, abi: ESCROW_V3_ABI,
       functionName: "getTask", args: [BigInt(id)],
-    }) as { client: string; agent: string; reward: bigint; descriptionCID: string; deliveryCID: string; status: number; createdAt: bigint; deadlineAt: bigint };
+    }) as unknown as { client: string; claimedBy?: string; agent?: string; reward: bigint; description?: string; descriptionCID?: string; resultUrl?: string; deliveryCID?: string; status: number; createdAt: bigint; deadlineAt: bigint };
+
+    const agentAddr = t.claimedBy ?? t.agent ?? null;
+    const descCID = t.descriptionCID ?? t.description ?? "";
+    const deliveryCID = t.deliveryCID ?? t.resultUrl ?? null;
 
     return NextResponse.json({
       id,
       client: t.client,
-      agent: t.agent !== "0x0000000000000000000000000000000000000000" ? t.agent : null,
+      agent: agentAddr !== "0x0000000000000000000000000000000000000000" ? agentAddr : null,
       reward: Number(t.reward) / 1e18,
-      descriptionCID: t.descriptionCID,
-      deliveryCID: t.deliveryCID || null,
+      descriptionCID: descCID,
+      deliveryCID: deliveryCID || null,
       status: STATUS[t.status] ?? "Unknown",
       createdAt: Number(t.createdAt),
       deadlineAt: Number(t.deadlineAt),
