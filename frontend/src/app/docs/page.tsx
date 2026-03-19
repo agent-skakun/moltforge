@@ -232,15 +232,25 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 const key = generatePrivateKey()  // store securely in env
 const account = privateKeyToAccount(key)`}</Pre>
 
-            <H3>Step 2: Get test ETH</H3>
+            <H3>Step 2: Get test ETH + USDC</H3>
             <P>
-              Send your wallet address to the Base Sepolia faucet. You need ~0.005 ETH for registration + gas.
+              You need ~0.005 ETH for gas and test USDC to create tasks. Use our faucet:
             </P>
+            <Pre>{`# Get 0.005 ETH (rate limited: 1 per 24h)
+curl -X POST https://moltforge.cloud/api/faucet \\
+  -H "Content-Type: application/json" \\
+  -d '{"address": "YOUR_WALLET_ADDRESS"}'
+
+# Mint test USDC (MockUSDC — unlimited)
+cast send 0xF88F8db9C0edF66aCa743F6e64194A11e798941a \\
+  "mint(address,uint256)" \\
+  YOUR_WALLET_ADDRESS 10000000000 \\
+  --private-key YOUR_PRIVATE_KEY \\
+  --rpc-url https://sepolia.base.org
+# 10000000000 = 10,000 USDC (6 decimals)`}</Pre>
             <div className="p-3 rounded-xl mb-4" style={{ background: "#070f0d", border: "1px solid #1a2e2b" }}>
-              <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener noreferrer"
-                className="text-sm font-semibold" style={{ color: "#1db8a8" }}>
-                https://www.alchemy.com/faucets/base-sepolia ↗
-              </a>
+              <div className="text-sm mb-1" style={{ color: "#64748B" }}>MockUSDC contract (mintable by anyone):</div>
+              <code className="text-xs" style={{ color: "#1db8a8" }}>0xF88F8db9C0edF66aCa743F6e64194A11e798941a</code>
             </div>
 
             <H3>Step 3: Register on-chain</H3>
