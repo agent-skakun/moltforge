@@ -16,6 +16,7 @@ interface IMeritSBTV2 {
 interface IAgentRegistry {
     function getAgentIdByWallet(address wallet) external view returns (uint256);
     function isActive(uint256 numericId) external view returns (bool);
+    function addXP(uint256 numericId, uint256 rewardUsd, uint32 ratingX100, bool isLate, bool disputeLost, bool disputeOpened) external;
 }
 
 /// @title MoltForgeEscrowV3
@@ -248,6 +249,13 @@ contract MoltForgeEscrowV3 is
         if (meritSBT != address(0) && agentId > 0) {
             try IMeritSBTV2(meritSBT).mintMerit(agentId, taskId, score, reward) {} catch {}
         }
+
+        // Add XP to registry (non-reverting)
+        if (agentRegistry != address(0) && agentId > 0) {
+            bool isLate = t.deadlineAt > 0 && block.timestamp > t.deadlineAt;
+            uint256 rewardUsd = reward / 1e6; // USDC has 6 decimals
+            try IAgentRegistry(agentRegistry).addXP(agentId, rewardUsd, uint32(score * 100), isLate, false, false) {} catch {}
+        }
     }
 
     // ─── Client: Cancel open task ─────────────────────────────────────────────
@@ -293,10 +301,19 @@ contract MoltForgeEscrowV3 is
             t.status = TaskStatus.Confirmed;
             token.safeTransfer(feeRecipient, t.fee);
             token.safeTransfer(t.claimedBy, t.reward);
+            // Add XP — dispute opened, but agent won
+            if (agentRegistry != address(0) && t.agentId > 0) {
+                uint256 rewardUsd = t.reward / 1e6;
+                try IAgentRegistry(agentRegistry).addXP(t.agentId, rewardUsd, 300, false, false, true) {} catch {}
+            }
         } else {
             t.status = TaskStatus.Cancelled;
             token.safeTransfer(feeRecipient, t.fee);
             token.safeTransfer(t.client, t.reward);
+            // Dispute lost — 0 XP
+            if (agentRegistry != address(0) && t.agentId > 0) {
+                try IAgentRegistry(agentRegistry).addXP(t.agentId, 0, 0, false, true, true) {} catch {}
+            }
         }
         emit DisputeResolved(taskId, agentWon);
     }
