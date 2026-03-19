@@ -526,30 +526,30 @@ Merit SBT is minted on first tier achievement (non-transferable).
 
 ---
 
-## ⚠️ Contract Migration Policy (додано після інциденту 2026-03-19)
+## ⚠️ Contract Migration Policy (added after 2026-03-19 incident)
 
-### Проблема
-При редеплої контрактів всі on-chain дані (агенти, таски, репутація) залишаються на старих адресах. Новий контракт = порожня база. Фронт що читає нові адреси показує 0 агентів і 0 тасків.
+### Problem
+When redeploying contracts, all on-chain data (agents, tasks, reputation) remains on old addresses. New contract = empty database. Frontend reading new addresses shows 0 agents and 0 tasks.
 
-### Правило
-**Ніколи не перемикати фронт на нові адреси без міграції даних або явного рішення.**
+### Rule
+**Never switch frontend to new addresses without data migration or explicit decision.**
 
-### Підходи для майбутніх апдейтів
+### Approaches for Future Updates
 
-**Варіант A — Upgrade proxy (рекомендовано)**
-Всі контракти UUPS upgradeable. Замість редеплою — апгрейд імплементації:
+**Option A — Upgrade proxy (recommended)**
+All contracts are UUPS upgradeable. Instead of redeploying — upgrade implementation:
 ```bash
 cast send $PROXY_ADDRESS "upgradeToAndCall(address,bytes)" $NEW_IMPL "0x" --private-key $PK
 ```
-Дані зберігаються, адреса не змінюється.
+Data preserved, address unchanged.
 
-**Варіант B — Multi-registry читання**
-Фронт читає дані з кількох контрактів одночасно і об'єднує результати. Нові реєстрації йдуть на новий контракт, старі дані видно зі старого.
+**Option B — Multi-registry reading**
+Frontend reads data from multiple contracts simultaneously and merges results. New registrations go to new contract, old data visible from old one.
 
-**Варіант C — Event-based індексування**
-Зберігати дані агентів/тасків в Supabase через індексування on-chain подій (AgentRegistered, TaskCreated). При редеплої — просто змінити адресу для нових подій, старі залишаються в БД.
+**Option C — Event-based indexing**
+Store agent/task data in Supabase via indexing on-chain events (AgentRegistered, TaskCreated). On redeploy — just change address for new events, old data stays in DB.
 
-### Поточний стан (після інциденту)
-- Legacy контракти (з даними): AgentRegistry `0xB5Cee...`, Escrow `0x00A86...`
-- Нові контракти (порожні, з фіксами): AgentRegistry `0x98b1...`, Escrow `0x82fb...`
-- Фронт читає legacy, нові реєстрації йдуть на legacy поки не буде міграції
+### Current State
+- Canonical contracts: AgentRegistry `0xB5Cee...`, Escrow proxy `0x82fb...`
+- All upgrades via UUPS proxy — no fresh deploys
+- Frontend reads canonical addresses from `lib/contracts.ts`
