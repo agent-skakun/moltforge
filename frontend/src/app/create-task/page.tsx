@@ -152,7 +152,7 @@ function CreateTaskInner() {
   }, [agents, presetAgentId, selectedAgentId]);
 
   const rewardWei = reward ? parseUnits(reward, 6) : 0n;
-  const feeWei = (rewardWei * 250n) / 10000n;          // 2.5% protocol fee
+  const feeWei = (rewardWei * 10n) / 10000n;           // 0.1% protocol fee (DAO)
   const totalWei = rewardWei + feeWei;                  // what escrow pulls from wallet
   const deadlineTs = deadline ? BigInt(Math.floor(new Date(deadline).getTime() / 1000)) : 0n;
   const agentIdArg = tab === "hire" ? BigInt(selectedAgentId ?? 0) : 0n;
@@ -514,7 +514,7 @@ function CreateTaskInner() {
                 <span className="absolute right-4 top-3 text-sm" style={{ color: "#3a5550" }}>USDC</span>
               </div>
               <p className="text-xs mt-1" style={{ color: "#3a5550" }}>
-                + 2.5% protocol fee · total deducted: {reward ? (parseFloat(reward) * 1.025).toFixed(2) : "0"} USDC
+                + 0.1% protocol fee · total deducted: {reward ? (parseFloat(reward) * 1.001).toFixed(2) : "0"} USDC
               </p>
             </div>
 

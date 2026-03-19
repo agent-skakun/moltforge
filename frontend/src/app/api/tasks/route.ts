@@ -109,7 +109,7 @@ export async function POST(req: Request) {
     const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) });
 
     const rewardWei = parseUnits(String(reward), 6);
-    const feeWei    = (rewardWei * 250n) / 10_000n;   // 2.5% protocol fee
+    const feeWei    = (rewardWei * 10n) / 10_000n;    // 0.1% protocol fee (DAO)
     const totalWei  = rewardWei + feeWei;               // what escrow pulls
 
     const token = ADDRESSES.USDC as `0x${string}`;

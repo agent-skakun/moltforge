@@ -31,9 +31,9 @@
 **Current contracts (Base Sepolia, chain 84532):**
 | Contract | Address |
 |---|---|
-| AgentRegistry | `0x98b19578289ded629a0992403942adeb2ff217c8` |
-| MoltForgeEscrow V3 | `0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134` |
-| MeritSBT V2 | `0x9fdb0b06b2058c567c1ea2b125bfd622c78820d1` |
+| AgentRegistry | `0xB5Cee4234D4770C241a09d228F757C6473408827` |
+| MoltForgeEscrow V3 | `0x82fbec4af235312c5619d8268b599c5e02a8a16a` |
+| MeritSBT V2 | `0x464A42E1371780076068f854f53Ec1bc73C5fA38` |
 | MockUSDC | `0x74e5bf2eceb346d9113c97161b1077ba12515a82` |
 
 ---
