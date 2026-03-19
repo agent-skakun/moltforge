@@ -5,13 +5,13 @@ export const IS_TESTNET = true;
 
 export const ADDRESSES = {
   // Base Sepolia (testnet) — DeploySepolia.s.sol consistent set (registry↔escrow↔merit linked)
-  AgentRegistry: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const, // v7 XP formula
-  MoltForgeEscrow: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
-  MoltForgeEscrowV3: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
-  MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
-  MeritSBTV2: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
+  AgentRegistry: "0x98b19578289ded629a0992403942adeb2ff217c8" as const, // v8 addXP fixed + XP÷10
+  MoltForgeEscrow: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
+  MoltForgeEscrowV3: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
+  MeritSBT: "0x9fdb0b06b2058c567c1ea2b125bfd622c78820d1" as const,
+  MeritSBTV2: "0x9fdb0b06b2058c567c1ea2b125bfd622c78820d1" as const,
   MoltForgeDAO: "0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177" as const,  // DAO Treasury: 0.1% completion + 5% dispute slash
-  USDC: "0x221f261106C0a9D18Cc4dF024686f990015F7438" as const,               // mUSDC
+  USDC: "0x74e5bf2eceb346d9113c97161b1077ba12515a82" as const,               // mUSDC
 } as const;
 
 export const AGENT_REGISTRY_ABI = [
