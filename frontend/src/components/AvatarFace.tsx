@@ -919,6 +919,73 @@ function SkinDetails({ skinDetail, aging, skin, makeup }: {
   );
 }
 
+// ─── Deterministic avatar from wallet address ────────────────────────────────
+
+/**
+ * Generates a unique, deterministic FaceParams from a wallet address.
+ * Same wallet always gets the same face. Different wallets get different faces.
+ */
+export function walletToFaceParams(wallet: string): FaceParams {
+  // Use wallet bytes as seed — each byte controls a different feature
+  const hex = wallet.toLowerCase().replace("0x", "");
+  const byte = (i: number) => parseInt(hex.slice((i * 2) % hex.length, (i * 2) % hex.length + 2) || "00", 16);
+  const pick = <T,>(arr: T[], i: number): T => arr[byte(i) % arr.length];
+
+  const faceShapes:  FaceParams["faceShape"][] = ["oval","round","square","heart","diamond","oblong"];
+  const eyeTypes:    FaceParams["eyes"][]       = ["normal","asian","wide","tired","hooded","deep","almond","round"];
+  const eyeColors:   FaceParams["eyeColor"][]   = ["brown","blue","green","gray","hazel","amber"];
+  const brows:       FaceParams["eyebrows"][]   = ["normal","thick","thin","arched","straight","bushy"];
+  const noses:       FaceParams["nose"][]       = ["small","medium","wide","upturned","hooked","button"];
+  const mouths:      FaceParams["mouth"][]      = ["smile","neutral","serious","smirk","open","pouty"];
+  const ears:        FaceParams["ears"][]       = ["normal","large","small","pointed"];
+  const hairs:       FaceParams["hair"][]       = ["short","long","curly","bald","ponytail","afro","business","mohawk","undercut","buzz","bun","wavy"];
+  const hairColors:  FaceParams["hairColor"][]  = ["black","brown","blonde","red","gray","white","platinum","auburn"];
+  const facialHairs: FaceParams["facialHair"][] = ["none","none","none","stubble","short","full","goatee","mustache"];
+  const glasses:     FaceParams["glasses"][]    = ["none","none","none","round","square","oval","cat-eye","rimless"];
+  const hats:        FaceParams["hat"][]        = ["none","none","none","none","cap","beanie","fedora","hood","crown","beret"];
+  const earrings:    FaceParams["earrings"][]   = ["none","none","none","studs","hoops","drops","dangles"];
+  const piercings:   FaceParams["piercing"][]   = ["none","none","none","none","nose","lip","eyebrow"];
+  const tattoos:     FaceParams["tattoo"][]     = ["none","none","none","none","none","neck","face","tear","circuit"];
+  const necklaces:   FaceParams["necklace"][]   = ["none","none","none","chain","pendant","choker","beads"];
+  const agings:      FaceParams["aging"][]      = ["none","none","light","heavy"];
+  const makeups:     FaceParams["makeup"][]     = ["none","none","none","light","bold","natural"];
+
+  const glassColors  = ["#888","#333","#c8a000","#1a6baf","#8b2222","#2d6e2d"];
+  const hatColors    = ["#222","#444","#8b2222","#1a3a6e","#2d5a27","#5a3d1c"];
+  const earringClrs  = ["#c8a000","#888","#c0c0c0","#b87333"];
+  const necklaceClrs = ["#c8a000","#888","#c0c0c0"];
+
+  return {
+    faceShape:    pick(faceShapes, 0),
+    skinColor:    SKIN_COLORS[byte(1) % SKIN_COLORS.length],
+    aging:        pick(agings, 2),
+    freckles:     byte(3) % 5 === 0 ? "light" : "none",
+    scar:         byte(4) % 8 === 0 ? pick(["cheek","chin","forehead"] as FaceParams["scar"][], 4) : "none",
+    eyes:         pick(eyeTypes, 5),
+    eyeColor:     pick(eyeColors, 6),
+    eyebrows:     pick(brows, 7),
+    nose:         pick(noses, 8),
+    mouth:        pick(mouths, 9),
+    ears:         pick(ears, 10),
+    hair:         pick(hairs, 11),
+    hairColor:    pick(hairColors, 12),
+    highlights:   byte(13) % 4 === 0,
+    facialHair:   pick(facialHairs, 14),
+    makeup:       pick(makeups, 15),
+    skinDetail:   byte(16) % 6 === 0 ? "freckles" : "none",
+    glasses:      pick(glasses, 17),
+    glassesColor: glassColors[byte(18) % glassColors.length],
+    earrings:     pick(earrings, 19),
+    earringsColor: earringClrs[byte(20) % earringClrs.length],
+    hat:          pick(hats, 21),
+    hatColor:     hatColors[byte(22) % hatColors.length],
+    piercing:     pick(piercings, 23),
+    tattoo:       pick(tattoos, 24),
+    necklace:     pick(necklaces, 25),
+    necklaceColor: necklaceClrs[byte(26) % necklaceClrs.length],
+  };
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function AvatarFace({ params, size = 200 }: { params: FaceParams; size?: number }) {
