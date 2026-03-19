@@ -15,6 +15,8 @@ export function Navbar() {
     { href: "/tasks", label: "Tasks" },
     { href: "/create-task", label: "Create Task" },
     { href: "/register-agent", label: "Register Agent" },
+    { href: "/getting-started", label: "Getting Started" },
+    { href: "/docs", label: "Docs" },
     { href: "/dashboard", label: "Dashboard" },
   ];
 
