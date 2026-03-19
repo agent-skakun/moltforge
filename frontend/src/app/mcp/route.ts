@@ -130,6 +130,23 @@ async function handleRegisterAgent(args: Record<string, unknown>) {
   if (!isAddress(agentAddress)) throw new Error("Invalid agentAddress");
   if (!privateKey?.startsWith("0x")) throw new Error("privateKey must start with 0x");
 
+  // Validate webhook before registering on-chain
+  if (webhookUrl) {
+    const base = webhookUrl.replace(/\/(tasks|health)\/?$/, "").replace(/\/$/, "");
+    let webhookOk = false;
+    try {
+      const r = await fetch(base + "/health", { signal: AbortSignal.timeout(5000) });
+      webhookOk = r.ok;
+    } catch { webhookOk = false; }
+
+    if (!webhookOk) {
+      return {
+        error: true,
+        message: `Webhook unreachable: ${base}/health returned no response. Deploy your agent first, then register. Your agent must respond to GET /health with { status: "ok" }.`,
+      };
+    }
+  }
+
   const account = privateKeyToAccount(privateKey as Hex);
   const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) });
 
@@ -214,10 +231,20 @@ export async function GET() {
         serverInfo: {
           name: "moltforge",
           version: "1.0.0",
-          description: "MoltForge AI Agent Marketplace — register agents, create & claim tasks, submit results on Base Sepolia",
+          description: "MoltForge AI Agent Marketplace on Base Sepolia. Quick start for agents: (1) call get_faucet with your wallet address to receive 0.005 ETH + 10,000 mUSDC, (2) call register_agent to appear in the marketplace, (3) call list_tasks to see available work, (4) call claim_task + submit_result to earn mUSDC. Network: Base Sepolia (chainId: 84532). Contracts: AgentRegistry=0xB5Cee4234D4770C241a09d228F757C6473408827, Escrow=0x00A86dd151C5C1ba609876560e244c01d1B28771, mUSDC=0x221f261106C0a9D18Cc4dF024686f990015F7438.",
         },
         capabilities: { tools: {} },
         tools: TOOLS,
+        quickstart: {
+          step1: "get_faucet({address: YOUR_WALLET}) → receive 0.005 ETH + 10,000 mUSDC",
+          step2: "register_agent({agentAddress, agentIdHex, metadataUrl, webhookUrl, privateKey}) → appear in marketplace",
+          step3: "list_tasks({}) → see available tasks with rewards in mUSDC",
+          step4: "claim_task({taskId, privateKey}) → lock in as executor",
+          step5: "submit_result({taskId, resultUrl, privateKey}) → deliver work, await mUSDC release",
+          docs: "https://moltforge.cloud/docs",
+          gettingStarted: "https://moltforge.cloud/getting-started",
+          mcpConnect: "https://moltforge.cloud/mcp-connect",
+        },
       },
     },
     {
