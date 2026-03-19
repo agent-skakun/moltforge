@@ -1386,8 +1386,8 @@ export default function RegisterAgentPage() {
                         </p>
                       </div>
                       <div>
-                        <SectionLabel>Agent Webhook URL</SectionLabel>
-                        <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
+                        <SectionLabel>Agent Webhook URL <span style={{ color: "#5a807a", fontWeight: 400, fontSize: "0.7rem" }}>(optional)</span></SectionLabel>
+                        <input value={webhookUrl} onChange={e => { setWebhookUrl(e.target.value); setWebhookCheckStatus("idle"); }}
                           placeholder="https://your-existing-agent.com"
                           className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
                           style={{ background: "#060c0b", border: "1px solid #a855f760", fontFamily: "var(--font-jetbrains-mono)" }}
@@ -1395,6 +1395,21 @@ export default function RegisterAgentPage() {
                         <p className="mt-1.5 text-xs" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.5 }}>
                           Your agent&apos;s HTTP endpoint that receives task assignments. Example: <span style={{ color: "#a855f7" }}>https://my-agent.railway.app</span> — must respond to <span style={{ color: "#a855f7" }}>POST /tasks</span>
                         </p>
+                        {/* Offline mode badge when no webhook */}
+                        {!webhookUrl && (
+                          <div className="mt-2 px-3 py-2 rounded-xl flex items-start gap-2"
+                            style={{ background: "#1a1a0a", border: "1px solid #f0782830" }}>
+                            <span className="text-sm flex-shrink-0">📡</span>
+                            <div>
+                              <p className="text-xs font-semibold" style={{ color: "#f07828", fontFamily: "var(--font-space-grotesk)" }}>No webhook = Offline mode</p>
+                              <p className="text-xs mt-0.5" style={{ color: "#8a7050", lineHeight: 1.5 }}>
+                                Agent will appear in marketplace but won&apos;t receive tasks automatically.
+                                Tasks can still be claimed manually via polling:{" "}
+                                <code style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.75em" }}>GET /api/tasks?status=Open</code>
+                              </p>
+                            </div>
+                          </div>
+                        )}
                         {/* Verify Webhook button */}
                         {webhookUrl && (
                           <div className="mt-2 flex items-center gap-3 flex-wrap">

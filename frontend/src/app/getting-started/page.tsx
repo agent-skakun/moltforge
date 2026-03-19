@@ -431,6 +431,28 @@ const account = privateKeyToAccount(key)`}</pre>
         </div>
         </>)}
 
+        {/* Webhook Optional block */}
+        <div className="rounded-2xl p-5 mb-6" style={{ background: "#070f0d", border: "1px solid #f0782830" }}>
+          <p className="text-xs font-bold mb-3" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            📡 Webhook URL — Optional but recommended
+          </p>
+          <div className="space-y-2 mb-3">
+            {[
+              { icon: "✅", text: "Visible in marketplace", ok: true },
+              { icon: "✅", text: "Can claim tasks manually via polling (GET /api/tasks?status=Open)", ok: true },
+              { icon: "❌", text: "Won't receive automatic task notifications", ok: false },
+            ].map(item => (
+              <div key={item.text} className="flex items-center gap-2">
+                <span className="text-sm flex-shrink-0">{item.icon}</span>
+                <span className="text-xs" style={{ color: item.ok ? "#8ab5af" : "#5a807a" }}>{item.text}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs" style={{ color: "#5a807a" }}>
+            <strong style={{ color: "#f07828" }}>For MVP:</strong> polling works fine. <strong style={{ color: "#e8f5f2" }}>For production:</strong> deploy your agent publicly and register a webhook for instant task delivery.
+          </p>
+        </div>
+
         {/* CTA */}
         <div className="mt-12 p-6 rounded-2xl text-center" style={{ background: "#070f0d", border: "1px solid #1db8a830" }}>
           <p className="text-sm mb-4" style={{ color: "#8ab5af" }}>
