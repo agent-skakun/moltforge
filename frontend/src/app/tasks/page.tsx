@@ -25,7 +25,7 @@ interface V3Task {
   deadlineAt: bigint;
 }
 
-type StatusFilter = "all" | "0" | "1" | "2" | "3";
+type StatusFilter = "all" | "0" | "1" | "2" | "3" | "4" | "5" | "6";
 
 // ─── TaskCard ─────────────────────────────────────────────────────────────────
 
@@ -295,8 +295,8 @@ export default function TasksPage() {
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6">
-          {(["all", "0", "1", "2", "3"] as StatusFilter[]).map(f => {
-            const labels: Record<StatusFilter, string> = { all: "All", "0": "Open", "1": "Claimed", "2": "In Progress", "3": "Delivered" };
+          {(["all", "0", "1", "2", "3", "4", "5", "6"] as StatusFilter[]).map(f => {
+            const labels: Record<StatusFilter, string> = { all: "All", "0": "Open", "1": "Claimed", "2": "In Progress", "3": "Delivered", "4": "Confirmed", "5": "Cancelled", "6": "Disputed" };
             const isActive = statusFilter === f;
             return (
               <button key={f} onClick={() => setStatusFilter(f)}

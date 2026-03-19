@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits } from "viem";
@@ -87,7 +87,8 @@ export default function TaskDetailPage() {
   const { writeContract: doCancel,  data: cancelTx,  isPending: cancelPending }  = useWriteContract();
   const { writeContract: doDispute, data: disputeTx, isPending: disputePending } = useWriteContract();
   const { writeContract: doResolve, data: resolveTx, isPending: resolvePending } = useWriteContract();
-  const { writeContract: doMintMerit } = useWriteContract();
+  const { writeContract: doMintMerit, data: mintTx, isPending: mintPending } = useWriteContract();
+  const { isLoading: waitMint, isSuccess: mintDone, isError: mintError } = useWaitForTransactionReceipt({ hash: mintTx });
 
   const { isLoading: waitClaim,   isSuccess: claimDone }   = useWaitForTransactionReceipt({ hash: claimTx });
   const { isLoading: waitSubmit,  isSuccess: submitDone }  = useWaitForTransactionReceipt({ hash: submitTx });
@@ -100,6 +101,32 @@ export default function TaskDetailPage() {
   const [resultUrl, setResultUrl]   = useState("");
   const [score, setScore]           = useState(5);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [meritStatus, setMeritStatus] = useState<"idle" | "minting" | "done" | "error">("idle");
+  const [meritAutoTriggered, setMeritAutoTriggered] = useState(false);
+
+  // Auto-mint Merit SBT after confirmDelivery succeeds (score >= 4 + agentId > 0)
+  useEffect(() => {
+    if (!confirmDone || meritAutoTriggered) return;
+    if (score < 4) return;
+    // We need the task data to check agentId — but raw might not be available yet on first render
+    const t = raw as unknown as V3Task | undefined;
+    if (!t || t.agentId <= 0n) return;
+
+    setMeritAutoTriggered(true);
+    setMeritStatus("minting");
+    doMintMerit({
+      address: ADDRESSES.MeritSBT,
+      abi: MERIT_SBT_V2_ABI as never,
+      functionName: "mintMerit" as never,
+      args: [t.agentId, taskId, score, t.reward] as never,
+    });
+  }, [confirmDone, meritAutoTriggered, score, raw, doMintMerit, taskId]);
+
+  // Track mint tx result
+  useEffect(() => {
+    if (mintDone) setMeritStatus("done");
+    if (mintError) setMeritStatus("error");
+  }, [mintDone, mintError]);
 
   if (isLoading) {
     return (
@@ -418,20 +445,44 @@ export default function TaskDetailPage() {
           {isCompleted && (
             <div className="space-y-3">
               <div className="rounded-2xl p-4 text-center" style={{ background: "#3ec95a10", border: "1px solid #3ec95a30" }}>
-                <p className="text-sm font-semibold" style={{ color: "#3ec95a" }}>✅ Task completed — payment released</p>
+                <p className="text-sm font-semibold" style={{ color: "#3ec95a" }}>Task completed — payment released</p>
               </div>
-              {/* MeritSBT: mint after confirmDelivery if score >= 4 */}
-              {confirmDone && score >= 4 && task.agentId > 0n && (
+            </div>
+          )}
+
+          {/* Auto-mint Merit SBT status */}
+          {(meritStatus === "minting" || mintPending || waitMint) && (
+            <div className="rounded-2xl p-4 text-center flex items-center justify-center gap-2"
+              style={{ background: "#e8c84210", border: "1px solid #e8c84230" }}>
+              <span className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin inline-block"
+                style={{ borderColor: "#e8c842", borderTopColor: "transparent" }} />
+              <p className="text-sm font-semibold" style={{ color: "#e8c842" }}>Minting Merit SBT...</p>
+            </div>
+          )}
+          {meritStatus === "done" && (
+            <div className="rounded-2xl p-4 text-center" style={{ background: "#e8c84210", border: "1px solid #e8c84230" }}>
+              <p className="text-sm font-semibold" style={{ color: "#e8c842" }}>Merit SBT minted ({score}★)</p>
+            </div>
+          )}
+          {meritStatus === "error" && (
+            <div className="space-y-2">
+              <div className="rounded-2xl p-4 text-center" style={{ background: "#e6303010", border: "1px solid #e6303030" }}>
+                <p className="text-sm" style={{ color: "#e63030" }}>Merit SBT mint failed</p>
+              </div>
+              {task.agentId > 0n && score >= 4 && (
                 <button
-                  onClick={() => doMintMerit({
-                    address: ADDRESSES.MeritSBT,
-                    abi: MERIT_SBT_V2_ABI as never,
-                    functionName: "mintMerit" as never,
-                    args: [task.agentId, taskId, score, task.reward] as never,
-                  })}
+                  onClick={() => {
+                    setMeritStatus("minting");
+                    doMintMerit({
+                      address: ADDRESSES.MeritSBT,
+                      abi: MERIT_SBT_V2_ABI as never,
+                      functionName: "mintMerit" as never,
+                      args: [task.agentId, taskId, score, task.reward] as never,
+                    });
+                  }}
                   className="w-full py-3 rounded-2xl text-sm font-semibold"
                   style={{ background: "#e8c84215", border: "1px solid #e8c842", color: "#e8c842", cursor: "pointer" }}>
-                  🏅 Mint Merit SBT (score {score}★)
+                  Retry Mint Merit SBT
                 </button>
               )}
             </div>
