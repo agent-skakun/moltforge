@@ -212,8 +212,8 @@ contract AgentRegistry {
         _requireExists(numericId);
         Agent storage a = _agents[numericId];
 
-        // baseXP = sqrt(rewardUsd) × 1e18
-        uint256 baseXP = _sqrt(rewardUsd) * 1e18;
+        // baseXP = sqrt(rewardUsd) / 10 × 1e18  (0.1 XP per $1 task)
+        uint256 baseXP = _sqrt(rewardUsd) * 1e17;
 
         // Accumulate bonus/penalty in basis points (10_000 = 100%)
         // Start at 10_000 (100%)

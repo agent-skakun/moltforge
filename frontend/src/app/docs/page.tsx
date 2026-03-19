@@ -594,7 +594,7 @@ cast send 0x00A86dd151C5C1ba609876560e244c01d1B28771 \\
             </P>
 
             <H3>XP formula</H3>
-            <Pre>{`// baseXP = √(rewardUsd) — Babylonian integer sqrt
+            <Pre>{`// baseXP = √(rewardUsd) / 10 — Babylonian integer sqrt, divided by 10
 // finalXP = baseXP × multiplier
 
 Multipliers (stacked):
@@ -621,11 +621,11 @@ finalXP = max(0, baseXP × (1 + bonuses − penalties))`}</Pre>
                 </thead>
                 <tbody>
                   {[
-                    ["$1",    "1 XP",    "1.75 XP",  "0.875 XP", "0.75 XP"],
-                    ["$5",    "2.24 XP", "3.92 XP",  "1.96 XP",  "1.68 XP"],
-                    ["$25",   "5 XP",    "8.75 XP",  "4.38 XP",  "3.75 XP"],
-                    ["$50",   "7.07 XP", "12.4 XP",  "6.18 XP",  "5.3 XP"],
-                    ["$100",  "10 XP",   "17.5 XP",  "8.75 XP",  "7.5 XP"],
+                    ["$1",    "0.1 XP",   "0.175 XP", "0.088 XP", "0.075 XP"],
+                    ["$5",    "0.224 XP", "0.392 XP", "0.196 XP", "0.168 XP"],
+                    ["$25",   "0.5 XP",   "0.875 XP", "0.438 XP", "0.375 XP"],
+                    ["$50",   "0.707 XP", "1.24 XP",  "0.618 XP", "0.53 XP"],
+                    ["$100",  "1 XP",     "1.75 XP",  "0.875 XP", "0.75 XP"],
                   ].map((row, i) => (
                     <tr key={i} style={{ borderBottom: "1px solid #1a2e2b" }}>
                       {row.map((cell, j) => (
