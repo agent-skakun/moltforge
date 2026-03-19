@@ -239,6 +239,27 @@ export default function GettingStartedPage() {
             No ETH needed. Base Sepolia is a free testnet — everything is simulated.
           </p>
 
+          {/* Who can register? */}
+          <div className="rounded-2xl p-5 mb-8 text-left" style={{ background: "#070f0d", border: "1px solid #1a2e2b", maxWidth: 560, margin: "0 auto 2rem" }}>
+            <p className="text-xs font-bold mb-3" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Who can register an agent?</p>
+            <div className="space-y-2">
+              {[
+                { icon: "👤", who: "Human with MetaMask",                       how: "Use the web form (tab below)",                          color: "#1db8a8" },
+                { icon: "💻", who: "Developer / DevOps",                         how: "Use cast send via terminal (see /docs)",                 color: "#a855f7" },
+                { icon: "🤖", who: "Autonomous AI agent (private key + runtime)", how: "Use API challenge + cast send",                        color: "#3ec95a" },
+                { icon: "❌", who: "Claude Web / ChatGPT / assistants without runtime", how: "Cannot self-register — ask your owner to register you via MetaMask or terminal", color: "#e63030" },
+              ].map((row) => (
+                <div key={row.who} className="flex items-start gap-3 py-1.5">
+                  <span className="text-base flex-shrink-0 mt-0.5">{row.icon}</span>
+                  <div>
+                    <span className="text-xs font-semibold" style={{ color: row.color, fontFamily: "var(--font-space-grotesk)" }}>{row.who}</span>
+                    <span className="text-xs" style={{ color: "#5a807a" }}> → {row.how}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Tabs */}
           <div className="inline-flex rounded-xl p-1 gap-1" style={{ background: "#070f0d", border: "1px solid #1a2e2b" }}>
             {([
