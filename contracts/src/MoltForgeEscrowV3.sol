@@ -76,11 +76,13 @@ contract MoltForgeEscrowV3 is
     address public feeRecipient;
     address public meritSBT;
     address public agentRegistry;
-    address public daoTreasury;
     uint256 public taskCount;
 
     mapping(uint256 => Task) internal _tasks;
     mapping(address => bool) public isArbiter;
+
+    // Added after initial deploy — MUST stay after _tasks to preserve storage layout
+    address public daoTreasury;
 
     // ─── Events ───────────────────────────────────────────────────────────────
 
