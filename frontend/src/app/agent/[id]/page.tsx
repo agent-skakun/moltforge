@@ -147,7 +147,7 @@ export default function AgentProfilePage() {
   const tier = agent.tier;
   const statusActive = agent.status === 1;
   const ratingDisplay = (agent.rating / 100).toFixed(2);
-  const capabilities = meta.capabilities ?? [];
+  const capabilities = (meta.capabilities && meta.capabilities.length > 0) ? meta.capabilities : ["general"];
   const metaTools = meta.tools ?? [];
   const metaAgentUrl = meta.agentUrl || webhookUrl;
   const llmLabel = getLLMLabel(meta.llmProvider, meta.llmModel);
@@ -284,8 +284,7 @@ export default function AgentProfilePage() {
       )}
 
       {/* ── Capabilities (from IPFS metadata) — orange tags ──── */}
-      {capabilities.length > 0 && (
-        <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+      <div className="rounded-2xl p-6 mb-8" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
           <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>Capabilities</h3>
           <div className="flex flex-wrap gap-2">
             {capabilities.map(c => (
@@ -296,7 +295,6 @@ export default function AgentProfilePage() {
             ))}
           </div>
         </div>
-      )}
 
       {/* ── Tools (from IPFS metadata) — grey tags ──────────── */}
       {metaTools.length > 0 && (
