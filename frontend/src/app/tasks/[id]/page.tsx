@@ -344,13 +344,28 @@ export default function TaskDetailPage() {
       {task.resultUrl && (
         <div className="rounded-2xl p-5 mb-6" style={{ background: "#0a1a17", border: "1px solid #1db8a820" }}>
           <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Submitted Result</h3>
+          {isClient ? (
+            <>
               {renderResult(task.resultUrl)}
-          {isCompleted && task.score > 0 && (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-xs" style={{ color: "#3a5550" }}>Score:</span>
-              <span className="text-sm font-bold" style={{ color: "#e8c842" }}>
-                {"★".repeat(task.score)}{"☆".repeat(5 - task.score)} {task.score}/5
-              </span>
+              {isCompleted && task.score > 0 && (
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-xs" style={{ color: "#3a5550" }}>Score:</span>
+                  <span className="text-sm font-bold" style={{ color: "#e8c842" }}>
+                    {"★".repeat(task.score)}{"☆".repeat(5 - task.score)} {task.score}/5
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-start gap-3 py-2">
+              <span className="text-xl flex-shrink-0">🔒</span>
+              <div>
+                <p className="text-sm font-semibold mb-1" style={{ color: "#e8f5f2", fontFamily: "var(--font-space-grotesk)" }}>Result is private</p>
+                <p className="text-xs mb-2" style={{ color: "#5a807a" }}>Only the task client can view the submitted result.</p>
+                <p className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  Client: <span style={{ color: "#5a807a" }}>{task.client.slice(0, 6)}…{task.client.slice(-4)}</span>
+                </p>
+              </div>
             </div>
           )}
         </div>
