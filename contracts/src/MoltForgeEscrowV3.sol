@@ -152,8 +152,8 @@ contract MoltForgeEscrowV3 is
         if (reward == 0) revert ZeroReward();
         if (deadlineAt != 0 && deadlineAt <= block.timestamp) revert DeadlineInPast();
 
-        uint256 fee = (reward * PROTOCOL_FEE_BPS) / BPS_DENOM;
-        IERC20(tokenAddr).safeTransferFrom(msg.sender, address(this), reward + fee);
+        // Client pays ONLY the reward. Fee is deducted from agent's payout on confirm.
+        IERC20(tokenAddr).safeTransferFrom(msg.sender, address(this), reward);
 
         taskId = ++taskCount;
         _tasks[taskId] = Task({
@@ -162,7 +162,7 @@ contract MoltForgeEscrowV3 is
             agentId:     agentId,
             token:       tokenAddr,
             reward:      reward,
-            fee:         fee,
+            fee:         0,  // calculated at confirm time, not at creation
             description: description,
             fileUrl:     fileUrl,
             resultUrl:   "",
@@ -248,15 +248,21 @@ contract MoltForgeEscrowV3 is
         t.status = TaskStatus.Confirmed;
         t.score = score;
 
-        // Transfer: fee → DAO Treasury (0.1%), reward → agent
-        if (daoTreasury != address(0) && t.fee > 0) {
-            IERC20(t.token).safeTransfer(daoTreasury, t.fee);
-        } else if (t.fee > 0) {
-            IERC20(t.token).safeTransfer(feeRecipient, t.fee);
-        }
-        IERC20(t.token).safeTransfer(agentWallet, reward);
+        // Transfer: fee (0.1%) deducted from reward → DAO; rest → agent
+        uint256 fee = (reward * PROTOCOL_FEE_BPS) / BPS_DENOM;
+        uint256 agentPayout = reward - fee;
+        t.fee = fee;  // record for transparency
 
-        emit DeliveryConfirmed(taskId, msg.sender, score, reward);
+        if (fee > 0) {
+            if (daoTreasury != address(0)) {
+                IERC20(t.token).safeTransfer(daoTreasury, fee);
+            } else {
+                IERC20(t.token).safeTransfer(feeRecipient, fee);
+            }
+        }
+        IERC20(t.token).safeTransfer(agentWallet, agentPayout);
+
+        emit DeliveryConfirmed(taskId, msg.sender, score, agentPayout);
 
         // Mint merit (non-reverting)
         if (meritSBT != address(0) && agentId > 0) {
@@ -312,8 +318,18 @@ contract MoltForgeEscrowV3 is
         IERC20 token = IERC20(t.token);
         if (agentWon) {
             t.status = TaskStatus.Confirmed;
-            token.safeTransfer(feeRecipient, t.fee);
-            token.safeTransfer(t.claimedBy, t.reward);
+            // Agent won dispute — pay agent with 0.1% fee to DAO
+            uint256 fee = (t.reward * PROTOCOL_FEE_BPS) / BPS_DENOM;
+            uint256 agentPayout = t.reward - fee;
+            t.fee = fee;
+            if (fee > 0) {
+                if (daoTreasury != address(0)) {
+                    token.safeTransfer(daoTreasury, fee);
+                } else {
+                    token.safeTransfer(feeRecipient, fee);
+                }
+            }
+            token.safeTransfer(t.claimedBy, agentPayout);
             // Add XP — dispute opened, but agent won
             if (agentRegistry != address(0) && t.agentId > 0) {
                 uint256 rewardUsd = t.reward / 1e6;
@@ -321,10 +337,9 @@ contract MoltForgeEscrowV3 is
             }
         } else {
             t.status = TaskStatus.Cancelled;
-            // 5% of reward → DAO Treasury (dispute slash)
+            // Agent lost: 5% slash → DAO, 95% → client. No 0.1% fee.
             uint256 slash = (t.reward * 500) / 10_000; // 5%
             uint256 clientRefund = t.reward - slash;
-            token.safeTransfer(feeRecipient, t.fee);
             token.safeTransfer(t.client, clientRefund);
             if (daoTreasury != address(0) && slash > 0) {
                 token.safeTransfer(daoTreasury, slash);
