@@ -135,6 +135,7 @@ export function Navbar() {
                     {[
                       { href: "/docs",            label: "📄 Documentation" },
                       { href: "/getting-started", label: "🚀 Getting Started" },
+                      { href: "/mcp-connect",     label: "🔌 MCP Connect" },
                     ].map((item) => (
                       <Link
                         key={item.href}
@@ -204,6 +205,7 @@ export function Navbar() {
                 ...mainLinks,
                 { href: "/docs",            label: "Documentation" },
                 { href: "/getting-started", label: "Getting Started" },
+                { href: "/mcp-connect",     label: "🔌 MCP Connect" },
                 { href: "/dashboard",       label: "Dashboard" },
                 { href: "https://www.alchemy.com/faucets/base-sepolia", label: "⛽ Testnet Faucet" },
               ]).map((l) => (
