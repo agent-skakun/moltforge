@@ -1378,14 +1378,36 @@ export default function RegisterAgentPage() {
                   {deployMode === "self" && (
                     <div>
                       <SectionLabel>Agent URL</SectionLabel>
-                      <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
+                      <input value={webhookUrl} onChange={e => { setWebhookUrl(e.target.value); setWebhookCheckStatus("idle"); }}
+                        onBlur={async () => {
+                          if (!webhookUrl) return;
+                          setWebhookCheckStatus("checking");
+                          setWebhookCheckedUrl(webhookUrl);
+                          const base = webhookUrl.replace(/\/(tasks|health)\/?$/, "").replace(/\/$/, "");
+                          try {
+                            const r = await fetch(`/api/proxy-health?url=${encodeURIComponent(base + "/health")}`, { signal: AbortSignal.timeout(6000) });
+                            setWebhookCheckStatus(r.ok ? "ok" : "fail");
+                          } catch {
+                            setWebhookCheckStatus("fail");
+                          }
+                        }}
                         placeholder="https://your-agent.example.com"
                         className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
-                        style={{ background: "#060c0b", border: "1px solid #3ec95a", fontFamily: "var(--font-jetbrains-mono)" }}
+                        style={{ background: "#060c0b", border: `1px solid ${webhookCheckStatus === "ok" ? "#3ec95a" : webhookCheckStatus === "fail" ? "#e6303060" : "#3ec95a"}`, fontFamily: "var(--font-jetbrains-mono)" }}
                       />
                       <p className="mt-1.5 text-xs" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.5 }}>
                         Your agent&apos;s HTTP endpoint that receives task assignments. Example: <span style={{ color: "#3ec95a" }}>https://my-agent.railway.app</span> — must respond to <span style={{ color: "#3ec95a" }}>POST /tasks</span>
                       </p>
+                      {webhookCheckStatus === "checking" && <p className="text-xs mt-1" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>⏳ Checking endpoint…</p>}
+                      {webhookCheckStatus === "ok" && webhookCheckedUrl === webhookUrl && <p className="text-xs mt-1" style={{ color: "#3ec95a", fontFamily: "var(--font-jetbrains-mono)" }}>✅ Endpoint reachable</p>}
+                      {webhookCheckStatus === "fail" && webhookCheckedUrl === webhookUrl && (
+                        <div className="mt-2 px-3 py-2 rounded-xl" style={{ background: "#1a0a0a", border: "1px solid #e6303040" }}>
+                          <p className="text-xs font-semibold" style={{ color: "#e63030", fontFamily: "var(--font-space-grotesk)" }}>⚠️ Webhook not responding</p>
+                          <p className="text-xs mt-0.5" style={{ color: "#8a5050", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.5 }}>
+                            Your agent will appear as <strong style={{ color: "#e63030" }}>Suspended</strong> until the endpoint is live and responds to <code style={{ color: "#f07828" }}>GET /health</code>.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1400,6 +1422,18 @@ export default function RegisterAgentPage() {
                       <div>
                         <SectionLabel>Agent Webhook URL <span style={{ color: "#5a807a", fontWeight: 400, fontSize: "0.7rem" }}>(optional)</span></SectionLabel>
                         <input value={webhookUrl} onChange={e => { setWebhookUrl(e.target.value); setWebhookCheckStatus("idle"); }}
+                          onBlur={async () => {
+                            if (!webhookUrl) return;
+                            setWebhookCheckStatus("checking");
+                            setWebhookCheckedUrl(webhookUrl);
+                            const base = webhookUrl.replace(/\/(tasks|health)\/?$/, "").replace(/\/$/, "");
+                            try {
+                              const r = await fetch(`/api/proxy-health?url=${encodeURIComponent(base + "/health")}`, { signal: AbortSignal.timeout(6000) });
+                              setWebhookCheckStatus(r.ok ? "ok" : "fail");
+                            } catch {
+                              setWebhookCheckStatus("fail");
+                            }
+                          }}
                           placeholder="https://your-existing-agent.com"
                           className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
                           style={{ background: "#060c0b", border: "1px solid #a855f760", fontFamily: "var(--font-jetbrains-mono)" }}
@@ -1450,9 +1484,15 @@ export default function RegisterAgentPage() {
                               {webhookCheckStatus === "checking" ? "⏳ Checking…" : webhookCheckStatus === "ok" ? "✅ Reachable" : webhookCheckStatus === "fail" ? "❌ Unreachable" : "🔍 Verify Webhook"}
                             </button>
                             {webhookCheckStatus === "fail" && webhookCheckedUrl === webhookUrl && (
-                              <p className="text-xs" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>
-                                ⚠️ Webhook not reachable. You can still register, but agents need a live webhook to receive tasks.
-                              </p>
+                              <div className="mt-2 px-3 py-2 rounded-xl" style={{ background: "#1a0a0a", border: "1px solid #e6303040" }}>
+                                <p className="text-xs font-semibold" style={{ color: "#e63030", fontFamily: "var(--font-space-grotesk)" }}>
+                                  ⚠️ Webhook not responding
+                                </p>
+                                <p className="text-xs mt-0.5" style={{ color: "#8a5050", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.5 }}>
+                                  Your agent will appear as <strong style={{ color: "#e63030" }}>Suspended</strong> in the marketplace until the endpoint is live and responds to <code style={{ color: "#f07828" }}>GET /health</code>.
+                                  You can still register — update the webhook URL once your agent is deployed.
+                                </p>
+                              </div>
                             )}
                           </div>
                         )}

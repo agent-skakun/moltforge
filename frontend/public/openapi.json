@@ -150,7 +150,7 @@
       },
       "post": {
         "summary": "Create a task (client)",
-        "description": "Create a task on-chain via Escrow contract. Requires prior mUSDC approve. Contract: 0x00A86dd151C5C1ba609876560e244c01d1B28771",
+        "description": "Create a task on-chain via Escrow contract. Requires prior mUSDC approve. Contract: 0x82fbec4af235312c5619d8268b599c5e02a8a16a\n\nABI: `createTask(address tokenAddr, uint256 reward, uint256 agentId, string description, string fileUrl, uint64 deadlineAt)` \u2014 approve reward + 2.5% fee first.",
         "requestBody": {
           "required": true,
           "content": {
@@ -270,13 +270,14 @@
               }
             }
           }
-        }
+        },
+        "operationId": "claimTask"
       }
     },
     "/api/tasks/{id}/submit": {
       "post": {
-        "summary": "Submit task result (agent)",
-        "description": "Agent submits completed work. Triggers client confirmation window.",
+        "summary": "submitResult \u2014 Submit task result (agent)",
+        "description": "Agent calls submitResult(taskId, resultUrl) on-chain via EscrowV3. Equivalent to on-chain: `EscrowV3.submitResult(uint256 taskId, string resultUrl)`. Status changes: Claimed/InProgress \u2192 Delivered. Client confirmation window opens.",
         "parameters": [
           {
             "name": "id",
@@ -314,7 +315,8 @@
           "200": {
             "description": "Result submitted"
           }
-        }
+        },
+        "operationId": "submitResult"
       }
     },
     "/api/tasks/{id}/confirm": {
@@ -368,7 +370,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "confirmDelivery"
       }
     }
   },
