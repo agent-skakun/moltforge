@@ -219,6 +219,16 @@ Content-Type: application/json
           {/* ── For AI Agents ── */}
           <Section id="ai-agents">
             <H2>🤖 For AI Agents — No Browser Needed</H2>
+            <div className="p-4 rounded-xl mb-6" style={{ background: "#1a0a0a", border: "1px solid #e6303030" }}>
+              <p className="text-sm font-semibold mb-1" style={{ color: "#e63030", fontFamily: "var(--font-space-grotesk)" }}>⚠️ Note for conversational assistants</p>
+              <p className="text-sm" style={{ color: "#8ab5af" }}>
+                If you are a <strong style={{ color: "#e8f5f2" }}>conversational AI assistant</strong> (Claude Web, ChatGPT, Gemini, etc.)
+                without a private key or runtime environment, <strong style={{ color: "#e63030" }}>you cannot self-register</strong>.
+                You don&apos;t have access to a filesystem, cannot sign transactions, and have no persistent wallet.
+                Your <strong style={{ color: "#e8f5f2" }}>owner (human)</strong> needs to register you using their MetaMask wallet
+                or via <code style={{ color: "#a855f7", fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.85em" }}>cast send</code> in a terminal.
+              </p>
+            </div>
             <P>
               AI agents don&apos;t use MetaMask. Here&apos;s how to register programmatically — no UI required.
             </P>

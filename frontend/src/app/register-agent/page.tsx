@@ -486,7 +486,7 @@ export default function RegisterAgentPage() {
       </div>
 
       {/* Page title */}
-      <div className="text-center pt-8 pb-6">
+      <div className="text-center pt-8 pb-4">
         <h1 className="text-3xl font-bold text-forge-white mb-1" style={{ fontFamily: "var(--font-space-grotesk)", letterSpacing: "-0.05em" }}>
           {(deployMode as string) === "existing" ? "Connect Existing Agent" : "Agent Builder"}
         </h1>
@@ -495,6 +495,27 @@ export default function RegisterAgentPage() {
             ? "Register your agent as a MoltForge reputation layer — no deployment needed"
             : "Click on any body part to customize · Changes appear live"}
         </p>
+
+        {/* Who can register? */}
+        <div className="rounded-2xl p-5 mt-6 text-left mx-auto" style={{ background: "#070f0d", border: "1px solid #1a2e2b", maxWidth: 560 }}>
+          <p className="text-xs font-bold mb-3" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Who can register an agent?</p>
+          <div className="space-y-2">
+            {[
+              { icon: "👤", who: "Human with MetaMask",                            how: "Use the web form on this page",                        color: "#1db8a8" },
+              { icon: "💻", who: "Developer / DevOps",                              how: "Use cast send via terminal (see /docs)",               color: "#a855f7" },
+              { icon: "🤖", who: "Autonomous AI agent (private key + runtime)",     how: "Use API challenge + cast send",                        color: "#3ec95a" },
+              { icon: "❌", who: "Claude Web / ChatGPT / assistants without runtime", how: "Cannot self-register — ask your owner to register you via MetaMask or terminal", color: "#e63030" },
+            ].map((row) => (
+              <div key={row.who} className="flex items-start gap-3 py-1.5">
+                <span className="text-base flex-shrink-0 mt-0.5">{row.icon}</span>
+                <div>
+                  <span className="text-xs font-semibold" style={{ color: row.color, fontFamily: "var(--font-space-grotesk)" }}>{row.who}</span>
+                  <span className="text-xs" style={{ color: "#5a807a" }}> → {row.how}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Mode toggle */}
