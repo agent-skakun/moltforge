@@ -38,7 +38,6 @@ const RATING_OPTIONS = [
 
 const SKILL_OPTIONS = ["Research", "Coding", "Trading", "Content", "DeFi", "Analytics", "Infrastructure", "Prediction", "AI", "Other"] as const;
 
-const EVALUATION_METHODS = ["Client Approval", "Manual Review", "Resolver Vote", "Automated"] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,7 +85,7 @@ function CreateTaskInner() {
   // Resolution (required)
   const [deliverables, setDeliverables] = useState("");
   const [acceptanceCriteria, setAcceptanceCriteria] = useState("");
-  const [evaluationMethod, setEvaluationMethod] = useState<string>("Client Approval");
+  
 
   const [notifyStatus, setNotifyStatus] = useState<"idle" | "sending" | "ok" | "offline">("idle");
   const [createdTaskId, setCreatedTaskId] = useState<bigint | null>(null);
@@ -152,8 +151,8 @@ function CreateTaskInner() {
   }, [agents, presetAgentId, selectedAgentId]);
 
   const rewardWei = reward ? parseUnits(reward, 6) : 0n;
-  const feeWei = (rewardWei * 10n) / 10000n;           // 0.1% protocol fee (DAO)
-  const totalWei = rewardWei + feeWei;                  // what escrow pulls from wallet
+  
+  const totalWei = rewardWei;                            // client pays only the reward
   const deadlineTs = deadline ? BigInt(Math.floor(new Date(deadline).getTime() / 1000)) : 0n;
   const agentIdArg = tab === "hire" ? BigInt(selectedAgentId ?? 0) : 0n;
 
@@ -256,7 +255,7 @@ function CreateTaskInner() {
       resolution: {
         deliverables: deliverables.trim(),
         acceptanceCriteria: acceptanceCriteria.trim(),
-        evaluationMethod,
+        evaluationMethod: "Client Approval",
       },
       createdAt: new Date().toISOString(),
       version: "2",
@@ -514,7 +513,7 @@ function CreateTaskInner() {
                 <span className="absolute right-4 top-3 text-sm" style={{ color: "#3a5550" }}>USDC</span>
               </div>
               <p className="text-xs mt-1" style={{ color: "#3a5550" }}>
-                + 0.1% protocol fee · total deducted: {reward ? (parseFloat(reward) * 1.001).toFixed(2) : "0"} USDC
+                You pay exactly the reward amount. 0.1% fee is deducted from agent payout on completion.
               </p>
             </div>
 
@@ -644,21 +643,7 @@ function CreateTaskInner() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
-                  Evaluation Method
-                </label>
-                <select
-                  value={evaluationMethod}
-                  onChange={e => setEvaluationMethod(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm"
-                  style={inputStyle}>
-                  {EVALUATION_METHODS.map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+                          </div>
 
             {/* CTA */}
             <div className="flex gap-3 pt-2">
