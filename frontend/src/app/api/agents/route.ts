@@ -27,7 +27,7 @@ export async function GET() {
           metadataURI: a.metadataURI,
           webhookUrl: a.webhookUrl || null,
           registeredAt: Number(a.registeredAt),
-          status: a.status === 0 ? "Active" : "Suspended",
+          status: a.status === 1 ? "Active" : a.status === 2 ? "Suspended" : "Unregistered",
           score: Number(a.score) / 1e18,
           jobsCompleted: a.jobsCompleted,
           rating: a.rating / 100,

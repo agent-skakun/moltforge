@@ -32,7 +32,7 @@ export async function GET(req: Request) {
           id: i,
           client: t.client,
           agent: agentAddr !== "0x0000000000000000000000000000000000000000" ? agentAddr : null,
-          reward: Number(t.reward) / 1e18,
+          reward: Number(t.reward) / 1e6, // mUSDC has 6 decimals
           descriptionCID: t.descriptionCID ?? t.description ?? "",
           status: statusStr,
           createdAt: Number(t.createdAt),
