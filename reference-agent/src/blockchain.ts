@@ -1,6 +1,20 @@
-import { createPublicClient, http, type Address } from "viem";
+import { createPublicClient, createWalletClient, http, type Address } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { base, baseSepolia } from "viem/chains";
 import { type Config } from "./config";
+
+const ESCROW_V3_ABI = [
+  {
+    type: "function",
+    name: "submitResult",
+    inputs: [
+      { name: "taskId", type: "uint256" },
+      { name: "resultUrl", type: "string" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+] as const;
 
 const AGENT_REGISTRY_ABI = [
   {
@@ -118,5 +132,26 @@ export function createBlockchainClient(config: Config) {
     }
   }
 
-  return { client, getAgentId, getAgentExtended };
+  async function submitResult(taskId: bigint, resultUrl: string): Promise<`0x${string}`> {
+    const privateKey = process.env.AGENT_PRIVATE_KEY as `0x${string}` | undefined;
+    if (!privateKey || privateKey.length < 10) {
+      throw new Error("AGENT_PRIVATE_KEY not set — cannot submit on-chain");
+    }
+    const account = privateKeyToAccount(privateKey);
+    const walletClient = createWalletClient({
+      account,
+      chain,
+      transport: http(config.rpcUrl),
+    });
+    const txHash = await walletClient.writeContract({
+      address: config.escrowAddress,
+      abi: ESCROW_V3_ABI,
+      functionName: "submitResult",
+      args: [taskId, resultUrl],
+    });
+    console.log(`[on-chain] submitResult(taskId=${taskId}) → txHash: ${txHash}`);
+    return txHash;
+  }
+
+  return { client, getAgentId, getAgentExtended, submitResult };
 }
