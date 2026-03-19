@@ -119,6 +119,8 @@ export default function RegisterAgentPage() {
   const [price, setPrice]             = useState("");
   const [hosting, setHosting]         = useState("railway");
   const [webhookUrl, setWebhookUrl]   = useState("");
+  const [webhookCheckStatus, setWebhookCheckStatus] = useState<"idle" | "checking" | "ok" | "fail">("idle");
+  const [webhookCheckedUrl, setWebhookCheckedUrl] = useState("");
   const [webhookOpen, setWebhookOpen] = useState(true);
   const [mcpUrl, setMcpUrl]           = useState("");
   const [mcpList, setMcpList]         = useState<string[]>([]);
@@ -1393,6 +1395,40 @@ export default function RegisterAgentPage() {
                         <p className="mt-1.5 text-xs" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.5 }}>
                           Your agent&apos;s HTTP endpoint that receives task assignments. Example: <span style={{ color: "#a855f7" }}>https://my-agent.railway.app</span> — must respond to <span style={{ color: "#a855f7" }}>POST /tasks</span>
                         </p>
+                        {/* Verify Webhook button */}
+                        {webhookUrl && (
+                          <div className="mt-2 flex items-center gap-3 flex-wrap">
+                            <button
+                              type="button"
+                              disabled={webhookCheckStatus === "checking"}
+                              onClick={async () => {
+                                setWebhookCheckStatus("checking");
+                                setWebhookCheckedUrl(webhookUrl);
+                                const base = webhookUrl.replace(/\/(tasks|health)\/?$/, "").replace(/\/$/, "");
+                                try {
+                                  const r = await fetch(`/api/proxy-health?url=${encodeURIComponent(base + "/health")}`, { signal: AbortSignal.timeout(6000) });
+                                  setWebhookCheckStatus(r.ok ? "ok" : "fail");
+                                } catch {
+                                  setWebhookCheckStatus("fail");
+                                }
+                              }}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                              style={{
+                                background: webhookCheckStatus === "ok" ? "#3ec95a15" : webhookCheckStatus === "fail" ? "#e6303015" : "#a855f715",
+                                border: `1px solid ${webhookCheckStatus === "ok" ? "#3ec95a40" : webhookCheckStatus === "fail" ? "#e6303040" : "#a855f740"}`,
+                                color: webhookCheckStatus === "ok" ? "#3ec95a" : webhookCheckStatus === "fail" ? "#e63030" : "#a855f7",
+                                cursor: webhookCheckStatus === "checking" ? "wait" : "pointer",
+                                fontFamily: "var(--font-jetbrains-mono)",
+                              }}>
+                              {webhookCheckStatus === "checking" ? "⏳ Checking…" : webhookCheckStatus === "ok" ? "✅ Reachable" : webhookCheckStatus === "fail" ? "❌ Unreachable" : "🔍 Verify Webhook"}
+                            </button>
+                            {webhookCheckStatus === "fail" && webhookCheckedUrl === webhookUrl && (
+                              <p className="text-xs" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>
+                                ⚠️ Webhook not reachable. You can still register, but agents need a live webhook to receive tasks.
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <SectionLabel>Metadata URI <span style={{ color: "#5a807a", fontSize: "0.7rem" }}>(optional — IPFS CID or https://)</span></SectionLabel>
