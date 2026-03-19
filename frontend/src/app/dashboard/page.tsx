@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { useAccount, useBalance, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useBalance, useReadContract, useWriteContract, useWaitForTransactionReceipt, useSignMessage } from "wagmi";
 import { formatUnits } from "viem";
 import { ADDRESSES, AGENT_REGISTRY_ABI, ESCROW_V3_ABI, ERC20_ABI, TIER_NAMES, V3_STATUS_COLORS } from "@/lib/contracts";
 import { parseMetadataSync, parseMetadataURI, metadataToDataURI, type AgentMetadata } from "@/lib/metadata";
@@ -785,6 +785,100 @@ function AgentCard({ agent, numericId }: { agent: AgentData; numericId: number }
 
 // ─── Tab: My Agents ───────────────────────────────────────────────────────────
 
+interface ClaimRecord {
+  agentId: number;
+  agentWallet: string;
+  managerWallet: string;
+  claimedAt: number;
+}
+
+function ClaimAgentModal({ address, onClose, onClaimed }: { address: `0x${string}`; onClose: () => void; onClaimed: () => void }) {
+  const [agentIdInput, setAgentIdInput] = useState("");
+  const [agentWalletInput, setAgentWalletInput] = useState("");
+  const [step, setStep] = useState<"form" | "signing" | "done" | "error">("form");
+  const [errMsg, setErrMsg] = useState("");
+  const { signMessageAsync } = useSignMessage();
+
+  const handleClaim = async () => {
+    const agentId = parseInt(agentIdInput);
+    if (isNaN(agentId) || agentId < 1) { setErrMsg("Enter a valid agent ID"); return; }
+    if (!agentWalletInput || !agentWalletInput.startsWith("0x")) { setErrMsg("Enter the agent\'s wallet address"); return; }
+
+    setStep("signing");
+    setErrMsg("");
+    try {
+      const message = `I claim ownership of MoltForge agent #${agentId} (wallet: ${agentWalletInput.toLowerCase()}) for manager: ${address.toLowerCase()}`;
+      const signature = await signMessageAsync({ message });
+
+      const res = await fetch("/api/agent-claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId, agentWallet: agentWalletInput, managerWallet: address, signature, message }),
+      });
+      const data = await res.json() as { success?: boolean; error?: string };
+      if (!data.success) throw new Error(data.error ?? "API error");
+
+      setStep("done");
+      setTimeout(() => { onClaimed(); onClose(); }, 1500);
+    } catch (err) {
+      setErrMsg((err as Error).message ?? "Unknown error");
+      setStep("form");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-md rounded-2xl overflow-hidden"
+        style={{ background: "#0a1a17", border: "1px solid #1db8a840", boxShadow: "0 0 60px #1db8a820" }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid #1a2e2b" }}>
+          <span className="text-sm font-semibold" style={{ color: "#e8f5f2", fontFamily: "var(--font-space-grotesk)" }}>📋 Claim Agent</span>
+          <button onClick={onClose} style={{ color: "#3a5550", background: "#060c0b", border: "1px solid #1a2e2b", borderRadius: 6, padding: "2px 8px", fontSize: 12, cursor: "pointer" }}>✕</button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div className="px-3 py-2.5 rounded-xl text-xs" style={{ background: "#060c0b", border: "1px solid #f0782830", color: "#8a7050" }}>
+            ⚠️ Claiming is <strong style={{ color: "#f07828" }}>off-chain</strong> and for dashboard visibility only. It does not grant on-chain control of the agent.
+          </div>
+          {step === "done" ? (
+            <p className="text-center text-sm py-4" style={{ color: "#3ec95a" }}>✅ Agent claimed successfully!</p>
+          ) : (
+            <>
+              <div>
+                <label className="text-xs mb-1 block" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>Agent Numeric ID</label>
+                <input value={agentIdInput} onChange={e => setAgentIdInput(e.target.value)} placeholder="e.g. 3"
+                  className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f2", fontFamily: "var(--font-jetbrains-mono)" }} />
+              </div>
+              <div>
+                <label className="text-xs mb-1 block" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>Agent Wallet Address</label>
+                <input value={agentWalletInput} onChange={e => setAgentWalletInput(e.target.value)} placeholder="0x..."
+                  className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f2", fontFamily: "var(--font-jetbrains-mono)" }} />
+                <p className="text-xs mt-1" style={{ color: "#3a5550" }}>Find it on the marketplace agent card</p>
+              </div>
+              {errMsg && <p className="text-xs" style={{ color: "#e63030" }}>{errMsg}</p>}
+              <button
+                onClick={handleClaim}
+                disabled={step === "signing"}
+                className="w-full py-3 rounded-xl font-semibold text-sm transition-all"
+                style={{
+                  background: step === "signing" ? "#060c0b" : "linear-gradient(135deg, #1db8a8, #0d9488)",
+                  color: step === "signing" ? "#3a5550" : "#060c0b",
+                  border: `1px solid ${step === "signing" ? "#1a2e2b" : "#1db8a8"}`,
+                  fontFamily: "var(--font-space-grotesk)",
+                  cursor: step === "signing" ? "wait" : "pointer",
+                }}>
+                {step === "signing" ? "⏳ Sign in wallet…" : "📝 Sign & Claim"}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MyAgentsTab({ address }: { address: `0x${string}` }) {
   const { data: agentCountRaw } = useReadContract({
     address: ADDRESSES.AgentRegistry,
@@ -795,77 +889,137 @@ function MyAgentsTab({ address }: { address: `0x${string}` }) {
   const agentCount = Number(agentCountRaw ?? 0);
 
   const [myAgents, setMyAgents] = useState<{ agent: AgentData; id: number }[]>([]);
+  const [claimedAgents, setClaimedAgents] = useState<{ agent: AgentData; id: number; claimedAt: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showClaimModal, setShowClaimModal] = useState(false);
 
-  useEffect(() => {
+  const fetchAll = React.useCallback(async () => {
     if (agentCount === 0) { setLoading(false); return; }
+    const { createPublicClient, http } = await import("viem");
+    const { baseSepolia } = await import("viem/chains");
+    const client = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") });
 
-    const fetchAgents = async () => {
-      const { createPublicClient, http } = await import("viem");
-      const { baseSepolia } = await import("viem/chains");
-      const client = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") });
+    const results: { agent: AgentData; id: number }[] = [];
+    const addr = address.toLowerCase();
 
-      const results: { agent: AgentData; id: number }[] = [];
-      const addr = address.toLowerCase();
+    for (let i = 1; i <= agentCount; i++) {
+      try {
+        const data = await client.readContract({
+          address: ADDRESSES.AgentRegistry,
+          abi: AGENT_REGISTRY_ABI,
+          functionName: "getAgent",
+          args: [BigInt(i)],
+        });
+        const a = data as unknown as AgentData;
+        if (a.wallet.toLowerCase() === addr) {
+          results.push({ agent: a, id: i });
+        }
+      } catch { /* skip */ }
+    }
+    setMyAgents(results);
 
-      for (let i = 1; i <= agentCount; i++) {
+    // Load claimed agents
+    try {
+      const res = await fetch(`/api/agent-claim?manager=${address}`);
+      const json = await res.json() as { claims: ClaimRecord[] };
+      const ownedIds = new Set(results.map(r => r.id));
+      const claimed: { agent: AgentData; id: number; claimedAt: number }[] = [];
+
+      for (const claim of (json.claims ?? [])) {
+        if (ownedIds.has(claim.agentId)) continue; // already in owned
         try {
           const data = await client.readContract({
             address: ADDRESSES.AgentRegistry,
             abi: AGENT_REGISTRY_ABI,
             functionName: "getAgent",
-            args: [BigInt(i)],
+            args: [BigInt(claim.agentId)],
           });
-          const a = data as unknown as AgentData;
-          if (a.wallet.toLowerCase() === addr) {
-            results.push({ agent: a, id: i });
-          }
+          claimed.push({ agent: data as unknown as AgentData, id: claim.agentId, claimedAt: claim.claimedAt });
         } catch { /* skip */ }
       }
+      setClaimedAgents(claimed);
+    } catch { /* ignore claim errors */ }
 
-      setMyAgents(results);
-      setLoading(false);
-    };
-
-    fetchAgents();
+    setLoading(false);
   }, [agentCount, address]);
 
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const handleUnclaim = async (agentId: number) => {
+    await fetch(`/api/agent-claim?agentId=${agentId}&manager=${address}`, { method: "DELETE" });
+    setClaimedAgents(prev => prev.filter(c => c.id !== agentId));
+  };
+
   if (loading) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-sm" style={{ color: "#5a807a" }}>Loading agents…</p>
-      </div>
-    );
+    return <div className="text-center py-12"><p className="text-sm" style={{ color: "#5a807a" }}>Loading agents…</p></div>;
   }
 
-  if (myAgents.length === 0) {
-    return (
-      <div className="text-center py-12 rounded-2xl"
-        style={{ background: "#0a1a17", border: "1px dashed #1a2e2b" }}>
-        <p className="text-sm mb-3" style={{ color: "#3a5550" }}>No agents registered.</p>
-        <Link href="/register-agent" className="text-sm" style={{ color: "#1db8a8" }}>
-          Register one →
-        </Link>
-      </div>
-    );
-  }
+  const totalCount = myAgents.length + claimedAgents.length;
 
   return (
     <div className="space-y-4">
+      {showClaimModal && (
+        <ClaimAgentModal address={address} onClose={() => setShowClaimModal(false)} onClaimed={fetchAll} />
+      )}
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold"
           style={{ color: "#e8f5f2", fontFamily: "var(--font-space-grotesk)" }}>
-          My Agents ({myAgents.length})
+          My Agents ({totalCount})
         </h2>
-        <Link href="/register-agent"
-          className="text-xs px-3 py-1.5 rounded-lg transition-all"
-          style={{ background: "#f0782815", border: "1px solid #f0782840", color: "#f07828" }}>
-          + Register Agent
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowClaimModal(true)}
+            className="text-xs px-3 py-1.5 rounded-lg transition-all"
+            style={{ background: "#1db8a815", border: "1px solid #1db8a840", color: "#1db8a8", cursor: "pointer" }}>
+            📋 Claim Agent
+          </button>
+          <Link href="/register-agent"
+            className="text-xs px-3 py-1.5 rounded-lg transition-all"
+            style={{ background: "#f0782815", border: "1px solid #f0782840", color: "#f07828" }}>
+            + Register Agent
+          </Link>
+        </div>
       </div>
+
+      {totalCount === 0 && (
+        <div className="text-center py-12 rounded-2xl" style={{ background: "#0a1a17", border: "1px dashed #1a2e2b" }}>
+          <p className="text-sm mb-3" style={{ color: "#3a5550" }}>No agents registered or claimed.</p>
+          <div className="flex justify-center gap-3">
+            <Link href="/register-agent" className="text-sm" style={{ color: "#f07828" }}>Register one →</Link>
+            <button onClick={() => setShowClaimModal(true)} className="text-sm" style={{ color: "#1db8a8", background: "none", border: "none", cursor: "pointer" }}>Claim existing →</button>
+          </div>
+        </div>
+      )}
+
       {myAgents.map(({ agent, id }) => (
         <AgentCard key={id} agent={agent} numericId={id} />
       ))}
+
+      {claimedAgents.length > 0 && (
+        <div>
+          <p className="text-xs mb-3" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "0.08em" }}>CLAIMED AGENTS</p>
+          {claimedAgents.map(({ agent, id, claimedAt }) => (
+            <div key={id} className="relative">
+              <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                  style={{ background: "#1db8a815", border: "1px solid #1db8a840", color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  📋 Claimed
+                </span>
+                <button
+                  onClick={() => handleUnclaim(id)}
+                  className="text-xs px-2 py-0.5 rounded-full"
+                  style={{ background: "#e6303015", border: "1px solid #e6303040", color: "#e63030", cursor: "pointer" }}>
+                  Unclaim
+                </button>
+              </div>
+              <AgentCard agent={agent} numericId={id} />
+              <p className="text-xs mt-1 text-right pr-1" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                Claimed {new Date(claimedAt).toLocaleDateString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
