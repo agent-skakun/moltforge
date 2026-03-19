@@ -303,6 +303,10 @@ export default function TasksPage() {
   }, [tasks, statusFilter, minReward]);
 
   const openCount = tasks.filter(t => t.status === 0).length;
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 20;
+  const totalPages = Math.ceil(filteredTasks.length / PAGE_SIZE);
+  const paginated = filteredTasks.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
     <div className="min-h-screen py-12 px-4" style={{ background: "#060c0b" }}>
@@ -362,7 +366,7 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {/* Grid */}
+        {/* Task Table */}
         {count === 0 ? (
           <div className="text-center py-20 rounded-2xl" style={{ background: "#0a1a17", border: "1px dashed #1a2e2b" }}>
             <p className="text-lg mb-2" style={{ color: "#3a5550", fontFamily: "var(--font-space-grotesk)" }}>No tasks yet</p>
@@ -374,11 +378,66 @@ export default function TasksPage() {
             <p className="text-sm" style={{ color: "#3a5550" }}>No tasks match your filters</p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTasks.map(task => (
-              <TaskCard key={task.id.toString()} task={task} address={address} />
-            ))}
-          </div>
+          <>
+            <div style={{ border: "1px solid #1a2e2b", borderRadius: 12, overflow: "hidden" }}>
+              {/* Table header */}
+              <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 90px 100px 90px 110px", padding: "8px 16px", background: "#0a1a17", borderBottom: "1px solid #1a2e2b" }}>
+                {["#", "Description", "Reward", "Status", "Date", ""].map((h, i) => (
+                  <span key={i} style={{ fontSize: "0.7rem", fontWeight: 700, color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
+                ))}
+              </div>
+              {/* Rows */}
+              {paginated.map((task, idx) => {
+                const reward = (Number(task.reward) / 1e6).toFixed(0);
+                const statusLabels = ["Open", "Claimed", "In Progress", "Delivered", "Confirmed", "Cancelled", "Disputed"];
+                const statusColors = ["#1db8a8", "#f07828", "#3b82f6", "#a855f7", "#22c55e", "#6b7280", "#ef4444"];
+                const status = Number(task.status);
+                const date = task.deadlineAt && Number(task.deadlineAt) > 0
+                  ? new Date(Number(task.deadlineAt) * 1000).toLocaleDateString("uk-UA", { day: "2-digit", month: "2-digit" })
+                  : "—";
+                const desc = task.description?.length > 60 ? task.description.slice(0, 60) + "…" : (task.description || "—");
+                const isEven = idx % 2 === 0;
+                return (
+                  <div key={task.id.toString()} style={{
+                    display: "grid", gridTemplateColumns: "60px 1fr 90px 100px 90px 110px",
+                    padding: "10px 16px", alignItems: "center",
+                    background: isEven ? "#070e0d" : "#060c0b",
+                    borderBottom: "1px solid #0f1e1c",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#0d1a18")}
+                  onMouseLeave={e => (e.currentTarget.style.background = isEven ? "#070e0d" : "#060c0b")}
+                  >
+                    <span style={{ fontSize: "0.75rem", color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>#{task.id.toString()}</span>
+                    <span style={{ fontSize: "0.8rem", color: "#c8e6e0", fontFamily: "var(--font-space-grotesk)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 12 }}>{desc}</span>
+                    <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>{reward} <span style={{ color: "#3a5550", fontSize: "0.65rem" }}>USDC</span></span>
+                    <span style={{ fontSize: "0.7rem", fontWeight: 600, color: statusColors[status] ?? "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>{statusLabels[status] ?? "Unknown"}</span>
+                    <span style={{ fontSize: "0.7rem", color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>{date}</span>
+                    <Link href={`/tasks/${task.id}`} style={{ fontSize: "0.72rem", color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)", textDecoration: "none", textAlign: "right" }}>
+                      View →
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 16 }}>
+                <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                  style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #1a2e2b", background: "#0a1a17", color: page === 0 ? "#1a2e2b" : "#1db8a8", fontSize: "0.8rem", cursor: page === 0 ? "not-allowed" : "pointer", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  ← Prev
+                </button>
+                <span style={{ fontSize: "0.75rem", color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  {page + 1} / {totalPages}
+                </span>
+                <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
+                  style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #1a2e2b", background: "#0a1a17", color: page === totalPages - 1 ? "#1a2e2b" : "#1db8a8", fontSize: "0.8rem", cursor: page === totalPages - 1 ? "not-allowed" : "pointer", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
