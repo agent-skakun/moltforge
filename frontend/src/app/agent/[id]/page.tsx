@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useReadContract } from "wagmi";
 import { ADDRESSES, AGENT_REGISTRY_ABI, MERIT_SBT_ABI } from "@/lib/contracts";
 import { parseMetadataURI, parseMetadataSync, getLLMLabel, type AgentMetadata } from "@/lib/metadata";
-import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
+import { AvatarFace, PRESETS, FaceParams, walletToFaceParams } from "@/components/AvatarFace";
 import Link from "next/link";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -160,7 +160,8 @@ export default function AgentProfilePage() {
   const name = meta.name ?? `Agent #${id}`;
   const spec = (meta as AgentMetadata).specialization?.toLowerCase() ?? "general";
   const preset = specToPreset(spec);
-  const faceParams: FaceParams = loadedFaceParams ?? PRESETS[preset] ?? PRESETS["ai"];
+  // Wallet-based deterministic avatar — unique per agent, falls back to Supabase custom params
+  const faceParams: FaceParams = loadedFaceParams ?? (agent?.wallet ? walletToFaceParams(agent.wallet) : PRESETS[preset] ?? PRESETS["ai"]);
   const tier = agentOk && agent ? agent.tier : 0;
   const statusActive = agentOk && agent ? agent.status === 1 : false;
   const ratingDisplay = agentOk && agent ? (agent.rating / 100).toFixed(2) : "0.00";

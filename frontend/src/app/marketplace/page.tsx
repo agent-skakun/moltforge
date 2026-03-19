@@ -5,7 +5,7 @@ import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
 import { parseMetadataSync, parseMetadataURI, getLLMLabel, LLM_PROVIDERS, type AgentMetadata } from "@/lib/metadata";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
+import { AvatarFace, PRESETS, FaceParams, walletToFaceParams } from "@/components/AvatarFace";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -103,7 +103,8 @@ function AgentCard({ agent }: { agent: AgentData }) {
   const llmLabel = getLLMLabel(meta.llmProvider, meta.llmModel);
   const llmColor = meta.llmProvider ? (LLM_PROVIDERS[meta.llmProvider as keyof typeof LLM_PROVIDERS]?.color ?? "#6b7280") : null;
   const preset = specToPreset(spec);
-  const faceParams: FaceParams = PRESETS[preset] ?? PRESETS["ai"];
+  // Use wallet-based deterministic avatar — unique per agent, no Supabase needed
+  const faceParams: FaceParams = agent.wallet ? walletToFaceParams(agent.wallet) : (PRESETS[preset] ?? PRESETS["ai"]);
   // tier may come as bigint from wagmi — normalize to number
   const tierNum = Number(agent.tier ?? 0);
   const tierColor = TIER_COLORS[tierNum] ?? TIER_COLORS[0];
