@@ -210,6 +210,15 @@ function TaskCard({ task, address }: { task: V3Task; address?: string }) {
         {confirmSuccess && (
           <div className="py-2 text-sm text-center" style={{ color: "#3ec95a" }}>Payment released!</div>
         )}
+
+        {/* View full details */}
+        <Link href={`/tasks/${task.id.toString()}`}
+          className="block w-full py-2 rounded-xl text-xs text-center transition-all mt-1"
+          style={{ background: "#0a1a17", border: "1px solid #1a2e2b", color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#1db8a8"; (e.currentTarget as HTMLElement).style.color = "#1db8a8"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "#1a2e2b"; (e.currentTarget as HTMLElement).style.color = "#3a5550"; }}>
+          View Details →
+        </Link>
       </div>
     </div>
   );
