@@ -27,6 +27,26 @@ interface V3Task {
 
 type StatusFilter = "all" | "0" | "1" | "2" | "3" | "4" | "5" | "6";
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function decodeDescription(raw: string): string {
+  try {
+    if (raw.startsWith("data:application/json;base64,")) {
+      const decoded = atob(raw.replace("data:application/json;base64,", ""));
+      const parsed = JSON.parse(decoded) as Record<string, unknown>;
+      return (parsed.description as string) || (parsed.title as string) || decoded;
+    }
+    if (raw.startsWith("data:text/markdown;base64,")) {
+      return atob(raw.replace("data:text/markdown;base64,", ""));
+    }
+    if (raw.startsWith("{")) {
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      return (parsed.description as string) || raw;
+    }
+  } catch { /* ignore */ }
+  return raw;
+}
+
 // ─── TaskCard ─────────────────────────────────────────────────────────────────
 
 function TaskCard({ task, address }: { task: V3Task; address?: string }) {
@@ -53,7 +73,7 @@ function TaskCard({ task, address }: { task: V3Task; address?: string }) {
   const now = Math.floor(Date.now() / 1000);
   const deadlinePassed = task.deadlineAt > 0n && Number(task.deadlineAt) < now;
 
-  const descText = task.description.length > 100 ? task.description.slice(0, 100) + "…" : task.description;
+  const descText = (() => { const d = decodeDescription(task.description); return d.length > 100 ? d.slice(0, 100) + "…" : d; })();
 
   const handleClaim = () => {
     setClaiming(true);

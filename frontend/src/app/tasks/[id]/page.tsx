@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
@@ -52,6 +53,42 @@ function parseDescription(raw: string): ParsedDescription {
     if (raw.startsWith("{")) return JSON.parse(raw);
   } catch { /* ignore */ }
   return { description: raw };
+}
+
+function renderResult(resultUrl: string): React.ReactNode {
+  if (!resultUrl) return null;
+  if (resultUrl.startsWith("data:text/markdown;base64,")) {
+    const decoded = atob(resultUrl.replace("data:text/markdown;base64,", ""));
+    return (
+      <pre className="text-sm whitespace-pre-wrap break-words" style={{ color: "#8ab5af", fontFamily: "var(--font-inter)", lineHeight: 1.7 }}>
+        {decoded}
+      </pre>
+    );
+  }
+  if (resultUrl.startsWith("data:application/json;base64,")) {
+    try {
+      const decoded = atob(resultUrl.replace("data:application/json;base64,", ""));
+      const parsed = JSON.parse(decoded);
+      return (
+        <pre className="text-xs overflow-x-auto" style={{ color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.6 }}>
+          {JSON.stringify(parsed, null, 2)}
+        </pre>
+      );
+    } catch {
+      const decoded = atob(resultUrl.replace("data:application/json;base64,", ""));
+      return <pre className="text-sm whitespace-pre-wrap" style={{ color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)" }}>{decoded}</pre>;
+    }
+  }
+  if (resultUrl.startsWith("http")) {
+    return (
+      <a href={resultUrl} target="_blank" rel="noopener noreferrer"
+        className="text-sm break-all"
+        style={{ color: "#1db8a8", textDecoration: "underline", textUnderlineOffset: 3 }}>
+        {resultUrl}
+      </a>
+    );
+  }
+  return <pre className="text-sm whitespace-pre-wrap break-all" style={{ color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)" }}>{resultUrl}</pre>;
 }
 
 function formatDeadline(ts: bigint): string {
@@ -307,7 +344,7 @@ export default function TaskDetailPage() {
       {task.resultUrl && (
         <div className="rounded-2xl p-5 mb-6" style={{ background: "#0a1a17", border: "1px solid #1db8a820" }}>
           <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Submitted Result</h3>
-              <p className="text-sm break-all font-jetbrainsMono" style={{ color: "#8ab0a8" }}>{task.resultUrl}</p>
+              {renderResult(task.resultUrl)}
           {isCompleted && task.score > 0 && (
             <div className="mt-3 flex items-center gap-2">
               <span className="text-xs" style={{ color: "#3a5550" }}>Score:</span>
