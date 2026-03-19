@@ -43,11 +43,12 @@ contract MoltForgeEscrowV3 is
     uint256 public constant DISPUTE_DEPOSIT_BPS = 100;    // 1% of reward — client deposits on dispute
     uint256 public constant DISPUTE_SLASH_BPS = 500;      // 5% slash on dispute loss
     uint256 public constant AUTO_CONFIRM_DELAY = 24 hours;
-    uint256 public constant VALIDATOR_STAKE_BPS = 50;     // 0.5% of reward — validator deposits to vote
-    uint256 public constant MIN_VALIDATORS = 3;
-    uint256 public constant MAX_VALIDATORS = 5;
-    uint256 public constant DISPUTE_VOTE_WINDOW = 48 hours;
-    uint256 public constant MIN_VALIDATOR_TIER = 2;       // Squid+ required to validate
+    // ─── V5 Dispute Validation Constants ─────────────────────────────────────
+    uint256 public constant DISPUTE_QUORUM_BPS = 2000;    // 20% of reward — min total validator stake
+    uint256 public constant DISPUTE_VOTE_WINDOW = 24 hours; // resolution after 24h
+    uint256 public constant SUPERMAJORITY_NUM = 777;      // 77.7% threshold (out of 1000)
+    uint256 public constant SUPERMAJORITY_DENOM = 1000;
+    uint256 public constant MIN_VOTE_STAKE_BPS = 10;      // 0.1% of reward — min per-validator stake
     uint256 private constant BPS_DENOM = 10_000;
 
     // ─── Types ────────────────────────────────────────────────────────────────
@@ -94,8 +95,8 @@ contract MoltForgeEscrowV3 is
     struct DisputeVote {
         address validator;
         uint256 agentId;
-        uint256 stake;
-        bool    agentWon;       // true = vote for agent, false = vote for client
+        uint256 stake;          // arbitrary amount staked by validator
+        bool    voteForAgent;   // true = agent delivered, false = client is right
         uint64  votedAt;
     }
 
@@ -165,7 +166,6 @@ contract MoltForgeEscrowV3 is
     error NotEligibleValidator();
     error VoteWindowClosed();
     error VoteWindowOpen();
-    error MaxValidatorsReached();
     error DisputeNotReady();
 
     // ─── Modifiers ────────────────────────────────────────────────────────────
@@ -496,7 +496,6 @@ contract MoltForgeEscrowV3 is
         if (t.status != TaskStatus.Delivered) revert WrongStatus(t.status);
         if (msg.sender != t.client) revert NotClient();
 
-        // Client deposits 1% of reward
         uint256 deposit = (t.reward * DISPUTE_DEPOSIT_BPS) / BPS_DENOM;
         if (deposit > 0) {
             IERC20(t.token).safeTransferFrom(msg.sender, address(this), deposit);
@@ -508,16 +507,18 @@ contract MoltForgeEscrowV3 is
         emit TaskDisputed(taskId, msg.sender);
     }
 
-    /// @notice Validator votes on a dispute. Must be Squid+ tier, stakes 0.5% of reward.
-    function voteOnDispute(uint256 taskId, bool agentWon)
+    /// @notice Validator votes on dispute. Stakes any amount (min 0.1% of reward).
+    /// @param taskId The task being disputed
+    /// @param voteForAgent true = agent delivered correctly, false = client is right
+    /// @param stakeAmount How much USDC to stake (more stake = more weight + more reward)
+    function voteOnDispute(uint256 taskId, bool voteForAgent, uint256 stakeAmount)
         external nonReentrant taskExists(taskId)
     {
         Task storage t = _tasks[taskId];
         if (t.status != TaskStatus.Disputed) revert WrongStatus(t.status);
         if (_hasVoted[taskId][msg.sender]) revert AlreadyVoted();
-        if (_disputeVotes[taskId].length >= MAX_VALIDATORS) revert MaxValidatorsReached();
 
-        // Check vote window
+        // Check vote window (24h)
         uint64 openedAt = _disputeOpenedAt[taskId];
         if (openedAt > 0 && block.timestamp > openedAt + DISPUTE_VOTE_WINDOW) revert VoteWindowClosed();
 
@@ -525,111 +526,136 @@ contract MoltForgeEscrowV3 is
         if (msg.sender == t.client) revert NotClient();
         if (msg.sender == t.claimedBy) revert NotAgent();
 
-        // Must be registered agent with Squid+ tier
-        uint256 voterId = 0;
-        if (agentRegistry != address(0)) {
-            try IAgentRegistry(agentRegistry).getAgentIdByWallet(msg.sender) returns (uint256 id) {
-                voterId = id;
-            } catch {
-                revert NotEligibleValidator();
-            }
-            // Check tier (Squid = 2+)
-            try IAgentRegistry(agentRegistry).getReputation(voterId) returns (uint256, uint256, uint256, uint8 tier) {
-                if (tier < MIN_VALIDATOR_TIER) revert NotEligibleValidator();
-            } catch {
-                revert NotEligibleValidator();
-            }
-        } else {
-            revert NotEligibleValidator();
-        }
-
-        // Check not an applicant on this task
+        // Must not be applicant
         if (_hasApplied[taskId][msg.sender]) revert NotEligibleValidator();
 
-        // Validator stakes 0.5% of reward
-        uint256 stake = (t.reward * VALIDATOR_STAKE_BPS) / BPS_DENOM;
-        if (stake > 0) {
-            IERC20(t.token).safeTransferFrom(msg.sender, address(this), stake);
-        }
+        // Min stake = 0.1% of reward
+        uint256 minStake = (t.reward * MIN_VOTE_STAKE_BPS) / BPS_DENOM;
+        if (stakeAmount < minStake) revert ZeroReward(); // reusing error for "too small"
+
+        // Transfer stake
+        IERC20(t.token).safeTransferFrom(msg.sender, address(this), stakeAmount);
 
         _disputeVotes[taskId].push(DisputeVote({
             validator: msg.sender,
-            agentId: voterId,
-            stake: stake,
-            agentWon: agentWon,
+            agentId: 0, // optional, can be resolved later
+            stake: stakeAmount,
+            voteForAgent: voteForAgent,
             votedAt: uint64(block.timestamp)
         }));
         _hasVoted[taskId][msg.sender] = true;
 
-        emit DisputeVoteCast(taskId, msg.sender, voterId, stake);
+        // Try to resolve voter's agentId (non-critical)
+        if (agentRegistry != address(0)) {
+            try IAgentRegistry(agentRegistry).getAgentIdByWallet(msg.sender) returns (uint256 id) {
+                _disputeVotes[taskId][_disputeVotes[taskId].length - 1].agentId = id;
+            } catch {}
+        }
+
+        emit DisputeVoteCast(taskId, msg.sender, _disputeVotes[taskId][_disputeVotes[taskId].length - 1].agentId, stakeAmount);
     }
 
-    /// @notice Finalize dispute after vote window closes or max validators reached.
+    /// @notice Finalize dispute after 24h vote window.
     function finalizeDispute(uint256 taskId)
         external nonReentrant taskExists(taskId)
     {
         Task storage t = _tasks[taskId];
         if (t.status != TaskStatus.Disputed) revert WrongStatus(t.status);
 
-        DisputeVote[] storage votes = _disputeVotes[taskId];
         uint64 openedAt = _disputeOpenedAt[taskId];
-        bool windowClosed = block.timestamp > openedAt + DISPUTE_VOTE_WINDOW;
-        bool maxReached = votes.length >= MAX_VALIDATORS;
+        if (block.timestamp <= openedAt + DISPUTE_VOTE_WINDOW) revert VoteWindowOpen();
 
-        // Can finalize if: window closed OR max validators voted
-        if (!windowClosed && !maxReached) revert VoteWindowOpen();
-
-        // Count votes
-        uint256 agentVotes = 0;
-        uint256 clientVotes = 0;
-        for (uint256 i = 0; i < votes.length; i++) {
-            if (votes[i].agentWon) {
-                agentVotes++;
-            } else {
-                clientVotes++;
-            }
-        }
-
-        // Determine winner: supermajority (3/5) or benefit of doubt to agent
-        // If < MIN_VALIDATORS voted, agent wins by default (work presumed acceptable)
-        bool agentWinsDispute;
-        if (votes.length < MIN_VALIDATORS) {
-            agentWinsDispute = true; // Not enough validators → agent wins by default
-        } else if (agentVotes > clientVotes) {
-            agentWinsDispute = true;
-        } else if (clientVotes > agentVotes) {
-            agentWinsDispute = false;
-        } else {
-            agentWinsDispute = true; // Tie → agent wins (benefit of doubt)
-        }
-
+        DisputeVote[] storage votes = _disputeVotes[taskId];
         IERC20 token = IERC20(t.token);
 
-        // --- Distribute validator stakes ---
-        // Correct voters get stake back + share of wrong voters' stakes
-        uint256 wrongVoterStakePool = 0;
-        uint256 correctVoterCount = 0;
+        // Calculate total stakes per side
+        uint256 totalAgentStake = 0;
+        uint256 totalClientStake = 0;
+        for (uint256 i = 0; i < votes.length; i++) {
+            if (votes[i].voteForAgent) {
+                totalAgentStake += votes[i].stake;
+            } else {
+                totalClientStake += votes[i].stake;
+            }
+        }
+        uint256 totalValidatorStake = totalAgentStake + totalClientStake;
+
+        // Check quorum: total validator stakes >= 20% of reward
+        uint256 quorum = (t.reward * DISPUTE_QUORUM_BPS) / BPS_DENOM;
+        if (totalValidatorStake < quorum) {
+            // Quorum not reached — return all validator stakes, leave dispute for centralized resolution
+            for (uint256 i = 0; i < votes.length; i++) {
+                if (votes[i].stake > 0) {
+                    token.safeTransfer(votes[i].validator, votes[i].stake);
+                }
+            }
+            // Dispute stays in Disputed status — owner/supreme court resolves
+            return;
+        }
+
+        // Determine winner
+        uint256 winnerStake;
+        uint256 loserStake;
+        bool agentWinsDispute;
+
+        if (totalAgentStake > totalClientStake) {
+            agentWinsDispute = true;
+            winnerStake = totalAgentStake;
+            loserStake = totalClientStake;
+        } else if (totalClientStake > totalAgentStake) {
+            agentWinsDispute = false;
+            winnerStake = totalClientStake;
+            loserStake = totalAgentStake;
+        } else {
+            // Exact tie — agent wins (benefit of doubt to worker)
+            agentWinsDispute = true;
+            winnerStake = totalAgentStake;
+            loserStake = totalClientStake;
+        }
+
+        // Check if supermajority (77.7%) reached
+        bool superMajority = (winnerStake * SUPERMAJORITY_DENOM) >= (totalValidatorStake * SUPERMAJORITY_NUM);
+
+        // --- Return stakes / slash losing validators ---
+        uint256 loserPool = 0; // total stakes from losing validators (only if supermajority)
 
         for (uint256 i = 0; i < votes.length; i++) {
-            if (votes[i].agentWon == agentWinsDispute) {
-                correctVoterCount++;
+            bool votedForWinner = (votes[i].voteForAgent == agentWinsDispute);
+            if (votedForWinner) {
+                // Winners always get their stake back
+                token.safeTransfer(votes[i].validator, votes[i].stake);
             } else {
-                wrongVoterStakePool += votes[i].stake;
+                if (superMajority) {
+                    // Losers are slashed — their stake goes to winner pool
+                    loserPool += votes[i].stake;
+                } else {
+                    // No supermajority — losers NOT slashed, stake returned
+                    token.safeTransfer(votes[i].validator, votes[i].stake);
+                }
             }
         }
 
-        // Return correct voters' stakes + bonus from wrong voters
-        for (uint256 i = 0; i < votes.length; i++) {
-            if (votes[i].agentWon == agentWinsDispute) {
-                uint256 payout = votes[i].stake; // return own stake
-                if (correctVoterCount > 0 && wrongVoterStakePool > 0) {
-                    payout += wrongVoterStakePool / correctVoterCount; // share of wrong voters
-                }
-                if (payout > 0) {
-                    token.safeTransfer(votes[i].validator, payout);
+        // Distribute loser pool to winning validators (proportional to their stake)
+        if (superMajority && loserPool > 0 && winnerStake > 0) {
+            uint256 distributed = 0;
+            for (uint256 i = 0; i < votes.length; i++) {
+                if (votes[i].voteForAgent == agentWinsDispute) {
+                    uint256 share = (loserPool * votes[i].stake) / winnerStake;
+                    if (share > 0) {
+                        token.safeTransfer(votes[i].validator, share);
+                        distributed += share;
+                    }
                 }
             }
-            // Wrong voters lose their stake (already in pool)
+            // Dust → first winning validator
+            if (distributed < loserPool) {
+                for (uint256 i = 0; i < votes.length; i++) {
+                    if (votes[i].voteForAgent == agentWinsDispute) {
+                        token.safeTransfer(votes[i].validator, loserPool - distributed);
+                        break;
+                    }
+                }
+            }
         }
 
         // --- Main dispute resolution ---
@@ -655,90 +681,48 @@ contract MoltForgeEscrowV3 is
                 token.safeTransfer(t.claimedBy, t.agentStake);
             }
 
-            // Client dispute deposit: 50% → agent, 50% → validators
+            // Client dispute deposit (1%): 50% → agent, 50% → winning validators
             if (t.disputeDeposit > 0) {
                 uint256 halfDeposit = t.disputeDeposit / 2;
-                uint256 agentShare = halfDeposit;
-                uint256 validatorShare = t.disputeDeposit - halfDeposit; // handles rounding
+                token.safeTransfer(t.claimedBy, halfDeposit);
 
-                token.safeTransfer(t.claimedBy, agentShare);
-
-                // Split validator share equally among correct voters
-                if (correctVoterCount > 0 && validatorShare > 0) {
-                    uint256 perValidator = validatorShare / correctVoterCount;
-                    uint256 distributed = 0;
-                    for (uint256 i = 0; i < votes.length; i++) {
-                        if (votes[i].agentWon == agentWinsDispute && perValidator > 0) {
-                            token.safeTransfer(votes[i].validator, perValidator);
-                            distributed += perValidator;
-                        }
-                    }
-                    // Dust → first correct voter
-                    uint256 dust = validatorShare - distributed;
-                    if (dust > 0) {
-                        for (uint256 i = 0; i < votes.length; i++) {
-                            if (votes[i].agentWon == agentWinsDispute) {
-                                token.safeTransfer(votes[i].validator, dust);
-                                break;
-                            }
-                        }
-                    }
+                uint256 validatorReward = t.disputeDeposit - halfDeposit;
+                if (winnerStake > 0 && validatorReward > 0) {
+                    _distributeProRata(token, votes, agentWinsDispute, validatorReward, winnerStake);
                 } else {
-                    // No correct voters (shouldn't happen) → agent gets all
-                    token.safeTransfer(t.claimedBy, validatorShare);
+                    token.safeTransfer(t.claimedBy, validatorReward);
                 }
             }
 
-            // XP — dispute opened, but agent won
+            // XP
             if (agentRegistry != address(0) && t.agentId > 0) {
-                uint256 rewardUsd = t.reward / 1e6;
-                try IAgentRegistry(agentRegistry).addXP(t.agentId, rewardUsd, 300, false, false, true) {} catch {}
+                try IAgentRegistry(agentRegistry).addXP(t.agentId, t.reward / 1e6, 300, false, false, true) {} catch {}
             }
         } else {
             t.status = TaskStatus.Cancelled;
 
-            // 5% of reward → DAO slash
+            // 5% slash → DAO
             uint256 slash = (t.reward * DISPUTE_SLASH_BPS) / BPS_DENOM;
             uint256 clientRefund = t.reward - slash;
-
-            // Refund client
             token.safeTransfer(t.client, clientRefund);
 
-            // Slash → DAO
             if (daoTreasury != address(0) && slash > 0) {
                 token.safeTransfer(daoTreasury, slash);
             } else if (slash > 0) {
                 token.safeTransfer(feeRecipient, slash);
             }
 
-            // Agent stake: 80% → client, 20% → validators
+            // Agent stake (5%): 80% → client, 20% → winning validators
             if (t.agentStake > 0) {
-                uint256 clientStakeShare = (t.agentStake * 80) / 100;  // 4% of reward
-                uint256 validatorStakeShare = t.agentStake - clientStakeShare; // 1% of reward
+                uint256 clientShare = (t.agentStake * 80) / 100;
+                uint256 validatorShare = t.agentStake - clientShare;
 
-                token.safeTransfer(t.client, clientStakeShare);
+                token.safeTransfer(t.client, clientShare);
 
-                // Split validator share among correct voters
-                if (correctVoterCount > 0 && validatorStakeShare > 0) {
-                    uint256 perValidator = validatorStakeShare / correctVoterCount;
-                    uint256 distributed = 0;
-                    for (uint256 i = 0; i < votes.length; i++) {
-                        if (votes[i].agentWon == agentWinsDispute && perValidator > 0) {
-                            token.safeTransfer(votes[i].validator, perValidator);
-                            distributed += perValidator;
-                        }
-                    }
-                    uint256 dust = validatorStakeShare - distributed;
-                    if (dust > 0) {
-                        for (uint256 i = 0; i < votes.length; i++) {
-                            if (votes[i].agentWon == agentWinsDispute) {
-                                token.safeTransfer(votes[i].validator, dust);
-                                break;
-                            }
-                        }
-                    }
+                if (winnerStake > 0 && validatorShare > 0) {
+                    _distributeProRata(token, votes, agentWinsDispute, validatorShare, winnerStake);
                 } else {
-                    token.safeTransfer(t.client, validatorStakeShare);
+                    token.safeTransfer(t.client, validatorShare);
                 }
             }
 
@@ -747,28 +731,61 @@ contract MoltForgeEscrowV3 is
                 token.safeTransfer(t.client, t.disputeDeposit);
             }
 
-            // Dispute lost — 0 XP
+            // XP
             if (agentRegistry != address(0) && t.agentId > 0) {
                 try IAgentRegistry(agentRegistry).addXP(t.agentId, 0, 0, false, true, true) {} catch {}
             }
         }
-        emit DisputeFinalized(taskId, agentWinsDispute, agentVotes, clientVotes);
+        emit DisputeFinalized(taskId, agentWinsDispute, totalAgentStake, totalClientStake);
     }
 
-    /// @notice Emergency owner resolution — only if dispute >7 days old with no finalization
+    /// @dev Distribute amount pro-rata to winning validators based on their stake
+    function _distributeProRata(
+        IERC20 token,
+        DisputeVote[] storage votes,
+        bool winningSide,
+        uint256 amount,
+        uint256 totalWinnerStake
+    ) internal {
+        uint256 distributed = 0;
+        for (uint256 i = 0; i < votes.length; i++) {
+            if (votes[i].voteForAgent == winningSide) {
+                uint256 share = (amount * votes[i].stake) / totalWinnerStake;
+                if (share > 0) {
+                    token.safeTransfer(votes[i].validator, share);
+                    distributed += share;
+                }
+            }
+        }
+        if (distributed < amount) {
+            for (uint256 i = 0; i < votes.length; i++) {
+                if (votes[i].voteForAgent == winningSide) {
+                    token.safeTransfer(votes[i].validator, amount - distributed);
+                    break;
+                }
+            }
+        }
+    }
+
+    /// @notice Emergency resolution by owner or supreme court — only if quorum not reached or >7 days old
     function resolveDispute(uint256 taskId, bool agentWon)
         external nonReentrant onlyOwner taskExists(taskId)
     {
         Task storage t = _tasks[taskId];
         if (t.status != TaskStatus.Disputed) revert WrongStatus(t.status);
 
-        // Owner can only resolve after 7 days (emergency fallback)
+        // Owner can resolve: either quorum not reached (after vote window) or >7 days stuck
         uint64 openedAt = _disputeOpenedAt[taskId];
-        if (openedAt > 0 && block.timestamp < openedAt + 7 days) revert TooEarly();
+        bool windowPassed = block.timestamp > openedAt + DISPUTE_VOTE_WINDOW;
+        bool sevenDaysPassed = block.timestamp > openedAt + 7 days;
+
+        if (!windowPassed) revert TooEarly();
+        // If quorum was reached and within 7 days, can't override — must use finalizeDispute
+        // (but if someone already called finalize, status wouldn't be Disputed anymore)
 
         IERC20 token = IERC20(t.token);
 
-        // Return all validator stakes first
+        // Return all validator stakes
         DisputeVote[] storage votes = _disputeVotes[taskId];
         for (uint256 i = 0; i < votes.length; i++) {
             if (votes[i].stake > 0) {
@@ -779,13 +796,12 @@ contract MoltForgeEscrowV3 is
         if (agentWon) {
             t.status = TaskStatus.Confirmed;
             uint256 fee = (t.reward * PROTOCOL_FEE_BPS) / BPS_DENOM;
-            uint256 agentPayout = t.reward - fee;
             t.fee = fee;
             if (fee > 0) {
                 if (daoTreasury != address(0)) { token.safeTransfer(daoTreasury, fee); }
                 else { token.safeTransfer(feeRecipient, fee); }
             }
-            token.safeTransfer(t.claimedBy, agentPayout);
+            token.safeTransfer(t.claimedBy, t.reward - fee);
             if (t.agentStake > 0) token.safeTransfer(t.claimedBy, t.agentStake);
             if (t.disputeDeposit > 0) token.safeTransfer(t.claimedBy, t.disputeDeposit);
             if (agentRegistry != address(0) && t.agentId > 0) {
@@ -806,7 +822,7 @@ contract MoltForgeEscrowV3 is
         emit DisputeResolved(taskId, agentWon);
     }
 
-    // ─── View: Dispute Votes ─────────────────────────────────────────────────
+    // ─── View: Dispute ───────────────────────────────────────────────────────
 
     function getDisputeVotes(uint256 taskId) external view returns (DisputeVote[] memory) {
         return _disputeVotes[taskId];
@@ -820,6 +836,16 @@ contract MoltForgeEscrowV3 is
 
     function disputeVoteCount(uint256 taskId) external view returns (uint256) {
         return _disputeVotes[taskId].length;
+    }
+
+    function disputeQuorumReached(uint256 taskId) external view returns (bool) {
+        Task storage t = _tasks[taskId];
+        uint256 quorum = (t.reward * DISPUTE_QUORUM_BPS) / BPS_DENOM;
+        uint256 totalStake = 0;
+        for (uint256 i = 0; i < _disputeVotes[taskId].length; i++) {
+            totalStake += _disputeVotes[taskId][i].stake;
+        }
+        return totalStake >= quorum;
     }
 
     // ─── Admin ────────────────────────────────────────────────────────────────
