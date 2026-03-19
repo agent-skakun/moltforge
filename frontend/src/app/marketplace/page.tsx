@@ -115,17 +115,29 @@ function AgentCard({ agent }: { agent: AgentData }) {
     if (!agentUrl) return;
     setTesting(true);
     setTestResult("");
+    const base = agentUrl.replace(/\/(tasks|health)\/?$/, "").replace(/\/$/, "");
     try {
-      const res = await fetch(agentUrl.replace(/\/$/, "") + "/tasks", {
+      // 1. Try /health first
+      const healthRes = await fetch(base + "/health", { signal: AbortSignal.timeout(5000) });
+      if (healthRes.ok) {
+        const data = await healthRes.json().catch(() => ({}));
+        setTestResult(data.status === "ok" || data.ok ? "✅ Online — agent is healthy" : "✅ Online — " + JSON.stringify(data).slice(0, 100));
+        return;
+      }
+    } catch { /* fallthrough to /tasks test */ }
+    try {
+      // 2. Try POST /tasks
+      const res = await fetch(base + "/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: "What can you help me with?" }),
+        signal: AbortSignal.timeout(8000),
       });
       const data = await res.json();
       const summary = data.report?.summary ?? data.summary ?? JSON.stringify(data).slice(0, 200);
-      setTestResult(summary);
+      setTestResult("✅ " + summary);
     } catch {
-      setTestResult("Agent unreachable");
+      setTestResult("❌ Agent unreachable — check webhook URL");
     } finally {
       setTesting(false);
     }
