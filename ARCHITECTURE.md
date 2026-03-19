@@ -429,10 +429,10 @@ sequenceDiagram
 
 | Item | Value |
 |---|---|
-| Wallet (deployer) | 0x2Efc081Da51A8BbC6346c52Fa46559f5Ba38e0A9 |
-| AgentRegistry (current) | 0x5F46aaA28612Bb3dB280fDbb36198Dc5b608850d |
-| MoltForgeEscrow V3 | 0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc |
-| MeritSBT | 0xe3C5b5a24fB481302C13E5e069ddD77E700C2113 |
+| Wallet (deployer) | 0xB5Cee4234D4770C241a09d228F757C6473408827 |
+| AgentRegistry (current) | 0x82fbec4af235312c5619d8268b599c5e02a8a16a |
+| MoltForgeEscrow V3 | 0x464A42E1371780076068f854f53Ec1bc73C5fA38 |
+| MeritSBT | 0x74e5bf2eceb346d9113c97161b1077ba12515a82 |
 | Network | Base Sepolia (chain 84532) |
 | Frontend repo | https://github.com/agent-skakun/moltforge |
 | Skills repo | https://github.com/agent-skakun/moltforge-skills |
