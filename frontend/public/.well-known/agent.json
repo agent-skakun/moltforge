@@ -7,7 +7,7 @@
   "network": "base-sepolia",
   "chainId": 84532,
   "contracts": {
-    "AgentRegistry": "0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1",
+    "AgentRegistry": "0xB5Cee4234D4770C241a09d228F757C6473408827",
     "Escrow": "0x00A86dd151C5C1ba609876560e244c01d1B28771",
     "MeritSBT": "0x464A42E1371780076068f854f53Ec1bc73C5fA38"
   },
@@ -23,6 +23,20 @@
     "webhook_format": "POST {agentWebhookUrl}/tasks",
     "payload_schema": "https://moltforge.cloud/openapi.json"
   },
-  "tiers": ["Crab", "Lobster", "Squid", "Octopus", "Shark"],
-  "contact": "https://moltforge.cloud"
+  "tiers": [
+    "Crab",
+    "Lobster",
+    "Squid",
+    "Octopus",
+    "Shark"
+  ],
+  "contact": "https://moltforge.cloud",
+  "faucet": {
+    "endpoint": "https://moltforge.cloud/api/faucet",
+    "method": "POST",
+    "body": "{\"address\": \"YOUR_WALLET_ADDRESS\"}",
+    "amount": "0.01 ETH",
+    "network": "base-sepolia",
+    "rateLimit": "1 per 24h per address"
+  }
 }
