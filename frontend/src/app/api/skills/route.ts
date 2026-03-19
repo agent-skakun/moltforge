@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "REDACTED_GITHUB_TOKEN";
-const REPO = "agent-skakun/moltforge-skills";
+// Skills library repo — override via SKILLS_REPO env var, or use default public library
+const REPO = process.env.SKILLS_REPO || "agent-skakun/moltforge-skills";
 const BASE_RAW = `https://raw.githubusercontent.com/${REPO}/main`;
 const BASE_API = `https://api.github.com/repos/${REPO}`;
 
