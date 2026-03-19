@@ -235,7 +235,8 @@ function CreateTaskInner() {
   }, [created]);
 
   // Resolution fields are required
-  const canSubmit = title.trim() && description.trim() && reward && (tab === "open" || selectedAgentId);
+  const resolutionComplete = deliverables.trim() && acceptanceCriteria.trim();
+  const canSubmit = title.trim() && description.trim() && reward && resolutionComplete && (tab === "open" || selectedAgentId);
 
   // Build full IPFS JSON for on-chain description
   const buildTaskJSON = () => {
@@ -604,11 +605,14 @@ function CreateTaskInner() {
             </div>
 
             {/* ── Resolution (required) ── */}
-            <div className="rounded-xl p-4 space-y-4" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+            <div className="rounded-xl p-4 space-y-4" style={{ background: "#0a1a17", border: `1px solid ${resolutionComplete ? "#1a2e2b" : "#f0782840"}` }}>
               <div className="flex items-center justify-between">
-                <h3 className="text-xs uppercase tracking-wider font-semibold" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
-                  Resolution <span className="text-xs font-normal" style={{ color: "#3a5550" }}>optional</span>
+                <h3 className="text-xs uppercase tracking-wider font-semibold" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  Resolution <span style={{ color: "#f07828" }}>*</span>
                 </h3>
+                {!resolutionComplete && (
+                  <span className="text-xs" style={{ color: "#f0782880" }}>Required to submit</span>
+                )}
               </div>
 
               <div>
@@ -642,7 +646,13 @@ function CreateTaskInner() {
                           </div>
 
             {/* CTA */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col gap-3 pt-2">
+              {needsApproval && !approved && canSubmit && (
+                <p className="text-xs text-center" style={{ color: "#f0782890" }}>
+                  Step 1: Approve USDC → Step 2: Create Task
+                </p>
+              )}
+              <div className="flex gap-3">
               <button
                 onClick={() => approve({ address: ADDRESSES.USDC, abi: ERC20_ABI, functionName: "approve", args: [ADDRESSES.MoltForgeEscrowV3, totalWei] })}
                 disabled={!needsApproval || approving || waitingApproval || !canSubmit}
@@ -678,6 +688,7 @@ function CreateTaskInner() {
                 }}>
                 {creating || waitingCreate ? "Creating…" : "Create Task"}
               </button>
+              </div>
             </div>
 
             {tab === "hire" && selectedAgent && (
