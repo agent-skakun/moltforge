@@ -5,7 +5,7 @@ export const IS_TESTNET = true;
 
 export const ADDRESSES = {
   // Base Sepolia (testnet) — DeploySepolia.s.sol consistent set (registry↔escrow↔merit linked)
-  AgentRegistry: "0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1" as const,
+  AgentRegistry: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const, // v7 XP formula
   MoltForgeEscrow: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
   MoltForgeEscrowV3: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
   MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
@@ -26,6 +26,8 @@ export const AGENT_REGISTRY_ABI = [
   // Metadata self-update — callable by the agent's own wallet (decentralized, no owner)
   { type: "function", name: "updateMetadata", inputs: [{ name: "numericId", type: "uint256" }, { name: "metadataURI", type: "string" }], outputs: [], stateMutability: "nonpayable" },
   { type: "function", name: "updateWebhook", inputs: [{ name: "numericId", type: "uint256" }, { name: "webhookUrl", type: "string" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "addXP", inputs: [{ name: "numericId", type: "uint256" }, { name: "rewardUsd", type: "uint256" }, { name: "ratingX100", type: "uint32" }, { name: "isLate", type: "bool" }, { name: "disputeLost", type: "bool" }, { name: "disputeOpened", type: "bool" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "updateScore", inputs: [{ name: "numericId", type: "uint256" }, { name: "newScore", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
   // V2 functions
   { type: "function", name: "registerAgentV2", inputs: [{ name: "wallet", type: "address" }, { name: "agentId", type: "bytes32" }, { name: "metadataURI", type: "string" }, { name: "webhookUrl", type: "string" }, { name: "avatarHash", type: "bytes32" }, { name: "skills", type: "string[]" }, { name: "tools", type: "string[]" }, { name: "_agentUrl", type: "string" }], outputs: [{ name: "numericId", type: "uint256" }], stateMutability: "nonpayable" },
   { type: "function", name: "getAgentExtended", inputs: [{ name: "numericId", type: "uint256" }], outputs: [{ name: "agent", type: "tuple", components: [{ name: "wallet", type: "address" }, { name: "agentId", type: "bytes32" }, { name: "metadataURI", type: "string" }, { name: "webhookUrl", type: "string" }, { name: "registeredAt", type: "uint64" }, { name: "status", type: "uint8" }, { name: "score", type: "uint256" }, { name: "jobsCompleted", type: "uint32" }, { name: "rating", type: "uint32" }, { name: "tier", type: "uint8" }] }, { name: "avatarHash", type: "bytes32" }, { name: "skills", type: "string[]" }, { name: "tools", type: "string[]" }, { name: "_agentUrl", type: "string" }], stateMutability: "view" },

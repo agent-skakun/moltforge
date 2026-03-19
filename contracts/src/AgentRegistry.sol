@@ -177,11 +177,84 @@ contract AgentRegistry {
     // Score & job tracking (called by ScoreAggregator / Escrow)
     // -------------------------------------------------------------------------
 
-    /// @notice Update reputation score
+    /// @notice Babylonian integer square root (floor)
+    function _sqrt(uint256 x) internal pure returns (uint256 y) {
+        if (x == 0) return 0;
+        uint256 z = (x + 1) / 2;
+        y = x;
+        while (z < y) { y = z; z = (x / z + z) / 2; }
+    }
+
+    /// @notice Recompute tier from XP score (scaled ×1e18)
+    function _tierByScore(uint256 score) internal pure returns (Tier) {
+        if      (score >= 25_000e18) return Tier.Shark;
+        else if (score >=  8_000e18) return Tier.Octopus;
+        else if (score >=  2_000e18) return Tier.Squid;
+        else if (score >=    500e18) return Tier.Lobster;
+        else                         return Tier.Crab;
+    }
+
+    /// @notice Compute and add XP from a completed task
+    /// @param numericId   Agent numeric ID
+    /// @param rewardUsd   Reward in whole USD (e.g. 10 for $10)
+    /// @param ratingX100  Rating ×100 (100–500)
+    /// @param isLate      Submitted after deadline
+    /// @param disputeLost Dispute raised AND resolved against agent
+    /// @param disputeOpened Dispute was opened (even if agent won)
+    function addXP(
+        uint256 numericId,
+        uint256 rewardUsd,
+        uint32  ratingX100,
+        bool    isLate,
+        bool    disputeLost,
+        bool    disputeOpened
+    ) external onlyOwner {
+        _requireExists(numericId);
+        Agent storage a = _agents[numericId];
+
+        // baseXP = sqrt(rewardUsd) × 1e18
+        uint256 baseXP = _sqrt(rewardUsd) * 1e18;
+
+        // Accumulate bonus/penalty in basis points (10_000 = 100%)
+        // Start at 10_000 (100%)
+        if (disputeLost) {
+            // No XP for losing a dispute
+            a.score += 0;
+        } else {
+            uint256 bp = 10_000;
+            // Bonuses
+            if      (ratingX100 >= 500) bp += 5_000;  // 5★ +50%
+            else if (ratingX100 >= 400) bp += 1_000;  // 4★ +10%
+            if (!isLate)                bp += 2_500;   // on-time +25%
+            // Penalties
+            if (isLate)                 bp  = bp >= 5_000 ? bp - 5_000 : 0;  // -50%
+            if (ratingX100 <= 200)      bp  = bp >= 2_500 ? bp - 2_500 : 0;  // ≤2★ -25%
+            if (disputeOpened)          bp  = bp >= 1_000 ? bp - 1_000 : 0;  // dispute opened -10%
+
+            uint256 xp = (baseXP * bp) / 10_000;
+            a.score += xp;
+            emit ScoreUpdated(numericId, a.score - xp, a.score);
+        }
+
+        // Recompute tier from XP score
+        Tier newTier = _tierByScore(a.score);
+        if (newTier != a.tier) {
+            a.tier = newTier;
+            emit TierUpgraded(numericId, newTier);
+        }
+    }
+
+    /// @notice Update reputation score (raw, owner only — legacy)
     function updateScore(uint256 numericId, uint256 newScore) external onlyOwner {
         _requireExists(numericId);
         uint256 old = _agents[numericId].score;
         _agents[numericId].score = newScore;
+        // Recompute tier from new score
+        Tier newTier = _tierByScore(newScore);
+        if (newTier != _agents[numericId].tier) {
+            _agents[numericId].tier = newTier;
+            emit TierUpgraded(numericId, newTier);
+        }
         emit ScoreUpdated(numericId, old, newScore);
     }
 
@@ -289,18 +362,18 @@ contract AgentRegistry {
 
     /// @dev Upgrade tier based on jobs completed milestones
     function _maybeTierUp(uint256 numericId, Agent storage a) internal {
-        Tier newTier = a.tier;
-
-        if (a.jobsCompleted >= 100 && a.tier < Tier.Shark) {
-            newTier = Tier.Shark;
-        } else if (a.jobsCompleted >= 50 && a.tier < Tier.Octopus) {
-            newTier = Tier.Octopus;
-        } else if (a.jobsCompleted >= 20 && a.tier < Tier.Squid) {
-            newTier = Tier.Squid;
-        } else if (a.jobsCompleted >= 5 && a.tier < Tier.Lobster) {
-            newTier = Tier.Lobster;
-        }
-
+        // Tier now driven by XP score via _tierByScore().
+        // This legacy function keeps jobsCompleted-based fallback for
+        // agents that were registered before addXP() was introduced.
+        Tier scoreTier = _tierByScore(a.score);
+        // Also keep jobs-based floor so existing agents don't regress
+        Tier jobsTier = a.tier;
+        if      (a.jobsCompleted >= 100) jobsTier = Tier.Shark;
+        else if (a.jobsCompleted >=  50) jobsTier = Tier.Octopus;
+        else if (a.jobsCompleted >=  20) jobsTier = Tier.Squid;
+        else if (a.jobsCompleted >=   5) jobsTier = Tier.Lobster;
+        // Take the higher of the two
+        Tier newTier = uint8(scoreTier) >= uint8(jobsTier) ? scoreTier : jobsTier;
         if (newTier != a.tier) {
             a.tier = newTier;
             emit TierUpgraded(numericId, newTier);

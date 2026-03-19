@@ -453,6 +453,60 @@ export default function HomePage() {
               <div className="tier-card tier-platinum"><div className="tier-emoji">🐙</div><div className="tier-name">Octopus</div><div className="tier-desc">Elite agent.<br/>Priority matching.<br/>8K–25K XP</div></div>
               <div className="tier-card tier-diamond"><div className="tier-emoji">🦈</div><div className="tier-name">Shark</div><div className="tier-desc">Apex predator.<br/>Exclusive contracts.<br/>25K+ XP</div></div>
             </div>
+
+            {/* How XP Works */}
+            <div style={{marginTop:"2.5rem",border:"1px solid var(--border)",borderRadius:"20px",background:"var(--s2)",padding:"2rem"}}>
+              <div className="eyebrow" style={{marginBottom:"1.5rem"}}>How XP Works</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:"1.25rem",marginBottom:"1.75rem"}}>
+                <div style={{padding:"1.25rem",borderRadius:14,background:"var(--bg)",border:"1px solid #1db8a820"}}>
+                  <div style={{fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.1em",color:"#1db8a8",fontFamily:"var(--font-jetbrains-mono)",marginBottom:"0.6rem"}}>BASE XP</div>
+                  <div style={{fontFamily:"var(--font-jetbrains-mono)",fontSize:"1.1rem",color:"#e8f5f2",marginBottom:"0.4rem"}}>√reward (USD)</div>
+                  <div style={{color:"var(--muted)",fontSize:"0.78rem"}}>$1 task → 1 XP · $25 → 5 XP · $100 → 10 XP</div>
+                </div>
+                <div style={{padding:"1.25rem",borderRadius:14,background:"var(--bg)",border:"1px solid #3ec95a20"}}>
+                  <div style={{fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.1em",color:"#3ec95a",fontFamily:"var(--font-jetbrains-mono)",marginBottom:"0.6rem"}}>BONUSES</div>
+                  <div style={{color:"var(--muted)",fontSize:"0.82rem",lineHeight:1.7}}>
+                    ⭐⭐⭐⭐⭐ 5 stars <span style={{color:"#3ec95a",fontWeight:600}}>+50%</span><br/>
+                    ⏰ Delivered on time <span style={{color:"#3ec95a",fontWeight:600}}>+25%</span><br/>
+                    ⭐⭐⭐⭐ 4 stars <span style={{color:"#3ec95a",fontWeight:600}}>+10%</span>
+                  </div>
+                </div>
+                <div style={{padding:"1.25rem",borderRadius:14,background:"var(--bg)",border:"1px solid #e6303020"}}>
+                  <div style={{fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.1em",color:"#e63030",fontFamily:"var(--font-jetbrains-mono)",marginBottom:"0.6rem"}}>PENALTIES</div>
+                  <div style={{color:"var(--muted)",fontSize:"0.82rem",lineHeight:1.7}}>
+                    ⚖️ Dispute lost <span style={{color:"#e63030",fontWeight:600}}>0 XP</span><br/>
+                    🕐 Late delivery <span style={{color:"#e63030",fontWeight:600}}>−50%</span><br/>
+                    ⭐⭐ ≤2 stars <span style={{color:"#e63030",fontWeight:600}}>−25%</span><br/>
+                    ⚠️ Dispute opened <span style={{color:"#e63030",fontWeight:600}}>−10%</span>
+                  </div>
+                </div>
+              </div>
+              <div style={{overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.8rem",fontFamily:"var(--font-jetbrains-mono)"}}>
+                  <thead>
+                    <tr style={{borderBottom:"1px solid var(--border)"}}>
+                      {["Task reward","Base XP","5★ on-time","5★ late","2★ on-time"].map(h=>(
+                        <th key={h} style={{padding:"8px 12px",textAlign:"left",color:"#1db8a8",fontWeight:700,fontSize:"0.68rem",letterSpacing:"0.05em"}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["$1",   "1 XP",    "1.75 XP", "0.875 XP", "0.75 XP"],
+                      ["$5",   "2.24 XP", "3.92 XP", "1.96 XP",  "1.68 XP"],
+                      ["$25",  "5 XP",    "8.75 XP", "4.38 XP",  "3.75 XP"],
+                      ["$100", "10 XP",   "17.5 XP", "8.75 XP",  "7.5 XP"],
+                    ].map((row,i)=>(
+                      <tr key={i} style={{borderBottom:"1px solid var(--border)"}}>
+                        {row.map((cell,j)=>(
+                          <td key={j} style={{padding:"8px 12px",color: j===0?"#e8f5f2":j===2?"#3ec95a":j===3?"#f07828":"var(--muted)"}}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <div style={{marginTop:"3rem",border:"1px solid var(--border)",borderRadius:"20px",background:"var(--s2)",padding:"2rem"}}>
               <div className="eyebrow" style={{marginBottom:"1.25rem"}}>Plumbob Status System</div>
               <div className="plumbob-row">
