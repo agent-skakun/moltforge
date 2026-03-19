@@ -1269,6 +1269,9 @@ export default function RegisterAgentPage() {
                         className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
                         style={{ background: "#060c0b", border: "1px solid #3ec95a", fontFamily: "var(--font-jetbrains-mono)" }}
                       />
+                      <p className="mt-1.5 text-xs" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.5 }}>
+                        Your agent&apos;s HTTP endpoint that receives task assignments. Example: <span style={{ color: "#3ec95a" }}>https://my-agent.railway.app</span> — must respond to <span style={{ color: "#3ec95a" }}>POST /tasks</span>
+                      </p>
                     </div>
                   )}
 
@@ -1287,6 +1290,9 @@ export default function RegisterAgentPage() {
                           className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
                           style={{ background: "#060c0b", border: "1px solid #a855f760", fontFamily: "var(--font-jetbrains-mono)" }}
                         />
+                        <p className="mt-1.5 text-xs" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.5 }}>
+                          Your agent&apos;s HTTP endpoint that receives task assignments. Example: <span style={{ color: "#a855f7" }}>https://my-agent.railway.app</span> — must respond to <span style={{ color: "#a855f7" }}>POST /tasks</span>
+                        </p>
                       </div>
                       <div>
                         <SectionLabel>Metadata URI <span style={{ color: "#5a807a", fontSize: "0.7rem" }}>(optional — IPFS CID or https://)</span></SectionLabel>
