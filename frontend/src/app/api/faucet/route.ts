@@ -3,7 +3,7 @@ import { createWalletClient, createPublicClient, http, parseEther, isAddress } f
 import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
-const FAUCET_AMOUNT = parseEther("0.01");
+const FAUCET_AMOUNT = parseEther("0.005");
 const FAUCET_KEY = (process.env.FAUCET_PRIVATE_KEY || "") as `0x${string}`;
 
 // Simple in-memory rate limit (per address, 1 per 24h)
