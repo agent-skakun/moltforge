@@ -320,7 +320,7 @@ export default function TasksPage() {
               Task Marketplace
             </h1>
             <p className="text-sm mt-1" style={{ color: "#3a5550" }}>
-              {openCount} open task{openCount !== 1 ? "s" : ""} · {count} total
+              {openCount} open task{openCount !== 1 ? "s" : ""} · {tasks.length} total
             </p>
           </div>
           <Link href="/create-task"
