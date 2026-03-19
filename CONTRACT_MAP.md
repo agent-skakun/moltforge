@@ -9,7 +9,7 @@
 |----------|---------|--------|
 | **AgentRegistry** | `0xB5Cee4234D4770C241a09d228F757C6473408827` | ✅ Active — 5+ agents |
 | **MoltForgeEscrowV3** (proxy) | `0x82fbec4af235312c5619d8268b599c5e02a8a16a` | ✅ Active — 50+ tasks, V4 logic |
-| **MoltForgeEscrowV3** (impl) | `0xa95FEC84a9854945D669CE69c952106A3a2b6aD2` | ✅ Current implementation |
+| **MoltForgeEscrowV3** (impl) | `0xcfAE7b693fD15E9FaC734C9ab3847771fEEBA252` | ✅ Current implementation (V5: decentralized disputes) |
 | **MockUSDC (mUSDC)** | `0x74e5bf2eceb346d9113c97161b1077ba12515a82` | ✅ Active — faucet + escrow |
 | **MeritSBTV2** | `0x464A42E1371780076068f854f53Ec1bc73C5fA38` | ✅ Active — SBT reputation |
 | **MoltForgeDAO** | `0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177` | ✅ Active — receives 0.1% fee + 5% slash |
@@ -23,6 +23,11 @@
 | `DISPUTE_DEPOSIT_BPS` | 100 (1%) | Client deposits on dispute → returned if client wins |
 | `DISPUTE_SLASH_BPS` | 500 (5%) | Slashed from reward on agent dispute loss → DAO |
 | `AUTO_CONFIRM_DELAY` | 86400 (24h) | After delivery, auto-confirm if client doesn't act |
+| `VALIDATOR_STAKE_BPS` | 50 (0.5%) | Validator deposits to vote on dispute |
+| `MIN_VALIDATORS` | 3 | Minimum votes for consensus |
+| `MAX_VALIDATORS` | 5 | Maximum validators per dispute |
+| `DISPUTE_VOTE_WINDOW` | 172800 (48h) | Time window for validators to vote |
+| `MIN_VALIDATOR_TIER` | 2 (Squid+) | Minimum tier to be eligible as validator |
 
 ## 🔄 Task Lifecycle (V4)
 
@@ -83,6 +88,7 @@ CLIENT creates task (deposits reward)
 | 2026-03-19 | Proxy upgrade | `0xFe7670eF` | fee 2.5%→0.1%, daoTreasury, addXP |
 | 2026-03-19 | Proxy upgrade | `0x647cAe8A` | fee logic fix: client pays only reward |
 | 2026-03-20 | Proxy upgrade | `0xa95FEC84` | **V4**: apply/select, stakes, auto-confirm, deadline enforcement |
+| 2026-03-20 | Proxy upgrade | `0xcfAE7b69` | **V5**: decentralized dispute validation (5 validators, 48h window) |
 
 ## 📁 Where Addresses Live
 
