@@ -59,7 +59,27 @@ function formatDate(ts: bigint | number): string {
 
 export default function AgentProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const numericId = BigInt(id);
+
+  // Support wallet address lookup: if id starts with 0x resolve numeric id first
+  const isWalletAddress = id?.startsWith("0x") && id.length === 42;
+  const [resolvedId, setResolvedId] = useState<bigint | null>(isWalletAddress ? null : (() => { try { return BigInt(id); } catch { return null; } })());
+  const [resolveError, setResolveError] = useState(false);
+
+  // Resolve wallet → numeric id
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!isWalletAddress) return;
+    fetch(`/api/agents?wallet=${id}`)
+      .then(r => r.json())
+      .then((data: { agents?: Array<{ id: number }> }) => {
+        const agent = data.agents?.[0];
+        if (agent?.id) setResolvedId(BigInt(agent.id));
+        else setResolveError(true);
+      })
+      .catch(() => setResolveError(true));
+  }, [id, isWalletAddress]);
+
+  const numericId = resolvedId ?? 0n;
 
   const [testing, setTesting] = useState(false);
   const [testQuery, setTestQuery] = useState("What can you help me with?");
@@ -74,6 +94,7 @@ export default function AgentProfilePage() {
     abi: AGENT_REGISTRY_ABI,
     functionName: "getAgentExtended",
     args: [numericId],
+    query: { enabled: numericId > 0n },
   });
 
   // V1 fallback
@@ -82,6 +103,7 @@ export default function AgentProfilePage() {
     abi: AGENT_REGISTRY_ABI,
     functionName: "getAgent",
     args: [numericId],
+    query: { enabled: numericId > 0n },
   });
 
   const { data: meritScore } = useReadContract({
@@ -100,7 +122,11 @@ export default function AgentProfilePage() {
     query: { enabled: !!agent },
   });
 
-  const isLoading = loadingV1 && loadingV2;
+  const isLoading = (isWalletAddress && resolvedId === null && !resolveError) || (loadingV1 && loadingV2);
+
+  if (resolveError) {
+    return <div className="text-center py-20" style={{ color: "#5a807a" }}>Agent not found for address {id}.</div>;
+  }
 
   if (isLoading) {
     return <div className="text-center py-20" style={{ color: "#5a807a" }}>Loading agent profile...</div>;

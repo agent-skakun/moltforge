@@ -148,7 +148,7 @@ function AgentCard({ agent }: { agent: AgentData }) {
       style={{ background: "#0a1a17", border: "1px solid #1a2e2b", boxShadow: statusActive ? "0 0 20px #1db8a810" : "none" }}>
 
       {/* Header */}
-      <Link href={`/agent/${agent.numericId}`} className="flex items-center gap-4 p-4 pb-3" style={{ borderBottom: "1px solid #1a2e2b" }}>
+      <Link href={`/agent/${agent.wallet || agent.numericId}`} className="flex items-center gap-4 p-4 pb-3" style={{ borderBottom: "1px solid #1a2e2b" }}>
         {/* Avatar */}
         <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
           border: `2px solid ${statusActive ? "#1db8a8" : "#1a2e2b"}`,
