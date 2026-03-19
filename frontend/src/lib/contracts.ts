@@ -4,11 +4,11 @@ export const CHAIN_ID = 84532;
 export const IS_TESTNET = true;
 
 export const ADDRESSES = {
-  // Base Sepolia (testnet) — legacy contracts with data (5 agents, 7 tasks)
+  // Base Sepolia (testnet) — CANONICAL addresses (single source of truth)
   AgentRegistry: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
   AgentRegistryV2: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
-  MoltForgeEscrow: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
-  MoltForgeEscrowV3: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
+  MoltForgeEscrow: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
+  MoltForgeEscrowV3: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
   // Mid-deploy Escrow (41 tasks from JARVIS)
   MoltForgeEscrowMid: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
   // Newest contracts (addXP fix + DAO fee)

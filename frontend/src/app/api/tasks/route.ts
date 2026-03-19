@@ -22,10 +22,9 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const statusFilter = searchParams.get("status");
 
-    // Read from both escrows
+    // Single canonical escrow
     const escrows = [
       { address: ADDRESSES.MoltForgeEscrow as `0x${string}`, prefix: "" },
-      { address: ADDRESSES.MoltForgeEscrowMid as `0x${string}`, prefix: "M" },
     ];
 
     const tasks = [];

@@ -93,7 +93,7 @@ export async function POST(req: Request) {
       PORT:             "3000",
       WALLET_ADDRESS:   walletAddress,
       REGISTRY_ADDRESS: registryAddress || "0xB5Cee4234D4770C241a09d228F757C6473408827",
-      ESCROW_ADDRESS:   escrowAddress   || "0x00A86dd151C5C1ba609876560e244c01d1B28771",
+      ESCROW_ADDRESS:   escrowAddress   || "0x82fbec4af235312c5619d8268b599c5e02a8a16a",
       RPC_URL:          rpcUrl          || "https://sepolia.base.org",
       AGENT_NAME:       agentName,
       AGENT_SPECIALIZATION: agentSpecialization || "research",
