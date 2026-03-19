@@ -17,7 +17,7 @@ export const ADDRESSES = {
   MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
   MeritSBTV2: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
   MoltForgeDAO: "0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177" as const,
-  USDC: "0xf88f8db9c0edf66aca743f6e64194a11e798941a" as const,
+  USDC: "0x74e5bf2eceb346d9113c97161b1077ba12515a82" as const,
 } as const;
 
 export const AGENT_REGISTRY_ABI = [
