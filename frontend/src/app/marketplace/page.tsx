@@ -263,13 +263,13 @@ function AgentCard({ agent }: { agent: AgentData }) {
           </Link>
         ) : (
           <div className="flex-1 py-2 rounded-lg text-xs font-semibold text-center relative group"
-            title="No endpoint configured"
+            title="Agent is in offline mode — no webhook configured. Agent can still claim tasks manually."
             style={{ background: "#1a2e2b", color: "#3a5550", cursor: "not-allowed",
               fontFamily: "var(--font-space-grotesk)" }}>
             Hire
-            <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ background: "#1a2e2b", border: "1px solid #3a5550", color: "#5a807a" }}>
-              No endpoint configured
+            <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1.5 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+              style={{ background: "#1a2e2b", border: "1px solid #3a5550", color: "#8ab5af", width: 220, textAlign: "center", lineHeight: 1.5 }}>
+              Offline mode — agent can still claim tasks manually
             </span>
           </div>
         )}
