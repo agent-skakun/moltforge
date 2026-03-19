@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useState, useMemo, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits } from "viem";
@@ -7,6 +8,46 @@ import { ADDRESSES, AGENT_REGISTRY_ABI, ESCROW_ABI, ESCROW_V3_ABI, TIER_NAMES, V
 import { parseMetadataSync, parseMetadataURI, metadataToDataURI, type AgentMetadata } from "@/lib/metadata";
 import { AvatarFace, PRESETS, FaceParams } from "@/components/AvatarFace";
 import Link from "next/link";
+
+// ─── Result / Description helpers ─────────────────────────────────────────────
+
+function decodeDescription(raw: string): string {
+  try {
+    if (raw.startsWith("data:application/json;base64,")) {
+      const decoded = atob(raw.replace("data:application/json;base64,", ""));
+      const p = JSON.parse(decoded) as Record<string, unknown>;
+      return (p.description as string) || (p.title as string) || decoded;
+    }
+    if (raw.startsWith("data:text/markdown;base64,")) {
+      return atob(raw.replace("data:text/markdown;base64,", ""));
+    }
+    if (raw.startsWith("{")) {
+      const p = JSON.parse(raw) as Record<string, unknown>;
+      return (p.description as string) || raw;
+    }
+  } catch { /* ignore */ }
+  return raw;
+}
+
+function renderResult(resultUrl: string): React.ReactNode {
+  if (!resultUrl) return null;
+  if (resultUrl.startsWith("data:text/markdown;base64,")) {
+    const decoded = atob(resultUrl.replace("data:text/markdown;base64,", ""));
+    return <pre className="text-sm whitespace-pre-wrap break-words" style={{ color: "#8ab5af", fontFamily: "var(--font-inter)", lineHeight: 1.7 }}>{decoded}</pre>;
+  }
+  if (resultUrl.startsWith("data:application/json;base64,")) {
+    try {
+      const decoded = atob(resultUrl.replace("data:application/json;base64,", ""));
+      return <pre className="text-xs overflow-x-auto" style={{ color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.6 }}>{JSON.stringify(JSON.parse(decoded), null, 2)}</pre>;
+    } catch {
+      return <pre className="text-sm whitespace-pre-wrap" style={{ color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)" }}>{atob(resultUrl.replace("data:application/json;base64,", ""))}</pre>;
+    }
+  }
+  if (resultUrl.startsWith("http")) {
+    return <a href={resultUrl} target="_blank" rel="noopener noreferrer" className="text-sm break-all" style={{ color: "#1db8a8", textDecoration: "underline", textUnderlineOffset: 3 }}>{resultUrl}</a>;
+  }
+  return <pre className="text-sm whitespace-pre-wrap break-all" style={{ color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)" }}>{resultUrl}</pre>;
+}
 
 // ─── V1 Constants ─────────────────────────────────────────────────────────────
 
@@ -336,7 +377,7 @@ function V3TaskItem({ task, role }: { task: V3Task; role: "client" | "agent" }) 
 
       <div className="px-5 py-4 space-y-3">
         <p className="text-sm" style={{ color: "#5a807a" }}>
-          {task.description.slice(0, 200)}{task.description.length > 200 ? "…" : ""}
+          {(() => { const d = decodeDescription(task.description); return d.length > 200 ? d.slice(0, 200) + "…" : d; })()}
         </p>
 
         <div className="grid grid-cols-2 gap-3 text-xs" style={{ fontFamily: "var(--font-jetbrains-mono)" }}>
@@ -358,12 +399,18 @@ function V3TaskItem({ task, role }: { task: V3Task; role: "client" | "agent" }) 
           )}
         </div>
 
-        {/* Result URL */}
+        {/* Result — full view for client only, lock for agent */}
         {task.resultUrl && (isDelivered || isConfirmed) && (
-          <div className="p-3 rounded-xl text-xs"
-            style={{ background: "#060c0b", border: "1px solid #1db8a820",
-              color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", maxHeight: 80, overflowY: "auto" }}>
-            <span style={{ color: "#1db8a8" }}>Result: </span>{task.resultUrl}
+          <div className="p-3 rounded-xl" style={{ background: "#060c0b", border: "1px solid #1db8a820" }}>
+            <p className="text-xs font-semibold mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>SUBMITTED RESULT</p>
+            {role === "client" ? (
+              <div style={{ maxHeight: 300, overflowY: "auto" }}>{renderResult(task.resultUrl)}</div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span>🔒</span>
+                <span className="text-xs" style={{ color: "#5a807a" }}>Result visible to task client only</span>
+              </div>
+            )}
           </div>
         )}
 
