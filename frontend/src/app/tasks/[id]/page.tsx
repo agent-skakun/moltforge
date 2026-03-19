@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits } from "viem";
 import Link from "next/link";
-import { ADDRESSES, ESCROW_V3_ABI, V3_STATUS_COLORS } from "@/lib/contracts";
+import { ADDRESSES, ESCROW_V3_ABI, V3_STATUS_COLORS, MERIT_SBT_V2_ABI } from "@/lib/contracts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +62,8 @@ function formatDeadline(ts: bigint): string {
 
 const TIER_NAMES: Record<number, string> = { 0: "Any", 1: "🦞 Lobster+", 2: "🦑 Squid+", 3: "🐙 Octopus+", 4: "🦈 Shark only" };
 const ZERO = "0x0000000000000000000000000000000000000000";
+// Deployer wallet = platform resolver (hardcoded until DAO governance)
+const RESOLVER = "0x9061bf366221ec610144890db619cebe3f26dc5d";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -84,12 +86,15 @@ export default function TaskDetailPage() {
   const { writeContract: doConfirm, data: confirmTx, isPending: confirmPending } = useWriteContract();
   const { writeContract: doCancel,  data: cancelTx,  isPending: cancelPending }  = useWriteContract();
   const { writeContract: doDispute, data: disputeTx, isPending: disputePending } = useWriteContract();
+  const { writeContract: doResolve, data: resolveTx, isPending: resolvePending } = useWriteContract();
+  const { writeContract: doMintMerit } = useWriteContract();
 
   const { isLoading: waitClaim,   isSuccess: claimDone }   = useWaitForTransactionReceipt({ hash: claimTx });
   const { isLoading: waitSubmit,  isSuccess: submitDone }  = useWaitForTransactionReceipt({ hash: submitTx });
   const { isLoading: waitConfirm, isSuccess: confirmDone } = useWaitForTransactionReceipt({ hash: confirmTx });
   const { isLoading: waitCancel,  isSuccess: cancelDone }  = useWaitForTransactionReceipt({ hash: cancelTx });
   const { isLoading: waitDispute } = useWaitForTransactionReceipt({ hash: disputeTx });
+  const { isLoading: waitResolve, isSuccess: resolveDone } = useWaitForTransactionReceipt({ hash: resolveTx });
 
   // ── Local state ────────────────────────────────────────────────────────────
   const [resultUrl, setResultUrl]   = useState("");
@@ -125,17 +130,19 @@ export default function TaskDetailPage() {
   const isClaimed   = task.status === 1;
   // status 2 = submitted, status 3 = delivered (legacy)
   const isCompleted = task.status === 4;
-  const isDisputed  = task.status === 5;
+  // status 5=Cancelled, 6=Disputed (V3 enum)
 
   const canClaim   = isOpen && !expired && address && !isClient;
   const canSubmit  = isClaimed && isClaimer;
   const canConfirm = (task.status === 2 || task.status === 3) && isClient;
   const canCancel  = (isOpen || (isClaimed && expired)) && isClient;
   const canDispute = (task.status === 2 || task.status === 3) && isClient;
+  const isResolver = address && address.toLowerCase() === RESOLVER;
+  const canResolve = task.status === 6 && isResolver; // Disputed = 6
 
-  const anyWaiting = waitClaim || waitSubmit || waitConfirm || waitCancel || waitDispute;
+  const anyWaiting = waitClaim || waitSubmit || waitConfirm || waitCancel || waitDispute || waitResolve;
 
-  if (claimDone || submitDone || confirmDone || cancelDone) {
+  if (claimDone || submitDone || confirmDone || cancelDone || resolveDone) {
     refetch();
   }
 
@@ -409,13 +416,74 @@ export default function TaskDetailPage() {
 
           {/* Read-only state messages */}
           {isCompleted && (
-            <div className="rounded-2xl p-4 text-center" style={{ background: "#3ec95a10", border: "1px solid #3ec95a30" }}>
-              <p className="text-sm font-semibold" style={{ color: "#3ec95a" }}>✅ Task completed — payment released</p>
+            <div className="space-y-3">
+              <div className="rounded-2xl p-4 text-center" style={{ background: "#3ec95a10", border: "1px solid #3ec95a30" }}>
+                <p className="text-sm font-semibold" style={{ color: "#3ec95a" }}>✅ Task completed — payment released</p>
+              </div>
+              {/* MeritSBT: mint after confirmDelivery if score >= 4 */}
+              {confirmDone && score >= 4 && task.agentId > 0n && (
+                <button
+                  onClick={() => doMintMerit({
+                    address: ADDRESSES.MeritSBT,
+                    abi: MERIT_SBT_V2_ABI as never,
+                    functionName: "mintMerit" as never,
+                    args: [task.agentId, taskId, score, task.reward] as never,
+                  })}
+                  className="w-full py-3 rounded-2xl text-sm font-semibold"
+                  style={{ background: "#e8c84215", border: "1px solid #e8c842", color: "#e8c842", cursor: "pointer" }}>
+                  🏅 Mint Merit SBT (score {score}★)
+                </button>
+              )}
             </div>
           )}
-          {isDisputed && (
-            <div className="rounded-2xl p-4 text-center" style={{ background: "#e6303010", border: "1px solid #e6303030" }}>
-              <p className="text-sm font-semibold" style={{ color: "#e63030" }}>⚠️ Under dispute — awaiting arbiter resolution</p>
+
+          {/* ── Dispute Resolution Panel (resolver only) ───────── */}
+          {task.status === 6 && (
+            <div className="rounded-2xl p-5" style={{ background: "#e6303008", border: "1px solid #e6303040" }}>
+              <h3 className="text-sm font-semibold mb-1" style={{ color: "#e63030" }}>⚠️ Disputed</h3>
+              <p className="text-xs mb-4" style={{ color: "#5a807a" }}>
+                Awaiting arbiter resolution. The resolver reviews the submitted work and decides.
+              </p>
+              {canResolve ? (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold" style={{ color: "#e8f5f3", fontFamily: "var(--font-jetbrains-mono)" }}>
+                    🔑 You are the resolver
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      disabled={resolvePending || waitResolve}
+                      onClick={() => doResolve({ address: ADDRESSES.MoltForgeEscrowV3, abi: ESCROW_V3_ABI, functionName: "resolveDispute", args: [taskId, true] })}
+                      className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all"
+                      style={{
+                        background: resolvePending || waitResolve ? "#060c0b" : "#3ec95a18",
+                        border: `1px solid ${resolvePending || waitResolve ? "#1a2e2b" : "#3ec95a"}`,
+                        color: resolvePending || waitResolve ? "#3a5550" : "#3ec95a",
+                        cursor: resolvePending || waitResolve ? "wait" : "pointer",
+                      }}>
+                      {resolvePending ? "Confirming…" : waitResolve ? "Processing…" : resolveDone ? "✅ Done" : "✅ Award Agent"}
+                    </button>
+                    <button
+                      disabled={resolvePending || waitResolve}
+                      onClick={() => doResolve({ address: ADDRESSES.MoltForgeEscrowV3, abi: ESCROW_V3_ABI, functionName: "resolveDispute", args: [taskId, false] })}
+                      className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all"
+                      style={{
+                        background: resolvePending || waitResolve ? "#060c0b" : "#e6303018",
+                        border: `1px solid ${resolvePending || waitResolve ? "#1a2e2b" : "#e63030"}`,
+                        color: resolvePending || waitResolve ? "#3a5550" : "#e63030",
+                        cursor: resolvePending || waitResolve ? "wait" : "pointer",
+                      }}>
+                      🔴 Slash + Refund Client
+                    </button>
+                  </div>
+                  <p className="text-xs" style={{ color: "#3a5550" }}>
+                    Award Agent: releases reward to agent · Slash + Refund: returns funds to client
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs" style={{ color: "#5a807a" }}>
+                  Only the platform resolver can settle this dispute.
+                </p>
+              )}
             </div>
           )}
         </div>

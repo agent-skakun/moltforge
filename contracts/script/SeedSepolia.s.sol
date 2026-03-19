@@ -11,9 +11,9 @@ contract SeedSepolia is Script {
     // ── Addresses ──────────────────────────────────────────────────────────
     address constant DEPLOYER      = 0x9061bF366221eC610144890dB619CEBe3F26DC5d;
     address constant SKAKUN        = 0x6FFa1e00509d8B625c2F061D7dB07893B37199BC;
-    address constant MOCK_USDC     = 0x7C8192c65775Cb1ba575cb24f1a4Ea8Ec714f2Bb;
-    address constant REGISTRY      = 0x0C9E94D02D48e3BE3E8892B0B8b07ba17A6EB728;
-    address constant ESCROW        = 0x4B9A5C6f434C34882952F1D5ab3B4feC52BaB3Ad;
+    address constant MOCK_USDC     = 0xF88F8db9C0edF66aCa743F6e64194A11e798941a;
+    address constant REGISTRY      = 0xf9D6507f7A4F96888618FC8538634Cf05Abf8f82;
+    address constant ESCROW        = 0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc;
     string  constant AGENT_URL     = "https://agent-production-f600.up.railway.app";
 
     uint256 constant MINT_AMOUNT   = 10_000 * 1e6; // 10k USDC each

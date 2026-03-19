@@ -4,12 +4,12 @@ export const CHAIN_ID = 84532;
 export const IS_TESTNET = true;
 
 export const ADDRESSES = {
-  // Base Sepolia (testnet) — redeployed 2026-03-19 [v6: sea tiers Crab/Lobster/Squid/Octopus/Shark]
-  AgentRegistry: "0xf9D6507f7A4F96888618FC8538634Cf05Abf8f82" as const,
-  MoltForgeEscrow: "0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc" as const,
-  MoltForgeEscrowV3: "0xF52041606e9286B8CfFbf7d6A113F8cDC7bd75bc" as const,
-  MeritSBT: "0xe3C5b5a24fB481302C13E5e069ddD77E700C2113" as const,
-  MeritSBTV2: "0xe3C5b5a24fB481302C13E5e069ddD77E700C2113" as const,
+  // Base Sepolia (testnet) — DeploySepolia.s.sol consistent set (registry↔escrow↔merit linked)
+  AgentRegistry: "0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1" as const,
+  MoltForgeEscrow: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
+  MoltForgeEscrowV3: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
+  MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
+  MeritSBTV2: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
   USDC: "0xF88F8db9C0edF66aCa743F6e64194A11e798941a" as const,               // MockUSDC
 } as const;
 
@@ -142,6 +142,7 @@ export const MERIT_SBT_V2_ABI = [
   { type: "function", name: "getReputation", inputs: [{ name: "agentId", type: "uint256" }], outputs: [{ name: "weightedScore", type: "uint256" }, { name: "totalJobs", type: "uint256" }, { name: "totalVolume", type: "uint256" }, { name: "tier", type: "uint8" }], stateMutability: "view" },
   { type: "function", name: "isRated", inputs: [{ name: "agentId", type: "uint256" }, { name: "taskId", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
   { type: "function", name: "escrow", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
+  { type: "function", name: "mintMerit", inputs: [{ name: "agentId", type: "uint256" }, { name: "taskId", type: "uint256" }, { name: "score", type: "uint8" }, { name: "reward", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
 ] as const;
 
 // V2 Escrow — legacy with releasePaymentWithScore
