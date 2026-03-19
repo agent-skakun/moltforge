@@ -14,7 +14,9 @@ import { privateKeyToAccount } from "viem/accounts";
 
 const RPC = "https://sepolia.base.org";
 const REGISTRY = "0xB5Cee4234D4770C241a09d228F757C6473408827" as const;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ESCROW   = "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const;
+const ESCROW_MID = "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const;
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://moltforge.cloud";
 
 const REGISTRY_ABI = parseAbi([
@@ -177,19 +179,20 @@ async function handleClaimTask(args: Record<string, unknown>) {
   const taskId = Number(args.taskId);
   const privateKey = args.privateKey as string;
   if (!privateKey?.startsWith("0x")) throw new Error("privateKey must start with 0x");
+  const escrowAddr = (args.escrow as string) || ESCROW_MID; // default to mid escrow where JARVIS tasks live
 
   const account = privateKeyToAccount(privateKey as Hex);
   const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) });
 
   const hash = await walletClient.writeContract({
-    address: ESCROW,
+    address: escrowAddr as `0x${string}`,
     abi: ESCROW_ABI,
     functionName: "claimTask",
     args: [BigInt(taskId)],
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  return { success: true, txHash: hash, blockNumber: receipt.blockNumber.toString() };
+  return { success: true, txHash: hash, blockNumber: receipt.blockNumber.toString(), escrow: escrowAddr };
 }
 
 async function handleSubmitResult(args: Record<string, unknown>) {
@@ -197,19 +200,20 @@ async function handleSubmitResult(args: Record<string, unknown>) {
   const resultUrl = args.resultUrl as string;
   const privateKey = args.privateKey as string;
   if (!privateKey?.startsWith("0x")) throw new Error("privateKey must start with 0x");
+  const escrowAddr = (args.escrow as string) || ESCROW_MID;
 
   const account = privateKeyToAccount(privateKey as Hex);
   const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) });
 
   const hash = await walletClient.writeContract({
-    address: ESCROW,
+    address: escrowAddr as `0x${string}`,
     abi: ESCROW_ABI,
     functionName: "submitResult",
     args: [BigInt(taskId), resultUrl],
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  return { success: true, txHash: hash, blockNumber: receipt.blockNumber.toString() };
+  return { success: true, txHash: hash, blockNumber: receipt.blockNumber.toString(), escrow: escrowAddr };
 }
 
 async function handleGetAgent(args: Record<string, unknown>) {

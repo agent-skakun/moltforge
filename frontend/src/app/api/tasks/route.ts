@@ -22,41 +22,50 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const statusFilter = searchParams.get("status");
 
-    const count = await publicClient.readContract({
-      address: ADDRESSES.MoltForgeEscrow, abi: ESCROW_V3_ABI, functionName: "taskCount",
-    }) as bigint;
+    // Read from both escrows
+    const escrows = [
+      { address: ADDRESSES.MoltForgeEscrow as `0x${string}`, prefix: "" },
+      { address: ADDRESSES.MoltForgeEscrowMid as `0x${string}`, prefix: "M" },
+    ];
 
     const tasks = [];
-    for (let i = 1; i <= Number(count); i++) {
-      try {
-        const t = await publicClient.readContract({
-          address: ADDRESSES.MoltForgeEscrow, abi: ESCROW_V3_ABI,
-          functionName: "getTask", args: [BigInt(i)],
-        }) as { client: string; claimedBy?: string; agent?: string; reward: bigint; description?: string; status: number; createdAt: bigint; deadlineAt: bigint; agentId: bigint; fileUrl: string; resultUrl: string; score: number; token: string; fee: bigint };
+    for (const esc of escrows) {
+      const count = await publicClient.readContract({
+        address: esc.address, abi: ESCROW_V3_ABI, functionName: "taskCount",
+      }) as bigint;
 
-        const statusStr = STATUS[t.status] ?? "Unknown";
-        if (statusFilter && statusStr.toLowerCase() !== statusFilter.toLowerCase()) continue;
+      for (let i = 1; i <= Number(count); i++) {
+        try {
+          const t = await publicClient.readContract({
+            address: esc.address, abi: ESCROW_V3_ABI,
+            functionName: "getTask", args: [BigInt(i)],
+          }) as { client: string; claimedBy?: string; agent?: string; reward: bigint; description?: string; status: number; createdAt: bigint; deadlineAt: bigint; agentId: bigint; fileUrl: string; resultUrl: string; score: number; token: string; fee: bigint };
 
-        const agentAddr = t.claimedBy ?? (t as { agent?: string }).agent ?? null;
+          const statusStr = STATUS[t.status] ?? "Unknown";
+          if (statusFilter && statusStr.toLowerCase() !== statusFilter.toLowerCase()) continue;
 
-        tasks.push({
-          id: i,
-          client: t.client,
-          agent: agentAddr !== "0x0000000000000000000000000000000000000000" ? agentAddr : null,
-          agentId: Number(t.agentId),
-          token: t.token,
-          reward: Number(t.reward) / 1e6,
-          fee: Number(t.fee ?? 0n) / 1e6,
-          description: t.description ?? "",
-          fileUrl: t.fileUrl ?? "",
-          resultUrl: t.resultUrl ?? "",
-          status: statusStr,
-          score: t.score ?? 0,
-          createdAt: Number(t.createdAt),
-          deadlineAt: Number(t.deadlineAt),
-          taskUrl: `https://moltforge.cloud/tasks/${i}`,
-        });
-      } catch { /* skip bad tasks */ }
+          const agentAddr = t.claimedBy ?? (t as { agent?: string }).agent ?? null;
+
+          tasks.push({
+            id: `${esc.prefix}${i}`,
+            escrow: esc.address,
+            client: t.client,
+            agent: agentAddr !== "0x0000000000000000000000000000000000000000" ? agentAddr : null,
+            agentId: Number(t.agentId),
+            token: t.token,
+            reward: Number(t.reward) / 1e6,
+            fee: Number(t.fee ?? 0n) / 1e6,
+            description: t.description ?? "",
+            fileUrl: t.fileUrl ?? "",
+            resultUrl: t.resultUrl ?? "",
+            status: statusStr,
+            score: t.score ?? 0,
+            createdAt: Number(t.createdAt),
+            deadlineAt: Number(t.deadlineAt),
+            taskUrl: `https://moltforge.cloud/tasks/${i}`,
+          });
+        } catch { /* skip bad tasks */ }
+      }
     }
 
     return NextResponse.json({ tasks, total: tasks.length, network: "base-sepolia", chainId: 84532 });
