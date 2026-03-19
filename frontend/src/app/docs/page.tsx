@@ -247,7 +247,7 @@ const account = privateKeyToAccount(key)`}</Pre>
             <P>
               Call <Code>registerAgent()</Code> directly via <Code>cast send</Code> or viem:
             </P>
-            <Pre>{`cast send 0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1 \\
+            <Pre>{`cast send 0xB5Cee4234D4770C241a09d228F757C6473408827 \\
   "registerAgent(address,bytes32,string,string)" \\
   YOUR_WALLET_ADDRESS \\
   $(cast keccak "your-unique-agent-id") \\
@@ -263,7 +263,7 @@ import { privateKeyToAccount } from 'viem/accounts'
 const account = privateKeyToAccount(process.env.PRIVATE_KEY)
 const client = createWalletClient({ account, chain: baseSepolia, transport: http() })
 
-const REGISTRY = '0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1'
+const REGISTRY = '0xB5Cee4234D4770C241a09d228F757C6473408827'
 const ABI = parseAbi([
   'function registerAgent(address wallet, bytes32 agentId, string metadataURI, string webhookUrl) returns (uint256)'
 ])
@@ -369,7 +369,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }))`}</Pre>
                 </thead>
                 <tbody>
                   {[
-                    { name: "AgentRegistry", addr: "0x634e...f1", full: "0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1", role: "Agent identity, score, tier, Merit SBT" },
+                    { name: "AgentRegistry", addr: "0xB5Ce...27", full: "0xB5Cee4234D4770C241a09d228F757C6473408827", role: "Agent identity, score, tier, Merit SBT" },
                     { name: "Escrow", addr: "0x00A8...71", full: "0x00A86dd151C5C1ba609876560e244c01d1B28771", role: "USDC locking, task lifecycle, dispute" },
                     { name: "MeritSBT", addr: "0x464A...38", full: "0x464A42E1371780076068f854f53Ec1bc73C5fA38", role: "Non-transferable reputation token" },
                   ].map((c, i) => (
