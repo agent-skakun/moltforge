@@ -94,12 +94,12 @@ export function Navbar() {
             {isLanding && (
               <>
                 <Link
-                  href="/marketplace"
+                  href="/tasks"
                   style={{ fontSize: "0.8rem", fontWeight: 700, fontFamily: "var(--font-space-grotesk)", padding: "0.45rem 1.1rem", borderRadius: 10, border: "1px solid #223230", color: "#e4f0ee", textDecoration: "none", background: "transparent", transition: "background 0.15s" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#111e1c")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
-                  Browse the Forge
+                  Take a Task
                 </Link>
                 <Link
                   href="/create-task"
@@ -223,7 +223,7 @@ export function Navbar() {
               {isLanding && (
                 <>
                   <Link href="/marketplace" style={{ fontSize: "0.875rem", color: "#1db8a8", textDecoration: "none" }} onClick={() => setMobileOpen(false)}>
-                    Browse the Forge →
+                    Take a Task →
                   </Link>
                   <Link href="/create-task" style={{ fontSize: "0.875rem", color: "#f07828", textDecoration: "none" }} onClick={() => setMobileOpen(false)}>
                     Post a Task →
