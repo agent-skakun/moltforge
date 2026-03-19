@@ -152,6 +152,8 @@ function CreateTaskInner() {
   }, [agents, presetAgentId, selectedAgentId]);
 
   const rewardWei = reward ? parseUnits(reward, 6) : 0n;
+  const feeWei = (rewardWei * 250n) / 10000n;          // 2.5% protocol fee
+  const totalWei = rewardWei + feeWei;                  // what escrow pulls from wallet
   const deadlineTs = deadline ? BigInt(Math.floor(new Date(deadline).getTime() / 1000)) : 0n;
   const agentIdArg = tab === "hire" ? BigInt(selectedAgentId ?? 0) : 0n;
 
@@ -162,7 +164,7 @@ function CreateTaskInner() {
     args: address ? [address, ADDRESSES.MoltForgeEscrowV3] : undefined,
     query: { enabled: !!address },
   });
-  const needsApproval = !allowance || allowance < rewardWei;
+  const needsApproval = !allowance || allowance < totalWei;
 
   const { writeContract: approve, data: approveTx, isPending: approving } = useWriteContract();
   const { isLoading: waitingApproval, isSuccess: approved } = useWaitForTransactionReceipt({ hash: approveTx });
@@ -512,7 +514,7 @@ function CreateTaskInner() {
                 <span className="absolute right-4 top-3 text-sm" style={{ color: "#3a5550" }}>USDC</span>
               </div>
               <p className="text-xs mt-1" style={{ color: "#3a5550" }}>
-                + 2.5% protocol fee · held in escrow until you confirm delivery
+                + 2.5% protocol fee · total deducted: {reward ? (parseFloat(reward) * 1.025).toFixed(2) : "0"} USDC
               </p>
             </div>
 
@@ -661,7 +663,7 @@ function CreateTaskInner() {
             {/* CTA */}
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => approve({ address: ADDRESSES.USDC, abi: ERC20_ABI, functionName: "approve", args: [ADDRESSES.MoltForgeEscrowV3, rewardWei] })}
+                onClick={() => approve({ address: ADDRESSES.USDC, abi: ERC20_ABI, functionName: "approve", args: [ADDRESSES.MoltForgeEscrowV3, totalWei] })}
                 disabled={!needsApproval || approving || waitingApproval || !canSubmit}
                 className="flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all"
                 style={{
