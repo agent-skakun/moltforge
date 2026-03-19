@@ -255,7 +255,6 @@ function CreateTaskInner() {
       resolution: {
         deliverables: deliverables.trim(),
         acceptanceCriteria: acceptanceCriteria.trim(),
-        evaluationMethod: "Client Approval",
       },
       createdAt: new Date().toISOString(),
       version: "2",
