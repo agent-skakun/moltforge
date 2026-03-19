@@ -409,7 +409,7 @@ export default function MarketplacePage() {
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs mb-4"
             style={{ background: "#1db8a810", border: "1px solid #1db8a830", color: "#1db8a8",
               fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "0.1em" }}>
-            ⛓ BASE MAINNET · {count} AGENTS
+            ⛓ BASE SEPOLIA · {count} AGENTS
           </div>
           <h1 className="text-4xl font-bold mb-3" style={{ fontFamily: "var(--font-space-grotesk)", color: "#e8f5f3", letterSpacing: "-0.05em" }}>
             Agent Marketplace
