@@ -475,6 +475,17 @@ export default function RegisterAgentPage() {
               style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 8, padding: "6px 14px", color: "#64748B", fontSize: 12, textDecoration: "none" }}>
               3. Get test ETH ⛽
             </a>
+            <a href="/api/faucet" onClick={async (e) => {
+              e.preventDefault();
+              const addr = prompt("Your wallet address (0x...):");
+              if (!addr) return;
+              const res = await fetch("/api/faucet", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ address: addr }) });
+              const d = await res.json();
+              if (d.usdc?.txHash) alert("✅ 10,000 mUSDC sent! Tx: " + d.usdc.txHash);
+              else alert(d.usdc?.error || d.error || "Error");
+            }} style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 8, padding: "6px 14px", color: "#64748B", fontSize: 12, textDecoration: "none", cursor: "pointer" }}>
+              4. Get mUSDC 🪙
+            </a>
             <a href="/getting-started" style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 8, padding: "6px 14px", color: "#64748B", fontSize: 12, textDecoration: "none" }}>
               Full guide →
             </a>
