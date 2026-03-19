@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/marketplace",
     "/register-agent",
     "/create-task",
+    "/faucet",
     "/docs",
     "/getting-started",
     "/mcp-connect",
