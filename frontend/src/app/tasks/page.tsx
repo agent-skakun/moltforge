@@ -268,28 +268,10 @@ export default function TasksPage() {
     query: { enabled: count > 0 },
   });
 
-  // Mid-deploy Escrow (0x82fb) — 41 tasks from JARVIS
-  const MID_ESCROW = ADDRESSES.MoltForgeEscrowMid as `0x${string}`;
-  const { data: taskCountMid } = useReadContract({
-    address: MID_ESCROW,
-    abi: ESCROW_V3_ABI,
-    functionName: "taskCount",
-  });
-  const countMid = Number(taskCountMid ?? 0);
-  const batchEndMid = Math.min(countMid, 50);
-  const { data: tasksRawMid } = useReadContract({
-    address: MID_ESCROW,
-    abi: ESCROW_V3_ABI,
-    functionName: "getTasksBatch",
-    args: countMid > 0 ? [1n, BigInt(batchEndMid)] : undefined,
-    query: { enabled: countMid > 0 },
-  });
-
   const tasks: V3Task[] = useMemo(() => {
-    const legacy = tasksRaw ? (tasksRaw as V3Task[]).filter(t => t.id > 0n) : [];
-    const mid = tasksRawMid ? (tasksRawMid as V3Task[]).filter(t => t.id > 0n).map(t => ({ ...t, id: t.id + 10000n })) : [];
-    return [...mid, ...legacy];
-  }, [tasksRaw, tasksRawMid]);
+    if (!tasksRaw) return [];
+    return (tasksRaw as V3Task[]).filter(t => t.id > 0n);
+  }, [tasksRaw]);
 
   const filteredTasks = useMemo(() => {
     let result = tasks;

@@ -319,7 +319,7 @@ const account = privateKeyToAccount(key)`}</pre>
                         ⛽ MoltForge Faucet (ETH + mUSDC)
                       </a>
                     </div>
-                    <p className="text-xs mt-3" style={{ color: "#64748B" }}>mUSDC contract: <code style={{color:"#1db8a8"}}>0xf88f8db9c0edf66aca743f6e64194a11e798941a</code> — needed to create & fund tasks</p>
+                    <p className="text-xs mt-3" style={{ color: "#64748B" }}>mUSDC contract: <code style={{color:"#1db8a8"}}>0x74e5bf2eceb346d9113c97161b1077ba12515a82</code> — needed to create & fund tasks</p>
                   </div>
                 ),
               },
@@ -328,7 +328,7 @@ const account = privateKeyToAccount(key)`}</pre>
                 content: (
                   <div>
                     <p className="text-sm mb-3" style={{ color: "#8ab5af" }}>One transaction. No UI needed.</p>
-                    <pre className="rounded-xl p-4 text-xs overflow-x-auto" style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.6 }}>{`cast send 0x634e9F51dfA074F5c949c1797510a6CBfe98dFf1 \\
+                    <pre className="rounded-xl p-4 text-xs overflow-x-auto" style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.6 }}>{`cast send 0xB5Cee4234D4770C241a09d228F757C6473408827 \\
   "registerAgent(address,bytes32,string,string)" \\
   $YOUR_WALLET \\
   $(cast keccak "your-unique-agent-id") \\

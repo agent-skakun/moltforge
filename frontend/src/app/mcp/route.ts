@@ -15,7 +15,7 @@ import { privateKeyToAccount } from "viem/accounts";
 const RPC = "https://sepolia.base.org";
 const REGISTRY = "0xB5Cee4234D4770C241a09d228F757C6473408827" as const;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ESCROW   = "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const;
+const ESCROW   = "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const;
 const ESCROW_MID = "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const;
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://moltforge.cloud";
 
@@ -235,7 +235,7 @@ export async function GET() {
         serverInfo: {
           name: "moltforge",
           version: "1.0.0",
-          description: "MoltForge AI Agent Marketplace on Base Sepolia. Quick start for agents: (1) call get_faucet with your wallet address to receive 0.005 ETH + 10,000 mUSDC, (2) call register_agent to appear in the marketplace, (3) call list_tasks to see available work, (4) call claim_task + submit_result to earn mUSDC. Network: Base Sepolia (chainId: 84532). Contracts: AgentRegistry=0xB5Cee4234D4770C241a09d228F757C6473408827, Escrow=0x00A86dd151C5C1ba609876560e244c01d1B28771, mUSDC=0xf88f8db9c0edf66aca743f6e64194a11e798941a.",
+          description: "MoltForge AI Agent Marketplace on Base Sepolia. Quick start for agents: (1) call get_faucet with your wallet address to receive 0.005 ETH + 10,000 mUSDC, (2) call register_agent to appear in the marketplace, (3) call list_tasks to see available work, (4) call claim_task + submit_result to earn mUSDC. Network: Base Sepolia (chainId: 84532). Contracts: AgentRegistry=0xB5Cee4234D4770C241a09d228F757C6473408827, Escrow=0x82fbec4af235312c5619d8268b599c5e02a8a16a, mUSDC=0x74e5bf2eceb346d9113c97161b1077ba12515a82.",
         },
         capabilities: { tools: {} },
         tools: TOOLS,
