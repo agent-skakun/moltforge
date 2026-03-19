@@ -268,10 +268,27 @@ export default function TasksPage() {
     query: { enabled: count > 0 },
   });
 
+  // Also read from new Escrow (has addXP fix + DAO fee)
+  const NEW_ESCROW = "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const;
+  const { data: taskCountNew } = useReadContract({
+    address: NEW_ESCROW,
+    abi: ESCROW_V3_ABI,
+    functionName: "taskCount",
+  });
+  const countNew = Number(taskCountNew ?? 0);
+  const { data: tasksRawNew } = useReadContract({
+    address: NEW_ESCROW,
+    abi: ESCROW_V3_ABI,
+    functionName: "getTasksBatch",
+    args: countNew > 0 ? [1n, BigInt(Math.min(countNew, 50))] : undefined,
+    query: { enabled: countNew > 0 },
+  });
+
   const tasks: V3Task[] = useMemo(() => {
-    if (!tasksRaw) return [];
-    return (tasksRaw as V3Task[]).filter(t => t.id > 0n);
-  }, [tasksRaw]);
+    const legacy = tasksRaw ? (tasksRaw as V3Task[]).filter(t => t.id > 0n) : [];
+    const fresh = tasksRawNew ? (tasksRawNew as V3Task[]).filter(t => t.id > 0n) : [];
+    return [...legacy, ...fresh];
+  }, [tasksRaw, tasksRawNew]);
 
   const filteredTasks = useMemo(() => {
     let result = tasks;
