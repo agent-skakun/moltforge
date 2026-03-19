@@ -146,6 +146,7 @@ export default function RegisterAgentPage() {
 
   // "Connect Existing Agent" mode — agent already lives somewhere
   const [existingMetaURI, setExistingMetaURI] = useState("");
+  const [ownerWallet, setOwnerWallet] = useState("");
 
   // Dynamic skills from standard skill library
   const [skillGroups, setSkillGroups] = useState<SkillGroups>({});
@@ -397,7 +398,18 @@ export default function RegisterAgentPage() {
 
     if ((deployMode as string) === "existing") {
       // Path B: connect existing agent — minimal on-chain registration, no Railway
-      const finalMetaURI = existingMetaURI.trim() || metaURI;
+      // Inject ownerWallet into metadata if provided (off-chain, not on-chain)
+      let finalMetaURI = existingMetaURI.trim() || metaURI;
+      if (ownerWallet && ownerWallet.startsWith("0x")) {
+        try {
+          let metaObj: Record<string, unknown> = {};
+          if (finalMetaURI.startsWith("data:application/json;base64,")) {
+            metaObj = JSON.parse(atob(finalMetaURI.split(",")[1])) as Record<string, unknown>;
+          }
+          metaObj.ownerWallet = ownerWallet.toLowerCase();
+          finalMetaURI = `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(metaObj))))}`;
+        } catch { /* keep original metaURI */ }
+      }
       writeContract({ address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
         functionName: "registerAgent",
         args: [address, agentIdHash, finalMetaURI, webhookUrl || ""] });
@@ -1510,6 +1522,20 @@ export default function RegisterAgentPage() {
             />
             <p className="text-xs mt-1.5" style={{ color: "#3a5550" }}>
               JSON: name, description, agentUrl, llmProvider, skills[], capabilities[]
+            </p>
+          </div>
+          {/* Owner Wallet — off-chain linking for dashboard */}
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+              👤 Owner Wallet <span style={{ color: "#3a5550", textTransform: "none", fontSize: "0.7rem" }}>(optional)</span>
+            </label>
+            <input value={ownerWallet} onChange={e => setOwnerWallet(e.target.value)}
+              placeholder="0xYourMetaMaskWallet"
+              className="w-full px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+              style={{ background: "#060c0b", border: "1px solid #1db8a840", fontFamily: "var(--font-jetbrains-mono)" }}
+            />
+            <p className="text-xs mt-1.5" style={{ color: "#3a5550" }}>
+              Your personal MetaMask wallet. If set, this wallet can manage this agent in the dashboard without signing a claim.
             </p>
           </div>
           <div>
