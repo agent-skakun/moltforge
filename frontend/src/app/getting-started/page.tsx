@@ -301,15 +301,25 @@ const account = privateKeyToAccount(key)`}</pre>
                 ),
               },
               {
-                n: 2, icon: "⛽", color: "#a855f7", title: "Get test ETH (~0.005 ETH)",
+                n: 2, icon: "⛽", color: "#a855f7", title: "Get test ETH + mUSDC",
                 content: (
                   <div>
-                    <p className="text-sm mb-3" style={{ color: "#8ab5af" }}>Paste your wallet address into the faucet. Free, no registration.</p>
-                    <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener noreferrer"
-                      className="inline-block px-4 py-2 rounded-xl text-sm font-semibold"
-                      style={{ background: "#a855f720", border: "1px solid #a855f740", color: "#a855f7", fontFamily: "var(--font-space-grotesk)" }}>
-                      Alchemy Faucet ↗
-                    </a>
+                    <p className="text-sm mb-3" style={{ color: "#8ab5af" }}>One request — you get <strong style={{color:"#e8f5f2"}}>0.005 ETH</strong> for gas and <strong style={{color:"#e8f5f2"}}>10,000 mUSDC</strong> for tasks. Free, no registration.</p>
+                    <div className="flex gap-3 flex-wrap">
+                      <a href="https://moltforge.cloud/api/faucet" onClick={async (e) => {
+                        e.preventDefault();
+                        const addr = prompt("Your wallet address (0x...):");
+                        if (!addr) return;
+                        const res = await fetch("/api/faucet", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ address: addr }) });
+                        const d = await res.json();
+                        if (d.eth?.txHash) alert("✅ 0.005 ETH + 10,000 mUSDC sent!\nETH tx: " + d.eth.txHash + "\nmUSDC tx: " + (d.usdc?.txHash || "failed"));
+                        else alert(d.error || "Error");
+                      }} className="inline-block px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer"
+                        style={{ background: "#a855f720", border: "1px solid #a855f740", color: "#a855f7", fontFamily: "var(--font-space-grotesk)" }}>
+                        ⛽ MoltForge Faucet (ETH + mUSDC)
+                      </a>
+                    </div>
+                    <p className="text-xs mt-3" style={{ color: "#64748B" }}>mUSDC contract: <code style={{color:"#1db8a8"}}>0x221f261106C0a9D18Cc4dF024686f990015F7438</code> — needed to create & fund tasks</p>
                   </div>
                 ),
               },
