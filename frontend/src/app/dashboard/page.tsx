@@ -793,31 +793,62 @@ interface ClaimRecord {
 }
 
 function ClaimAgentModal({ address, onClose, onClaimed }: { address: `0x${string}`; onClose: () => void; onClaimed: () => void }) {
-  const [agentIdInput, setAgentIdInput] = useState("");
   const [agentWalletInput, setAgentWalletInput] = useState("");
-  const [step, setStep] = useState<"form" | "signing" | "done" | "error">("form");
+  const [resolvedAgent, setResolvedAgent] = useState<{ id: number; tier: number; status: number; name?: string } | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolveErr, setResolveErr] = useState("");
+  const [step, setStep] = useState<"form" | "signing" | "done">("form");
   const [errMsg, setErrMsg] = useState("");
   const { signMessageAsync } = useSignMessage();
 
-  const handleClaim = async () => {
-    const agentId = parseInt(agentIdInput);
-    if (isNaN(agentId) || agentId < 1) { setErrMsg("Enter a valid agent ID"); return; }
-    if (!agentWalletInput || !agentWalletInput.startsWith("0x")) { setErrMsg("Enter the agent\'s wallet address"); return; }
+  const TIER_NAMES: Record<number, string> = { 0: "🦀 Crab", 1: "🦞 Lobster", 2: "🦑 Squid", 3: "🐙 Octopus", 4: "🦈 Shark" };
 
+  // Auto-resolve wallet → agent info
+  const resolveWallet = React.useCallback(async (wallet: string) => {
+    if (!wallet || wallet.length < 42 || !wallet.startsWith("0x")) {
+      setResolvedAgent(null); setResolveErr(""); return;
+    }
+    setResolving(true); setResolveErr(""); setResolvedAgent(null);
+    try {
+      const res = await fetch(`/api/agents?wallet=${wallet}`);
+      const data = await res.json() as { agents?: Array<{ id: number; tier: string; status: string; metadataURI?: string }> };
+      const agent = data.agents?.[0];
+      if (!agent) { setResolveErr("Agent not found in registry"); setResolving(false); return; }
+      const tierMap: Record<string, number> = { Crab: 0, Lobster: 1, Squid: 2, Octopus: 3, Shark: 4 };
+      let name: string | undefined;
+      if (agent.metadataURI) {
+        try {
+          if (agent.metadataURI.startsWith("data:application/json;base64,")) {
+            const parsed = JSON.parse(atob(agent.metadataURI.split(",")[1])) as { name?: string };
+            name = parsed.name;
+          }
+        } catch { /* ignore */ }
+      }
+      setResolvedAgent({ id: agent.id, tier: tierMap[agent.tier] ?? 0, status: agent.status === "Active" ? 1 : 0, name });
+    } catch { setResolveErr("Lookup failed — try again"); }
+    setResolving(false);
+  }, []);
+
+  // Debounce wallet input
+  React.useEffect(() => {
+    const t = setTimeout(() => resolveWallet(agentWalletInput), 600);
+    return () => clearTimeout(t);
+  }, [agentWalletInput, resolveWallet]);
+
+  const handleClaim = async () => {
+    if (!resolvedAgent) { setErrMsg("Resolve an agent wallet first"); return; }
     setStep("signing");
     setErrMsg("");
     try {
-      const message = `I claim ownership of MoltForge agent #${agentId} (wallet: ${agentWalletInput.toLowerCase()}) for manager: ${address.toLowerCase()}`;
+      const message = `I claim ownership of MoltForge agent #${resolvedAgent.id} (wallet: ${agentWalletInput.toLowerCase()}) for manager: ${address.toLowerCase()}`;
       const signature = await signMessageAsync({ message });
-
       const res = await fetch("/api/agent-claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId, agentWallet: agentWalletInput, managerWallet: address, signature, message }),
+        body: JSON.stringify({ agentId: resolvedAgent.id, agentWallet: agentWalletInput, managerWallet: address, signature, message }),
       });
       const data = await res.json() as { success?: boolean; error?: string };
       if (!data.success) throw new Error(data.error ?? "API error");
-
       setStep("done");
       setTimeout(() => { onClaimed(); onClose(); }, 1500);
     } catch (err) {
@@ -837,37 +868,53 @@ function ClaimAgentModal({ address, onClose, onClaimed }: { address: `0x${string
           <button onClick={onClose} style={{ color: "#3a5550", background: "#060c0b", border: "1px solid #1a2e2b", borderRadius: 6, padding: "2px 8px", fontSize: 12, cursor: "pointer" }}>✕</button>
         </div>
         <div className="px-6 py-5 space-y-4">
-          <div className="px-3 py-2.5 rounded-xl text-xs" style={{ background: "#060c0b", border: "1px solid #f0782830", color: "#8a7050" }}>
-            ⚠️ Claiming is <strong style={{ color: "#f07828" }}>off-chain</strong> and for dashboard visibility only. It does not grant on-chain control of the agent.
+          {/* Updated warning */}
+          <div className="px-3 py-2.5 rounded-xl" style={{ background: "#060c0b", border: "1px solid #1db8a830" }}>
+            <p className="text-xs font-semibold mb-1" style={{ color: "#1db8a8", fontFamily: "var(--font-space-grotesk)" }}>📋 Dashboard linking only</p>
+            <p className="text-xs" style={{ color: "#5a807a", lineHeight: 1.6 }}>
+              This connects the agent to your dashboard for monitoring.<br/>
+              It does <strong style={{ color: "#e8f5f2" }}>NOT</strong> give you on-chain control of the agent&apos;s funds.<br/>
+              To prove you own the agent, you need its private key.
+            </p>
           </div>
           {step === "done" ? (
             <p className="text-center text-sm py-4" style={{ color: "#3ec95a" }}>✅ Agent claimed successfully!</p>
           ) : (
             <>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>Agent Numeric ID</label>
-                <input value={agentIdInput} onChange={e => setAgentIdInput(e.target.value)} placeholder="e.g. 3"
-                  className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                  style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f2", fontFamily: "var(--font-jetbrains-mono)" }} />
-              </div>
-              <div>
                 <label className="text-xs mb-1 block" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>Agent Wallet Address</label>
                 <input value={agentWalletInput} onChange={e => setAgentWalletInput(e.target.value)} placeholder="0x..."
                   className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                  style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f2", fontFamily: "var(--font-jetbrains-mono)" }} />
-                <p className="text-xs mt-1" style={{ color: "#3a5550" }}>Find it on the marketplace agent card</p>
+                  style={{ background: "#060c0b", border: `1px solid ${resolvedAgent ? "#1db8a840" : resolveErr ? "#e6303040" : "#1a2e2b"}`, color: "#e8f5f2", fontFamily: "var(--font-jetbrains-mono)" }} />
+                <p className="text-xs mt-1" style={{ color: "#3a5550" }}>Find it on the marketplace agent card or in /dashboard</p>
+                {/* Resolve preview */}
+                {resolving && (
+                  <p className="text-xs mt-1.5" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>⏳ Looking up…</p>
+                )}
+                {resolvedAgent && !resolving && (
+                  <div className="mt-1.5 flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
+                    style={{ background: "#1db8a810", border: "1px solid #1db8a830" }}>
+                    <span className="text-xs" style={{ color: "#3ec95a" }}>✓</span>
+                    <span className="text-xs font-semibold" style={{ color: "#e8f5f2", fontFamily: "var(--font-space-grotesk)" }}>
+                      Found: Agent #{resolvedAgent.id}{resolvedAgent.name ? ` · ${resolvedAgent.name}` : ""} · {TIER_NAMES[resolvedAgent.tier]} · {resolvedAgent.status === 1 ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                )}
+                {resolveErr && !resolving && (
+                  <p className="text-xs mt-1.5" style={{ color: "#e63030", fontFamily: "var(--font-jetbrains-mono)" }}>✗ {resolveErr}</p>
+                )}
               </div>
               {errMsg && <p className="text-xs" style={{ color: "#e63030" }}>{errMsg}</p>}
               <button
                 onClick={handleClaim}
-                disabled={step === "signing"}
+                disabled={step === "signing" || !resolvedAgent}
                 className="w-full py-3 rounded-xl font-semibold text-sm transition-all"
                 style={{
-                  background: step === "signing" ? "#060c0b" : "linear-gradient(135deg, #1db8a8, #0d9488)",
-                  color: step === "signing" ? "#3a5550" : "#060c0b",
-                  border: `1px solid ${step === "signing" ? "#1a2e2b" : "#1db8a8"}`,
+                  background: step === "signing" || !resolvedAgent ? "#060c0b" : "linear-gradient(135deg, #1db8a8, #0d9488)",
+                  color: step === "signing" || !resolvedAgent ? "#3a5550" : "#060c0b",
+                  border: `1px solid ${step === "signing" || !resolvedAgent ? "#1a2e2b" : "#1db8a8"}`,
                   fontFamily: "var(--font-space-grotesk)",
-                  cursor: step === "signing" ? "wait" : "pointer",
+                  cursor: step === "signing" ? "wait" : !resolvedAgent ? "not-allowed" : "pointer",
                 }}>
                 {step === "signing" ? "⏳ Sign in wallet…" : "📝 Sign & Claim"}
               </button>
