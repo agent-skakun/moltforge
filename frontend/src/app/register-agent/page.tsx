@@ -533,9 +533,9 @@ export default function RegisterAgentPage() {
 
       {/* Mode toggle */}
       <div className="flex justify-center gap-3 mb-6">
-        {/* TODO: Agent Builder — паузировано до пост-хакатона */}
-        {/* Нужно: LLM selection, skills config, Railway auto-deploy, wallet linking */}
-        {/* Вернуться после: 2026-03-20 */}
+        {/* TODO: Agent Builder — paused until post-hackathon */}
+        {/* Needed: LLM selection, skills config, Railway auto-deploy, wallet linking */}
+        {/* Resume after: 2026-03-20 */}
         <button
           onClick={() => setDeployMode("hosted")}
           style={{

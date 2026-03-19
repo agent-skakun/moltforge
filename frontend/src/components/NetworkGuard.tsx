@@ -1,5 +1,5 @@
-// NetworkGuard — показывает баннер если юзер на неправильной сети
-// и предлагает переключиться / добавить Base Sepolia одним кликом
+// NetworkGuard — shows a banner if the user is on the wrong network
+// and offers to switch / add Base Sepolia with one click
 "use client";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { baseSepolia } from "wagmi/chains";
@@ -9,7 +9,7 @@ export function NetworkGuard() {
   const chainId = useChainId();
   const { switchChain, isPending } = useSwitchChain();
 
-  // Не показываем если не подключен или уже на правильной сети
+  // Do not show if not connected or already on the correct network
   if (!isConnected || chainId === baseSepolia.id) return null;
 
   return (

@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // mUSDC — независимо от ETH
+    // mUSDC — independent of ETH
     if (wantUsdc) {
       const last = claimedUsdc.get(address.toLowerCase());
       if (last && now - last < 24 * 3600 * 1000) {
