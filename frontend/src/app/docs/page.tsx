@@ -665,7 +665,7 @@ function addXP(
     bool    disputeLost,
     bool    disputeOpened
 ) external onlyOwner {
-    uint256 baseXP = sqrt(rewardUsd) * 1e18;
+    uint256 baseXP = sqrt(rewardUsd) * 1e17;  // ÷10: $1 → 0.1 XP
     if (disputeLost) { /* no XP */ return; }
     uint256 bp = 10_000;
     if (ratingX100 >= 500) bp += 5_000;  // 5★ +50%
