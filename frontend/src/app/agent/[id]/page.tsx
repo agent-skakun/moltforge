@@ -124,19 +124,9 @@ export default function AgentProfilePage() {
 
   const isLoading = (isWalletAddress && resolvedId === null && !resolveError) || (loadingV1 && loadingV2);
 
-  if (resolveError) {
-    return <div className="text-center py-20" style={{ color: "#5a807a" }}>Agent not found for address {id}.</div>;
-  }
+  const agentOk = !isLoading && !resolveError && !!agent && agent.wallet !== "0x0000000000000000000000000000000000000000";
 
-  if (isLoading) {
-    return <div className="text-center py-20" style={{ color: "#5a807a" }}>Loading agent profile...</div>;
-  }
-
-  if (!agent || agent.wallet === "0x0000000000000000000000000000000000000000") {
-    return <div className="text-center py-20" style={{ color: "#5a807a" }}>Agent not found.</div>;
-  }
-
-  // Extract V2 fields
+  // Extract V2 fields (safe — only used after hooks)
   let skills: readonly string[] = [];
   let tools: readonly string[] = [];
   let agentUrl = "";
@@ -151,8 +141,8 @@ export default function AgentProfilePage() {
     } catch { /* fallback to V1 */ }
   }
 
-  // Fetch avatar params from Supabase when agent.agentId is known
-  if (agent) onChainAvatarHash = agent.agentId as string;
+  if (agentOk && agent) onChainAvatarHash = agent.agentId as string;
+
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (!onChainAvatarHash || onChainAvatarHash === "0x0000000000000000000000000000000000000000000000000000000000000000") return;
@@ -161,30 +151,30 @@ export default function AgentProfilePage() {
       .then(data => {
         if (data?.ok && data.avatarParams) setLoadedFaceParams(data.avatarParams as FaceParams);
       })
-      .catch(() => { /* fallback to preset */ });
+      .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onChainAvatarHash]);
 
-  const webhookUrl = agentUrl || agent.webhookUrl || "";
-  const meta = { ...parseMetadata(agent.metadataURI), ...ipfsMeta };
+  const webhookUrl = agentOk && agent ? (agentUrl || agent.webhookUrl || "") : "";
+  const meta = agentOk && agent ? { ...parseMetadata(agent.metadataURI), ...ipfsMeta } : {};
   const name = meta.name ?? `Agent #${id}`;
-  const spec = meta.specialization?.toLowerCase() ?? "general";
+  const spec = (meta as AgentMetadata).specialization?.toLowerCase() ?? "general";
   const preset = specToPreset(spec);
   const faceParams: FaceParams = loadedFaceParams ?? PRESETS[preset] ?? PRESETS["ai"];
-  const tier = agent.tier;
-  const statusActive = agent.status === 1;
-  const ratingDisplay = (agent.rating / 100).toFixed(2);
-  const capabilities = (meta.capabilities && meta.capabilities.length > 0) ? meta.capabilities : ["general"];
-  const metaTools = meta.tools ?? [];
-  const metaAgentUrl = meta.agentUrl || webhookUrl;
-  const llmLabel = getLLMLabel(meta.llmProvider, meta.llmModel);
+  const tier = agentOk && agent ? agent.tier : 0;
+  const statusActive = agentOk && agent ? agent.status === 1 : false;
+  const ratingDisplay = agentOk && agent ? (agent.rating / 100).toFixed(2) : "0.00";
+  const capabilities = ((meta as AgentMetadata).capabilities && (meta as AgentMetadata).capabilities!.length > 0) ? (meta as AgentMetadata).capabilities! : ["general"];
+  const metaTools = (meta as AgentMetadata).tools ?? [];
+  const metaAgentUrl = (meta as AgentMetadata).agentUrl || webhookUrl;
+  const llmLabel = getLLMLabel((meta as AgentMetadata).llmProvider, (meta as AgentMetadata).llmModel);
 
   // Load IPFS/https metadata async
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    if (!agent.metadataURI) return;
+    if (!agent?.metadataURI) return;
     parseMetadataURI(agent.metadataURI).then(setIpfsMeta).catch(() => {});
-  }, [agent.metadataURI]);
+  }, [agent?.metadataURI]);
 
   // Ping webhook to determine Online/Offline status
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -194,13 +184,25 @@ export default function AgentProfilePage() {
     fetch(url, { method: "HEAD", signal: AbortSignal.timeout(4000) })
       .then(r => setOnlineStatus(r.ok ? "online" : "offline"))
       .catch(() => {
-        // fallback: try GET /
         fetch(webhookUrl, { method: "GET", signal: AbortSignal.timeout(4000) })
           .then(() => setOnlineStatus("online"))
           .catch(() => setOnlineStatus("offline"));
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [webhookUrl]);
+
+  // ── Early returns AFTER all hooks ──────────────────────────────────────────
+  if (resolveError) {
+    return <div className="text-center py-20" style={{ color: "#5a807a" }}>Agent not found for address {id}.</div>;
+  }
+
+  if (isLoading) {
+    return <div className="text-center py-20" style={{ color: "#5a807a" }}>Loading agent profile...</div>;
+  }
+
+  if (!agentOk || !agent) {
+    return <div className="text-center py-20" style={{ color: "#5a807a" }}>Agent not found.</div>;
+  }
 
   const testAgent = async () => {
     if (!webhookUrl) return;
