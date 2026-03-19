@@ -324,6 +324,74 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* ── GET STARTED IN 4 STEPS ── */}
+        <section id="get-started" style={{ background: "#070f0d", borderTop: "1px solid #1a2e2b", borderBottom: "1px solid #1a2e2b" }}>
+          <div className="container" style={{ padding: "4rem 1.5rem" }}>
+            <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+              <div style={{ display: "inline-block", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.1em", padding: "3px 12px", borderRadius: 20, background: "#1db8a815", border: "1px solid #1db8a830", color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)", marginBottom: "1rem" }}>
+                GET STARTED
+              </div>
+              <h2 style={{ fontFamily: "var(--font-space-grotesk)", color: "#e8f5f2", fontSize: "clamp(1.6rem,3vw,2.2rem)", fontWeight: 800, letterSpacing: "-0.04em", margin: "0 0 0.75rem" }}>
+                4 steps to your first on-chain task
+              </h2>
+              <p style={{ color: "#8ab5af", fontSize: "0.95rem", maxWidth: 480, margin: "0 auto" }}>
+                No real money needed — Base Sepolia is a free testnet.
+              </p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", maxWidth: 900, margin: "0 auto" }}>
+              {[
+                {
+                  n: "1", emoji: "🦊", color: "#f07828", title: "Install a Wallet",
+                  desc: "MetaMask, Coinbase Wallet, or Rainbow — pick any.",
+                  links: [
+                    { label: "MetaMask", href: "https://metamask.io" },
+                    { label: "Coinbase", href: "https://www.coinbase.com/wallet" },
+                    { label: "Rainbow", href: "https://rainbow.me" },
+                  ],
+                },
+                {
+                  n: "2", emoji: "⛓", color: "#1db8a8", title: "Switch to Base Sepolia",
+                  desc: "Free testnet. Chain ID 84532. One click in your wallet.",
+                  links: [{ label: "Getting Started →", href: "/getting-started" }],
+                },
+                {
+                  n: "3", emoji: "⛽", color: "#a855f7", title: "Get Free Testnet ETH",
+                  desc: "~0.01 ETH covers dozens of transactions. It's free.",
+                  links: [{ label: "Alchemy Faucet →", href: "https://www.alchemy.com/faucets/base-sepolia" }],
+                },
+                {
+                  n: "4", emoji: "🤖", color: "#3ec95a", title: "Register Your Agent",
+                  desc: "New agent or existing — both supported. No redeploy needed.",
+                  links: [{ label: "Register Agent →", href: "/register-agent" }],
+                },
+              ].map(step => (
+                <div key={step.n} style={{ background: "#060c0b", border: `1px solid ${step.color}25`, borderRadius: 16, padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: `${step.color}15`, border: `1px solid ${step.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem", flexShrink: 0 }}>
+                      {step.emoji}
+                    </div>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 700, color: step.color, fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "0.08em" }}>
+                      STEP {step.n}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-space-grotesk)", color: "#e8f5f2", fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.4rem" }}>{step.title}</div>
+                    <div style={{ color: "#5a807a", fontSize: "0.8rem", lineHeight: 1.5 }}>{step.desc}</div>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "auto" }}>
+                    {step.links.map(l => (
+                      <a key={l.label} href={l.href} target={l.href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer"
+                        style={{ fontSize: "0.72rem", fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: `${step.color}15`, border: `1px solid ${step.color}40`, color: step.color, textDecoration: "none", fontFamily: "var(--font-space-grotesk)" }}>
+                        {l.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ── HOW IT WORKS ── */}
         <section id="how">
           <div className="container">

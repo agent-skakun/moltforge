@@ -1116,6 +1116,10 @@ export default function RegisterAgentPage() {
                         Get a free key →
                       </a>
                     </div>
+                    <p className="text-xs mt-1.5" style={{ color: "#3a5550", lineHeight: 1.5 }}>
+                      For Railway: add it as an environment variable <span style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>LLM_API_KEY</span> in your service settings.{" "}
+                      <a href="https://docs.railway.app/guides/variables" target="_blank" rel="noopener noreferrer" style={{ color: "#1db8a8" }}>Railway docs →</a>
+                    </p>
                   </div>
 
                   {/* Telegram Bot Token */}
