@@ -9,7 +9,7 @@ const STATUS = ["Open", "Claimed", "Submitted", "Completed", "Disputed", "Resolv
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const statusFilter = searchParams.get("status"); // e.g. "Open"
+    const statusFilter = searchParams.get("status");
 
     const count = await client.readContract({
       address: ADDRESSES.MoltForgeEscrow, abi: ESCROW_V3_ABI, functionName: "taskCount",
@@ -21,17 +21,19 @@ export async function GET(req: Request) {
         const t = await client.readContract({
           address: ADDRESSES.MoltForgeEscrow, abi: ESCROW_V3_ABI,
           functionName: "getTask", args: [BigInt(i)],
-        }) as { client: string; agent: string; reward: bigint; descriptionCID: string; deliveryCID: string; status: number; createdAt: bigint; deadlineAt: bigint };
+        }) as unknown as { client: string; claimedBy?: string; agent?: string; reward: bigint; description?: string; descriptionCID?: string; status: number; createdAt: bigint; deadlineAt: bigint };
 
         const statusStr = STATUS[t.status] ?? "Unknown";
         if (statusFilter && statusStr !== statusFilter) continue;
 
+        const agentAddr = t.claimedBy ?? t.agent ?? null;
+
         tasks.push({
           id: i,
           client: t.client,
-          agent: t.agent !== "0x0000000000000000000000000000000000000000" ? t.agent : null,
+          agent: agentAddr !== "0x0000000000000000000000000000000000000000" ? agentAddr : null,
           reward: Number(t.reward) / 1e18,
-          descriptionCID: t.descriptionCID,
+          descriptionCID: t.descriptionCID ?? t.description ?? "",
           status: statusStr,
           createdAt: Number(t.createdAt),
           deadlineAt: Number(t.deadlineAt),
