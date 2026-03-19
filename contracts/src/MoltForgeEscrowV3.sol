@@ -25,8 +25,7 @@ interface IMoltForgeDAO {
 }
 
 /// @title MoltForgeEscrowV3
-/// @notice Full task marketplace: open tasks + direct hire. UUPS upgradeable.
-/// @dev New proxy deployment (not upgrade of V1/V2 — different storage layout)
+/// @notice Full task marketplace with apply/select flow, auto-confirm, stakes. UUPS upgradeable.
 contract MoltForgeEscrowV3 is
     Initializable,
     OwnableUpgradeable,
@@ -38,58 +37,85 @@ contract MoltForgeEscrowV3 is
 
     // ─── Constants ────────────────────────────────────────────────────────────
 
-    uint256 public constant PROTOCOL_FEE_BPS = 10;  // 0.1% → DAO Treasury
+    uint256 public constant PROTOCOL_FEE_BPS = 10;       // 0.1% → DAO Treasury
+    uint256 public constant AGENT_STAKE_BPS = 500;        // 5% of reward — agent deposits on apply
+    uint256 public constant DISPUTE_DEPOSIT_BPS = 100;    // 1% of reward — client deposits on dispute
+    uint256 public constant DISPUTE_SLASH_BPS = 500;      // 5% slash on dispute loss
+    uint256 public constant AUTO_CONFIRM_DELAY = 24 hours;
     uint256 private constant BPS_DENOM = 10_000;
 
     // ─── Types ────────────────────────────────────────────────────────────────
 
-    /// @notice Full task lifecycle
     enum TaskStatus {
-        Open,       // 0 — created, awaiting agent
-        Claimed,    // 1 — agent claimed open task
-        InProgress, // 2 — direct-hire task accepted by agent (via webhook/auto)
+        Open,       // 0 — created, awaiting applications
+        Claimed,    // 1 — agent selected (assigned)
+        InProgress, // 2 — reserved for future use
         Delivered,  // 3 — agent submitted result
-        Confirmed,  // 4 — client confirmed, payment released
-        Cancelled,  // 5 — client cancelled (only when Open)
+        Confirmed,  // 4 — confirmed, payment released
+        Cancelled,  // 5 — cancelled
         Disputed    // 6 — dispute raised
     }
 
     struct Task {
         uint256 id;
         address client;
-        uint256 agentId;      // 0 = open task (any agent can claim)
+        uint256 agentId;
         address token;
         uint256 reward;
         uint256 fee;
-        string description;   // human-readable task (or base64 JSON)
-        string fileUrl;       // optional file/IPFS URL
-        string resultUrl;     // agent submits result here
+        string description;
+        string fileUrl;
+        string resultUrl;
         TaskStatus status;
-        address claimedBy;    // wallet of agent who claimed/accepted
-        uint8 score;          // 1–5, set on confirmDelivery
+        address claimedBy;
+        uint8 score;
         uint64 createdAt;
         uint64 deadlineAt;
+        // ─── V4 additions (appended for proxy safety) ───
+        uint256 agentStake;      // selected agent's locked stake
+        uint256 disputeDeposit;  // client's dispute deposit
+        uint64  deliveredAt;     // timestamp of result submission
     }
 
-    // ─── Storage ──────────────────────────────────────────────────────────────
+    struct Application {
+        address agent;
+        uint256 agentId;
+        uint256 stake;
+        uint64  appliedAt;
+        bool    withdrawn;
+    }
 
+    // ─── Storage (order MUST NOT change for proxy) ────────────────────────────
+
+    // slot 0
     address public feeRecipient;
+    // slot 1
     address public meritSBT;
+    // slot 2
     address public agentRegistry;
+    // slot 3
     uint256 public taskCount;
-
+    // slot 4 — mapping
     mapping(uint256 => Task) internal _tasks;
+    // slot 5 — mapping
     mapping(address => bool) public isArbiter;
-
-    // Added after initial deploy — MUST stay after _tasks to preserve storage layout
+    // slot 6
     address public daoTreasury;
+    // slot 7 — NEW: applications per task
+    mapping(uint256 => Application[]) internal _applications;
+    // slot 8 — NEW: track if agent already applied
+    mapping(uint256 => mapping(address => bool)) internal _hasApplied;
 
     // ─── Events ───────────────────────────────────────────────────────────────
 
     event TaskCreated(uint256 indexed taskId, address indexed client, uint256 agentId, uint256 reward);
     event TaskClaimed(uint256 indexed taskId, address indexed agent, uint256 agentId);
+    event ApplicationSubmitted(uint256 indexed taskId, address indexed agent, uint256 agentId, uint256 stake);
+    event ApplicationWithdrawn(uint256 indexed taskId, address indexed agent, uint256 stakeReturned);
+    event AgentSelected(uint256 indexed taskId, address indexed agent, uint256 agentId, uint256 applicationsReturned);
     event ResultSubmitted(uint256 indexed taskId, address indexed agent, string resultUrl);
     event DeliveryConfirmed(uint256 indexed taskId, address indexed client, uint8 score, uint256 payout);
+    event AutoConfirmed(uint256 indexed taskId, address indexed caller, uint256 payout);
     event TaskCancelled(uint256 indexed taskId, address indexed client, uint256 refund);
     event TaskDisputed(uint256 indexed taskId, address indexed opener);
     event DisputeResolved(uint256 indexed taskId, bool agentWon);
@@ -109,6 +135,10 @@ contract MoltForgeEscrowV3 is
     error NotOpenTask();
     error AgentMismatch();
     error DeadlineNotPassed();
+    error AlreadyApplied();
+    error ApplicationNotFound();
+    error TooEarly();
+    error NoApplications();
 
     // ─── Modifiers ────────────────────────────────────────────────────────────
 
@@ -133,14 +163,14 @@ contract MoltForgeEscrowV3 is
         feeRecipient = _feeRecipient;
         meritSBT = _meritSBT;
         agentRegistry = _agentRegistry;
-        daoTreasury = address(0); // set via setDaoTreasury after deploy
+        daoTreasury = address(0);
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
     // ─── Task Creation ────────────────────────────────────────────────────────
 
-    /// @notice Create a task. agentId=0 → open (any agent), agentId>0 → direct hire
+    /// @notice Create a task. agentId=0 → open (agents apply), agentId>0 → direct hire
     function createTask(
         address tokenAddr,
         uint256 reward,
@@ -152,42 +182,39 @@ contract MoltForgeEscrowV3 is
         if (reward == 0) revert ZeroReward();
         if (deadlineAt != 0 && deadlineAt <= block.timestamp) revert DeadlineInPast();
 
-        // Client pays ONLY the reward. Fee is deducted from agent's payout on confirm.
         IERC20(tokenAddr).safeTransferFrom(msg.sender, address(this), reward);
 
         taskId = ++taskCount;
-        _tasks[taskId] = Task({
-            id:          taskId,
-            client:      msg.sender,
-            agentId:     agentId,
-            token:       tokenAddr,
-            reward:      reward,
-            fee:         0,  // calculated at confirm time, not at creation
-            description: description,
-            fileUrl:     fileUrl,
-            resultUrl:   "",
-            status:      TaskStatus.Open,
-            claimedBy:   address(0),
-            score:       0,
-            createdAt:   uint64(block.timestamp),
-            deadlineAt:  deadlineAt
-        });
+        Task storage t = _tasks[taskId];
+        t.id = taskId;
+        t.client = msg.sender;
+        t.agentId = agentId;
+        t.token = tokenAddr;
+        t.reward = reward;
+        t.status = TaskStatus.Open;
+        t.description = description;
+        t.fileUrl = fileUrl;
+        t.createdAt = uint64(block.timestamp);
+        t.deadlineAt = deadlineAt;
 
         emit TaskCreated(taskId, msg.sender, agentId, reward);
     }
 
-    // ─── Agent: Claim open task ────────────────────────────────────────────────
+    // ─── Agent: Apply for task ────────────────────────────────────────────────
 
-    /// @notice Agent claims an open task (agentId == 0). Only registered agents.
-    function claimTask(uint256 taskId)
+    /// @notice Agent applies for open task by depositing 5% stake. Multiple agents can apply.
+    function applyForTask(uint256 taskId)
         external nonReentrant whenNotPaused taskExists(taskId)
     {
         Task storage t = _tasks[taskId];
         if (t.status != TaskStatus.Open) revert WrongStatus(t.status);
-        if (t.agentId != 0) revert NotOpenTask();
-        if (msg.sender == t.client) revert NotAgent();
+        if (t.agentId != 0) revert NotOpenTask(); // direct-hire tasks skip application
+        if (msg.sender == t.client) revert NotClient(); // client can't apply to own task
+        if (_hasApplied[taskId][msg.sender]) revert AlreadyApplied();
 
-        // Resolve agentId from wallet
+        uint256 stake = (t.reward * AGENT_STAKE_BPS) / BPS_DENOM;
+        IERC20(t.token).safeTransferFrom(msg.sender, address(this), stake);
+
         uint256 claimerAgentId = 0;
         if (agentRegistry != address(0)) {
             try IAgentRegistry(agentRegistry).getAgentIdByWallet(msg.sender) returns (uint256 id) {
@@ -195,16 +222,107 @@ contract MoltForgeEscrowV3 is
             } catch {}
         }
 
-        t.agentId = claimerAgentId;
-        t.claimedBy = msg.sender;
+        _applications[taskId].push(Application({
+            agent: msg.sender,
+            agentId: claimerAgentId,
+            stake: stake,
+            appliedAt: uint64(block.timestamp),
+            withdrawn: false
+        }));
+        _hasApplied[taskId][msg.sender] = true;
+
+        emit ApplicationSubmitted(taskId, msg.sender, claimerAgentId, stake);
+    }
+
+    /// @notice Agent withdraws application and gets stake back (only before selection)
+    function withdrawApplication(uint256 taskId)
+        external nonReentrant taskExists(taskId)
+    {
+        Task storage t = _tasks[taskId];
+        if (t.status != TaskStatus.Open) revert WrongStatus(t.status);
+
+        Application[] storage apps = _applications[taskId];
+        bool found = false;
+        for (uint256 i = 0; i < apps.length; i++) {
+            if (apps[i].agent == msg.sender && !apps[i].withdrawn) {
+                apps[i].withdrawn = true;
+                IERC20(t.token).safeTransfer(msg.sender, apps[i].stake);
+                _hasApplied[taskId][msg.sender] = false;
+                emit ApplicationWithdrawn(taskId, msg.sender, apps[i].stake);
+                found = true;
+                break;
+            }
+        }
+        if (!found) revert ApplicationNotFound();
+    }
+
+    /// @notice Client selects an agent from applicants. Other stakes returned.
+    function selectAgent(uint256 taskId, uint256 applicationIndex)
+        external nonReentrant taskExists(taskId)
+    {
+        Task storage t = _tasks[taskId];
+        if (msg.sender != t.client) revert NotClient();
+        if (t.status != TaskStatus.Open) revert WrongStatus(t.status);
+
+        Application[] storage apps = _applications[taskId];
+        if (apps.length == 0) revert NoApplications();
+        if (applicationIndex >= apps.length) revert ApplicationNotFound();
+
+        Application storage selected = apps[applicationIndex];
+        if (selected.withdrawn) revert ApplicationNotFound();
+
+        // Assign selected agent
+        t.claimedBy = selected.agent;
+        t.agentId = selected.agentId;
+        t.agentStake = selected.stake;
         t.status = TaskStatus.Claimed;
 
-        emit TaskClaimed(taskId, msg.sender, claimerAgentId);
+        // Return stakes to all non-selected applicants
+        uint256 returned = 0;
+        for (uint256 i = 0; i < apps.length; i++) {
+            if (i != applicationIndex && !apps[i].withdrawn) {
+                IERC20(t.token).safeTransfer(apps[i].agent, apps[i].stake);
+                apps[i].withdrawn = true; // mark as returned
+                returned++;
+            }
+        }
+
+        emit AgentSelected(taskId, selected.agent, selected.agentId, returned);
+        emit TaskClaimed(taskId, selected.agent, selected.agentId);
+    }
+
+    // ─── Agent: Claim direct-hire task (backward compat) ──────────────────────
+
+    /// @notice Direct-hire: assigned agent accepts + deposits stake
+    function claimTask(uint256 taskId)
+        external nonReentrant whenNotPaused taskExists(taskId)
+    {
+        Task storage t = _tasks[taskId];
+        if (t.status != TaskStatus.Open) revert WrongStatus(t.status);
+        if (t.agentId == 0) revert NotOpenTask(); // open tasks use applyForTask
+        if (msg.sender == t.client) revert NotClient();
+
+        // Verify agent matches direct-hire agentId
+        if (agentRegistry != address(0)) {
+            try IAgentRegistry(agentRegistry).getAgentIdByWallet(msg.sender) returns (uint256 id) {
+                if (id != t.agentId) revert AgentMismatch();
+            } catch { revert NotAgent(); }
+        }
+
+        // Agent deposits stake
+        uint256 stake = (t.reward * AGENT_STAKE_BPS) / BPS_DENOM;
+        IERC20(t.token).safeTransferFrom(msg.sender, address(this), stake);
+
+        t.claimedBy = msg.sender;
+        t.agentStake = stake;
+        t.status = TaskStatus.Claimed;
+
+        emit TaskClaimed(taskId, msg.sender, t.agentId);
     }
 
     // ─── Agent: Submit result ─────────────────────────────────────────────────
 
-    /// @notice Agent submits delivery. Allowed in Claimed, InProgress.
+    /// @notice Agent submits delivery. Sets deliveredAt for 24h auto-confirm timer.
     function submitResult(uint256 taskId, string calldata resultUrl)
         external nonReentrant whenNotPaused taskExists(taskId)
     {
@@ -212,27 +330,18 @@ contract MoltForgeEscrowV3 is
         if (t.status != TaskStatus.Claimed && t.status != TaskStatus.InProgress) {
             revert WrongStatus(t.status);
         }
-        // Must be the claiming agent or (for direct-hire) any registered agent with matching agentId
-        if (t.claimedBy != address(0) && msg.sender != t.claimedBy) revert NotAgent();
-        if (t.claimedBy == address(0)) {
-            // Direct-hire: verify msg.sender matches agentId
-            if (agentRegistry != address(0)) {
-                try IAgentRegistry(agentRegistry).getAgentIdByWallet(msg.sender) returns (uint256 id) {
-                    if (id != t.agentId) revert AgentMismatch();
-                } catch { revert NotAgent(); }
-            }
-            t.claimedBy = msg.sender;
-        }
+        if (msg.sender != t.claimedBy) revert NotAgent();
 
         t.resultUrl = resultUrl;
         t.status = TaskStatus.Delivered;
+        t.deliveredAt = uint64(block.timestamp);
 
         emit ResultSubmitted(taskId, msg.sender, resultUrl);
     }
 
     // ─── Client: Confirm delivery ─────────────────────────────────────────────
 
-    /// @notice Client confirms delivery and rates 1–5. Releases payment + mints Merit.
+    /// @notice Client confirms delivery, rates 1–5, releases payment + returns stake.
     function confirmDelivery(uint256 taskId, uint8 score)
         external nonReentrant taskExists(taskId)
     {
@@ -241,6 +350,22 @@ contract MoltForgeEscrowV3 is
         if (msg.sender != t.client) revert NotClient();
         if (t.status != TaskStatus.Delivered) revert WrongStatus(t.status);
 
+        _finalizeConfirm(taskId, t, score);
+    }
+
+    /// @notice Anyone can auto-confirm after 24h if client hasn't acted. Score = 3.
+    function autoConfirm(uint256 taskId)
+        external nonReentrant taskExists(taskId)
+    {
+        Task storage t = _tasks[taskId];
+        if (t.status != TaskStatus.Delivered) revert WrongStatus(t.status);
+        if (t.deliveredAt == 0 || block.timestamp < t.deliveredAt + AUTO_CONFIRM_DELAY) revert TooEarly();
+
+        _finalizeConfirm(taskId, t, 3);
+    }
+
+    /// @dev Internal: finalize confirmation (shared by confirmDelivery + autoConfirm)
+    function _finalizeConfirm(uint256 taskId, Task storage t, uint8 score) internal {
         address agentWallet = t.claimedBy;
         uint256 reward = t.reward;
         uint256 agentId = t.agentId;
@@ -248,67 +373,113 @@ contract MoltForgeEscrowV3 is
         t.status = TaskStatus.Confirmed;
         t.score = score;
 
-        // Transfer: fee (0.1%) deducted from reward → DAO; rest → agent
+        // 0.1% fee deducted from reward → DAO
         uint256 fee = (reward * PROTOCOL_FEE_BPS) / BPS_DENOM;
         uint256 agentPayout = reward - fee;
-        t.fee = fee;  // record for transparency
+        t.fee = fee;
+
+        IERC20 token = IERC20(t.token);
 
         if (fee > 0) {
             if (daoTreasury != address(0)) {
-                IERC20(t.token).safeTransfer(daoTreasury, fee);
+                token.safeTransfer(daoTreasury, fee);
             } else {
-                IERC20(t.token).safeTransfer(feeRecipient, fee);
+                token.safeTransfer(feeRecipient, fee);
             }
         }
-        IERC20(t.token).safeTransfer(agentWallet, agentPayout);
+        token.safeTransfer(agentWallet, agentPayout);
 
-        emit DeliveryConfirmed(taskId, msg.sender, score, agentPayout);
+        // Return agent stake
+        if (t.agentStake > 0) {
+            token.safeTransfer(agentWallet, t.agentStake);
+        }
+
+        emit DeliveryConfirmed(taskId, t.client, score, agentPayout);
 
         // Mint merit (non-reverting)
         if (meritSBT != address(0) && agentId > 0) {
             try IMeritSBTV2(meritSBT).mintMerit(agentId, taskId, score, reward) {} catch {}
         }
 
-        // Add XP to registry (non-reverting)
+        // Add XP (non-reverting)
         if (agentRegistry != address(0) && agentId > 0) {
             bool isLate = t.deadlineAt > 0 && block.timestamp > t.deadlineAt;
-            uint256 rewardUsd = reward / 1e6; // USDC has 6 decimals
+            uint256 rewardUsd = reward / 1e6;
             try IAgentRegistry(agentRegistry).addXP(agentId, rewardUsd, uint32(score * 100), isLate, false, false) {} catch {}
         }
     }
 
-    // ─── Client: Cancel open task ─────────────────────────────────────────────
+    // ─── Client: Cancel task ──────────────────────────────────────────────────
 
-    /// @notice Client cancels task. Only allowed when Open (agent hasn't claimed yet).
+    /// @notice Client cancels task.
+    /// - Open (no selection): reward → client, all application stakes returned
+    /// - Assigned but deadline passed + no submit: reward → client, agent stake → client
     function cancelTask(uint256 taskId)
         external nonReentrant taskExists(taskId)
     {
         Task storage t = _tasks[taskId];
         if (msg.sender != t.client) revert NotClient();
-        if (t.status != TaskStatus.Open) revert WrongStatus(t.status);
 
-        t.status = TaskStatus.Cancelled;
-        IERC20(t.token).safeTransfer(t.client, t.reward + t.fee);
+        IERC20 token = IERC20(t.token);
 
-        emit TaskCancelled(taskId, msg.sender, t.reward + t.fee);
+        if (t.status == TaskStatus.Open) {
+            t.status = TaskStatus.Cancelled;
+
+            // Return all application stakes
+            Application[] storage apps = _applications[taskId];
+            for (uint256 i = 0; i < apps.length; i++) {
+                if (!apps[i].withdrawn) {
+                    token.safeTransfer(apps[i].agent, apps[i].stake);
+                    apps[i].withdrawn = true;
+                }
+            }
+
+            // Return reward to client
+            token.safeTransfer(t.client, t.reward);
+            emit TaskCancelled(taskId, msg.sender, t.reward);
+
+        } else if (t.status == TaskStatus.Claimed || t.status == TaskStatus.InProgress) {
+            // Only if deadline passed and agent hasn't submitted
+            if (t.deadlineAt == 0 || block.timestamp < t.deadlineAt) revert DeadlineNotPassed();
+
+            t.status = TaskStatus.Cancelled;
+
+            // Reward back to client
+            token.safeTransfer(t.client, t.reward);
+
+            // Agent stake → client (penalty for missing deadline)
+            if (t.agentStake > 0) {
+                token.safeTransfer(t.client, t.agentStake);
+            }
+
+            emit TaskCancelled(taskId, msg.sender, t.reward + t.agentStake);
+        } else {
+            revert WrongStatus(t.status);
+        }
     }
 
     // ─── Dispute ──────────────────────────────────────────────────────────────
 
-    /// @notice Client or agent opens dispute on Delivered task.
+    /// @notice Client opens dispute on delivered task. Requires 1% deposit.
     function disputeTask(uint256 taskId)
         external nonReentrant taskExists(taskId)
     {
         Task storage t = _tasks[taskId];
-        if (t.status != TaskStatus.Delivered && t.status != TaskStatus.Claimed && t.status != TaskStatus.InProgress) {
-            revert WrongStatus(t.status);
+        if (t.status != TaskStatus.Delivered) revert WrongStatus(t.status);
+        if (msg.sender != t.client) revert NotClient();
+
+        // Client deposits 1% of reward
+        uint256 deposit = (t.reward * DISPUTE_DEPOSIT_BPS) / BPS_DENOM;
+        if (deposit > 0) {
+            IERC20(t.token).safeTransferFrom(msg.sender, address(this), deposit);
         }
-        if (msg.sender != t.client && msg.sender != t.claimedBy) revert NotAgent();
+        t.disputeDeposit = deposit;
         t.status = TaskStatus.Disputed;
+
         emit TaskDisputed(taskId, msg.sender);
     }
 
-    /// @notice Owner resolves dispute: agentWon=true → pay agent, false → refund client
+    /// @notice Owner resolves dispute
     function resolveDispute(uint256 taskId, bool agentWon)
         external nonReentrant onlyOwner taskExists(taskId)
     {
@@ -316,12 +487,15 @@ contract MoltForgeEscrowV3 is
         if (t.status != TaskStatus.Disputed) revert WrongStatus(t.status);
 
         IERC20 token = IERC20(t.token);
+
         if (agentWon) {
             t.status = TaskStatus.Confirmed;
-            // Agent won dispute — pay agent with 0.1% fee to DAO
+
+            // 0.1% fee → DAO
             uint256 fee = (t.reward * PROTOCOL_FEE_BPS) / BPS_DENOM;
             uint256 agentPayout = t.reward - fee;
             t.fee = fee;
+
             if (fee > 0) {
                 if (daoTreasury != address(0)) {
                     token.safeTransfer(daoTreasury, fee);
@@ -330,22 +504,49 @@ contract MoltForgeEscrowV3 is
                 }
             }
             token.safeTransfer(t.claimedBy, agentPayout);
-            // Add XP — dispute opened, but agent won
+
+            // Return agent stake
+            if (t.agentStake > 0) {
+                token.safeTransfer(t.claimedBy, t.agentStake);
+            }
+
+            // Client dispute deposit → agent (compensation for delay)
+            if (t.disputeDeposit > 0) {
+                token.safeTransfer(t.claimedBy, t.disputeDeposit);
+            }
+
+            // XP — dispute opened, but agent won
             if (agentRegistry != address(0) && t.agentId > 0) {
                 uint256 rewardUsd = t.reward / 1e6;
                 try IAgentRegistry(agentRegistry).addXP(t.agentId, rewardUsd, 300, false, false, true) {} catch {}
             }
         } else {
             t.status = TaskStatus.Cancelled;
-            // Agent lost: 5% slash → DAO, 95% → client. No 0.1% fee.
-            uint256 slash = (t.reward * 500) / 10_000; // 5%
+
+            // 5% of reward → DAO slash
+            uint256 slash = (t.reward * DISPUTE_SLASH_BPS) / BPS_DENOM;
             uint256 clientRefund = t.reward - slash;
+
+            // Refund client
             token.safeTransfer(t.client, clientRefund);
+
+            // Slash → DAO
             if (daoTreasury != address(0) && slash > 0) {
                 token.safeTransfer(daoTreasury, slash);
             } else if (slash > 0) {
                 token.safeTransfer(feeRecipient, slash);
             }
+
+            // Agent stake → client
+            if (t.agentStake > 0) {
+                token.safeTransfer(t.client, t.agentStake);
+            }
+
+            // Dispute deposit → client (returned)
+            if (t.disputeDeposit > 0) {
+                token.safeTransfer(t.client, t.disputeDeposit);
+            }
+
             // Dispute lost — 0 XP
             if (agentRegistry != address(0) && t.agentId > 0) {
                 try IAgentRegistry(agentRegistry).addXP(t.agentId, 0, 0, false, true, true) {} catch {}
@@ -399,11 +600,26 @@ contract MoltForgeEscrowV3 is
         }
     }
 
-    /// @notice Get open tasks (paginated)
+    function getApplications(uint256 taskId)
+        external view taskExists(taskId) returns (Application[] memory)
+    {
+        return _applications[taskId];
+    }
+
+    function getApplicationCount(uint256 taskId)
+        external view taskExists(taskId) returns (uint256)
+    {
+        uint256 count = 0;
+        Application[] storage apps = _applications[taskId];
+        for (uint256 i = 0; i < apps.length; i++) {
+            if (!apps[i].withdrawn) count++;
+        }
+        return count;
+    }
+
     function getOpenTasks(uint256 offset, uint256 limit)
         external view returns (Task[] memory tasks, uint256 total)
     {
-        // Count open tasks
         uint256 count = 0;
         for (uint256 i = 1; i <= taskCount; i++) {
             if (_tasks[i].status == TaskStatus.Open) count++;

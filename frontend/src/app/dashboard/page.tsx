@@ -66,6 +66,9 @@ interface V3Task {
   score: number;
   createdAt: bigint;
   deadlineAt: bigint;
+  agentStake: bigint;
+  disputeDeposit: bigint;
+  deliveredAt: bigint;
 }
 
 // ─── Star Rating ──────────────────────────────────────────────────────────────
