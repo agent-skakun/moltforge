@@ -10,6 +10,7 @@ export const ADDRESSES = {
   MoltForgeEscrowV3: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
   MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
   MeritSBTV2: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
+  MoltForgeDAO: "0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177" as const,  // DAO Treasury: 0.1% completion + 5% dispute slash
   USDC: "0x221f261106C0a9D18Cc4dF024686f990015F7438" as const,               // mUSDC
 } as const;
 

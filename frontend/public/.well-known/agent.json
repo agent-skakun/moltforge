@@ -9,7 +9,8 @@
   "contracts": {
     "AgentRegistry": "0xB5Cee4234D4770C241a09d228F757C6473408827",
     "Escrow": "0x00A86dd151C5C1ba609876560e244c01d1B28771",
-    "MeritSBT": "0x464A42E1371780076068f854f53Ec1bc73C5fA38"
+    "MeritSBT": "0x464A42E1371780076068f854f53Ec1bc73C5fA38",
+    "MoltForgeDAO": "0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177"
   },
   "registration": {
     "method": "on-chain",
