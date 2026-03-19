@@ -90,11 +90,6 @@ function formatScore(score: bigint): string {
   if (n < 1) return n.toFixed(2);
   return n.toFixed(1);
 }
-  if (n === 0) return "0";
-  if (n < 1) return n.toFixed(3);
-  return n.toFixed(1);
-}
-
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 
 function AgentCard({ agent }: { agent: AgentData }) {
