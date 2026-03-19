@@ -531,14 +531,18 @@ export default function RegisterAgentPage() {
 
       {/* Mode toggle */}
       <div className="flex justify-center gap-3 mb-6">
+        {/* TODO: Agent Builder — паузировано до пост-хакатона */}
+        {/* Нужно: LLM selection, skills config, Railway auto-deploy, wallet linking */}
+        {/* Вернуться после: 2026-03-20 */}
         <button
           onClick={() => setDeployMode("hosted")}
           style={{
-            padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
-            background: deployMode === "hosted" ? "#F97316" : "transparent",
-            color: deployMode === "hosted" ? "#000" : "#94A3B8",
-            border: deployMode === "hosted" ? "1px solid #F97316" : "1px solid #334155",
-            transition: "all 0.2s"
+            padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "default",
+            background: deployMode === "hosted" ? "#f0782820" : "transparent",
+            color: deployMode === "hosted" ? "#f07828" : "#94A3B8",
+            border: deployMode === "hosted" ? "1px solid #f0782840" : "1px solid #334155",
+            opacity: 0.7,
+            transition: "all 0.2s",
           }}
         >
           🛠 Create New Agent
@@ -557,7 +561,38 @@ export default function RegisterAgentPage() {
         </button>
       </div>
 
-      {deployMode !== "existing" && (
+      {/* Coming Soon block for hosted/builder mode */}
+      {deployMode === "hosted" && (
+        <div className="max-w-xl mx-auto text-center py-16 px-8 rounded-2xl mb-8"
+          style={{ background: "#070f0d", border: "1px solid #f0782830" }}>
+          <div className="text-4xl mb-4">🚧</div>
+          <h2 className="text-2xl font-bold mb-3" style={{ fontFamily: "var(--font-space-grotesk)", color: "#e8f5f2", letterSpacing: "-0.03em" }}>
+            Coming Soon
+          </h2>
+          <p className="text-sm mb-2" style={{ color: "#8ab5af" }}>
+            Agent Builder is under construction.
+          </p>
+          <p className="text-sm mb-6" style={{ color: "#5a807a" }}>
+            We&apos;re working on full agent deployment with custom LLM, skills, and on-chain identity.
+          </p>
+          <div className="p-4 rounded-xl mb-6" style={{ background: "#0a1a17", border: "1px solid #1db8a830" }}>
+            <p className="text-sm font-semibold mb-1" style={{ color: "#1db8a8", fontFamily: "var(--font-space-grotesk)" }}>
+              In the meantime →
+            </p>
+            <p className="text-sm" style={{ color: "#8ab5af" }}>
+              Use <strong style={{ color: "#e8f5f2" }}>Connect Existing Agent</strong> to register your agent on MoltForge.
+            </p>
+          </div>
+          <button
+            onClick={() => setDeployMode("existing")}
+            className="px-6 py-3 rounded-xl font-semibold text-sm"
+            style={{ background: "linear-gradient(135deg, #1db8a8, #0d9488)", color: "#060c0b", fontFamily: "var(--font-space-grotesk)", cursor: "pointer", border: "none" }}>
+            🔗 Connect Existing Agent →
+          </button>
+        </div>
+      )}
+
+      {deployMode !== "existing" && deployMode !== "hosted" && (
       <div className="flex items-start justify-center gap-0 relative max-w-6xl mx-auto px-6" style={{ overflowX: "visible" }}>
 
         {/* ── CENTER: Agent Figure ── */}
@@ -1272,8 +1307,8 @@ export default function RegisterAgentPage() {
                     <div className="space-y-3">
                       <button onClick={() => { setDeployMode("hosted"); setWebhookUrl(""); }}
                         className="w-full flex items-start gap-4 p-4 rounded-xl text-left transition-all"
-                        style={{ background: deployMode === "hosted" ? "#1db8a815" : "#060c0b",
-                          border: `1px solid ${deployMode === "hosted" ? "#1db8a8" : "#1a2e2b"}` }}>
+                        style={{ background: (deployMode as string) === "hosted" ? "#1db8a815" : "#060c0b",
+                          border: `1px solid ${(deployMode as string) === "hosted" ? "#1db8a8" : "#1a2e2b"}` }}>
                         <span className="text-2xl mt-0.5">🚂</span>
                         <div className="flex-1">
                           <div className="text-sm font-semibold text-forge-white">MoltForge Hosted</div>
@@ -1290,7 +1325,7 @@ export default function RegisterAgentPage() {
                             </span>
                           </div>
                         </div>
-                        {deployMode === "hosted" && <span className="text-sm" style={{ color: "#1db8a8" }}>✓</span>}
+                        {(deployMode as string) === "hosted" && <span className="text-sm" style={{ color: "#1db8a8" }}>✓</span>}
                       </button>
 
                       <button onClick={() => setDeployMode("self")}
@@ -1373,7 +1408,7 @@ export default function RegisterAgentPage() {
                     </div>
                   )}
 
-                  {deployMode === "hosted" && (
+                  {(deployMode as string) === "hosted" && (
                     <div className="px-4 py-3 rounded-xl" style={{ background: "#0a1a17", border: "1px solid #1db8a820" }}>
                       <div className="text-xs font-semibold mb-2" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
                         ⚡ MoltForge Hosted — Auto-deploy
@@ -1652,21 +1687,24 @@ export default function RegisterAgentPage() {
             <p className="text-xs" style={{ color: "#3a5550" }}>Wallet needed only for on-chain registration</p>
           </div>
         ) : (
-          <button onClick={handleDeploy} disabled={!canDeploy}
+          <button
+            onClick={(deployMode as string) === "existing" ? handleDeploy : undefined}
+            disabled={!canDeploy || (deployMode as string) !== "existing"}
             className="flex items-center gap-3 px-10 py-4 rounded-2xl text-base font-bold transition-all"
             style={{
-              background: canDeploy ? "linear-gradient(135deg, #f07828, #d05e10)" : "#0a1a17",
-              border: `1px solid ${canDeploy ? "#f07828" : "#1a2e2b"}`,
-              color: canDeploy ? "white" : "#1a2e2b",
-              boxShadow: canDeploy ? "0 0 30px #f0782840" : "none",
+              background: (deployMode as string) !== "existing" ? "#0a1a17" : canDeploy ? "linear-gradient(135deg, #f07828, #d05e10)" : "#0a1a17",
+              border: `1px solid ${(deployMode as string) !== "existing" ? "#1a2e2b" : canDeploy ? "#f07828" : "#1a2e2b"}`,
+              color: (deployMode as string) !== "existing" ? "#3a5550" : canDeploy ? "white" : "#1a2e2b",
+              boxShadow: (deployMode as string) !== "existing" ? "none" : canDeploy ? "0 0 30px #f0782840" : "none",
               fontFamily: "var(--font-space-grotesk)",
               letterSpacing: "-0.02em",
-              cursor: canDeploy ? "pointer" : "not-allowed",
+              cursor: (deployMode as string) !== "existing" ? "not-allowed" : canDeploy ? "pointer" : "not-allowed",
+              opacity: (deployMode as string) !== "existing" ? 0.4 : 1,
             }}>
             {isPending || waiting ? (
               <><svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Deploying…</>
             ) : (
-              <><span>{(deployMode as string) === "existing" ? "🔌" : "⚡"}</span> {(deployMode as string) === "existing" ? "Register On-Chain" : "Deploy Agent"} {!agentName && <span className="text-sm font-normal opacity-60 ml-1">— enter a name first</span>}</>
+              <><span>{(deployMode as string) === "existing" ? "🔌" : "⚡"}</span> {(deployMode as string) === "existing" ? "Register On-Chain" : "Deploy — Coming Soon"} {(deployMode as string) === "existing" && !agentName && <span className="text-sm font-normal opacity-60 ml-1">— enter a name first</span>}</>
             )}
           </button>
         )}
