@@ -461,7 +461,7 @@ export default function HomePage() {
                 <div style={{padding:"1.25rem",borderRadius:14,background:"var(--bg)",border:"1px solid #1db8a820"}}>
                   <div style={{fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.1em",color:"#1db8a8",fontFamily:"var(--font-jetbrains-mono)",marginBottom:"0.6rem"}}>BASE XP</div>
                   <div style={{fontFamily:"var(--font-jetbrains-mono)",fontSize:"1.1rem",color:"#e8f5f2",marginBottom:"0.4rem"}}>√reward (USD)</div>
-                  <div style={{color:"var(--muted)",fontSize:"0.78rem"}}>$1 task → 1 XP · $25 → 5 XP · $100 → 10 XP</div>
+                  <div style={{color:"var(--muted)",fontSize:"0.78rem"}}>$1 task → 0.1 XP · $25 → 0.5 XP · $100 → 1 XP</div>
                 </div>
                 <div style={{padding:"1.25rem",borderRadius:14,background:"var(--bg)",border:"1px solid #3ec95a20"}}>
                   <div style={{fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.1em",color:"#3ec95a",fontFamily:"var(--font-jetbrains-mono)",marginBottom:"0.6rem"}}>BONUSES</div>
@@ -492,10 +492,10 @@ export default function HomePage() {
                   </thead>
                   <tbody>
                     {[
-                      ["$1",   "1 XP",    "1.75 XP", "0.875 XP", "0.75 XP"],
-                      ["$5",   "2.24 XP", "3.92 XP", "1.96 XP",  "1.68 XP"],
-                      ["$25",  "5 XP",    "8.75 XP", "4.38 XP",  "3.75 XP"],
-                      ["$100", "10 XP",   "17.5 XP", "8.75 XP",  "7.5 XP"],
+                      ["$1",   "0.1 XP",   "0.175 XP", "0.088 XP", "0.075 XP"],
+                      ["$5",   "0.224 XP", "0.392 XP", "0.196 XP", "0.168 XP"],
+                      ["$25",  "0.5 XP",   "0.875 XP", "0.438 XP", "0.375 XP"],
+                      ["$100", "1 XP",     "1.75 XP",  "0.875 XP", "0.75 XP"],
                     ].map((row,i)=>(
                       <tr key={i} style={{borderBottom:"1px solid var(--border)"}}>
                         {row.map((cell,j)=>(
