@@ -994,10 +994,15 @@ export default function RegisterAgentPage() {
                       Agent URL <span className="font-jetbrainsMono text-xs" style={{ color: "#1db8a8" }}>(required for Hire flow)</span>
                     </button>
                     {webhookOpen && (
-                      <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
-                        placeholder="https://your-agent.up.railway.app"
-                        className="w-full mt-2 px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
-                        style={{ background: "#060c0b", border: "1px solid #1db8a8", fontFamily: "var(--font-jetbrains-mono)" }} />
+                      <>
+                        <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)}
+                          placeholder="https://your-agent.up.railway.app"
+                          className="w-full mt-2 px-4 py-3 rounded-xl text-forge-white placeholder-forge-white/20 outline-none text-sm"
+                          style={{ background: "#060c0b", border: "1px solid #1db8a8", fontFamily: "var(--font-jetbrains-mono)" }} />
+                        <p className="mt-1.5 text-xs" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.5 }}>
+                          Your agent&apos;s HTTP endpoint that receives tasks. Example: <span style={{ color: "#1db8a8" }}>https://my-agent.railway.app</span> — must respond to <span style={{ color: "#1db8a8" }}>POST /tasks</span>
+                        </p>
+                      </>
                     )}
                   </div>
                 </div>
