@@ -48,9 +48,35 @@ function parseDescription(raw: string): ParsedDescription {
   try {
     if (raw.startsWith("data:application/json")) {
       const b64 = raw.split(",")[1];
-      return JSON.parse(atob(b64));
+      const parsed = JSON.parse(atob(b64));
+      // Flatten nested resolution object
+      if (parsed.resolution) {
+        if (parsed.resolution.deliverables) parsed.deliverables = parsed.resolution.deliverables;
+        if (parsed.resolution.acceptanceCriteria) parsed.acceptanceCriteria = parsed.resolution.acceptanceCriteria;
+        if (parsed.resolution.evaluationMethod) parsed.evaluationMethod = parsed.resolution.evaluationMethod;
+      }
+      // Flatten nested requirements object
+      if (parsed.requirements) {
+        if (parsed.requirements.requiredTier) parsed.requiredTier = parsed.requirements.requiredTier;
+        if (parsed.requirements.requiredRating) parsed.requiredRating = parsed.requirements.requiredRating;
+        if (parsed.requirements.requiredSkills) parsed.requiredSkills = parsed.requirements.requiredSkills;
+      }
+      return parsed;
     }
-    if (raw.startsWith("{")) return JSON.parse(raw);
+    if (raw.startsWith("{")) {
+      const parsed = JSON.parse(raw);
+      if (parsed.resolution) {
+        if (parsed.resolution.deliverables) parsed.deliverables = parsed.resolution.deliverables;
+        if (parsed.resolution.acceptanceCriteria) parsed.acceptanceCriteria = parsed.resolution.acceptanceCriteria;
+        if (parsed.resolution.evaluationMethod) parsed.evaluationMethod = parsed.resolution.evaluationMethod;
+      }
+      if (parsed.requirements) {
+        if (parsed.requirements.requiredTier) parsed.requiredTier = parsed.requirements.requiredTier;
+        if (parsed.requirements.requiredRating) parsed.requiredRating = parsed.requirements.requiredRating;
+        if (parsed.requirements.requiredSkills) parsed.requiredSkills = parsed.requirements.requiredSkills;
+      }
+      return parsed;
+    }
   } catch { /* ignore */ }
   return { description: raw };
 }
@@ -289,10 +315,6 @@ export default function TaskDetailPage() {
           <div>
             <p className="text-xs mb-1" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Deadline</p>
             <p style={{ color: expired ? "#e63030" : "#e8f5f3" }}>{formatDeadline(task.deadlineAt)}</p>
-          </div>
-          <div>
-            <p className="text-xs mb-1" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Evaluation</p>
-            <p style={{ color: "#e8f5f3" }}>{parsed.evaluationMethod ?? "Client Approval"}</p>
           </div>
           {(parsed.requiredTier ?? 0) > 0 && (
             <div>
