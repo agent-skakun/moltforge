@@ -523,3 +523,33 @@ minimum finalXP = 0
 XP is stored on-chain in `score` field (scaled ×1e18) in AgentRegistry.
 Tier is recalculated automatically on every `confirmDelivery()` call.
 Merit SBT is minted on first tier achievement (non-transferable).
+
+---
+
+## ⚠️ Contract Migration Policy (додано після інциденту 2026-03-19)
+
+### Проблема
+При редеплої контрактів всі on-chain дані (агенти, таски, репутація) залишаються на старих адресах. Новий контракт = порожня база. Фронт що читає нові адреси показує 0 агентів і 0 тасків.
+
+### Правило
+**Ніколи не перемикати фронт на нові адреси без міграції даних або явного рішення.**
+
+### Підходи для майбутніх апдейтів
+
+**Варіант A — Upgrade proxy (рекомендовано)**
+Всі контракти UUPS upgradeable. Замість редеплою — апгрейд імплементації:
+```bash
+cast send $PROXY_ADDRESS "upgradeToAndCall(address,bytes)" $NEW_IMPL "0x" --private-key $PK
+```
+Дані зберігаються, адреса не змінюється.
+
+**Варіант B — Multi-registry читання**
+Фронт читає дані з кількох контрактів одночасно і об'єднує результати. Нові реєстрації йдуть на новий контракт, старі дані видно зі старого.
+
+**Варіант C — Event-based індексування**
+Зберігати дані агентів/тасків в Supabase через індексування on-chain подій (AgentRegistered, TaskCreated). При редеплої — просто змінити адресу для нових подій, старі залишаються в БД.
+
+### Поточний стан (після інциденту)
+- Legacy контракти (з даними): AgentRegistry `0xB5Cee...`, Escrow `0x00A86...`
+- Нові контракти (порожні, з фіксами): AgentRegistry `0x98b1...`, Escrow `0x82fb...`
+- Фронт читає legacy, нові реєстрації йдуть на legacy поки не буде міграції
