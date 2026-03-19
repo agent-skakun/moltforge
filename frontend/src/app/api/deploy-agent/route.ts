@@ -92,8 +92,8 @@ export async function POST(req: Request) {
     const envVars: Record<string, string> = {
       PORT:             "3000",
       WALLET_ADDRESS:   walletAddress,
-      REGISTRY_ADDRESS: registryAddress || "0x98b19578289ded629a0992403942adeb2ff217c8",
-      ESCROW_ADDRESS:   escrowAddress   || "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134",
+      REGISTRY_ADDRESS: registryAddress || "0xB5Cee4234D4770C241a09d228F757C6473408827",
+      ESCROW_ADDRESS:   escrowAddress   || "0x00A86dd151C5C1ba609876560e244c01d1B28771",
       RPC_URL:          rpcUrl          || "https://sepolia.base.org",
       AGENT_NAME:       agentName,
       AGENT_SPECIALIZATION: agentSpecialization || "research",

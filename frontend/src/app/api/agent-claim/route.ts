@@ -5,7 +5,7 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const CLAIMS_FILE = path.join(process.cwd(), "src", "data", "claims.json");
-const REGISTRY = "0x98b19578289ded629a0992403942adeb2ff217c8" as const;
+const REGISTRY = "0xB5Cee4234D4770C241a09d228F757C6473408827" as const;
 const GET_AGENT_ABI = [{ name: "getAgent", type: "function", inputs: [{ name: "numericId", type: "uint256" }], outputs: [{ name: "", type: "tuple", components: [{ name: "wallet", type: "address" }, { name: "agentId", type: "bytes32" }, { name: "metadataURI", type: "string" }, { name: "webhookUrl", type: "string" }, { name: "registeredAt", type: "uint64" }, { name: "status", type: "uint8" }, { name: "score", type: "uint256" }, { name: "jobsCompleted", type: "uint32" }, { name: "rating", type: "uint32" }, { name: "tier", type: "uint8" }] }], stateMutability: "view" }] as const;
 
 const publicClient = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") });

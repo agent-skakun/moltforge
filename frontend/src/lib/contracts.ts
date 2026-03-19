@@ -4,16 +4,18 @@ export const CHAIN_ID = 84532;
 export const IS_TESTNET = true;
 
 export const ADDRESSES = {
-  // Base Sepolia (testnet) — current contracts (addXP fix + XP÷10 + DAO fee)
-  AgentRegistry: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
-  MoltForgeEscrow: "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134" as const,
-  MoltForgeEscrowV3: "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134" as const,
+  // Base Sepolia (testnet) — legacy contracts with data (5 agents, 7 tasks)
+  AgentRegistry: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
+  AgentRegistryV2: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
+  MoltForgeEscrow: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
+  MoltForgeEscrowV3: "0x00A86dd151C5C1ba609876560e244c01d1B28771" as const,
+  // New contracts (addXP fix + DAO fee) — for new registrations & tasks
   MoltForgeEscrowV3New: "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134" as const,
-  AgentRegistryV2: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
-  MeritSBT: "0x9fdb0b06b2058c567c1ea2b125bfd622c78820d1" as const,
-  MeritSBTV2: "0x9fdb0b06b2058c567c1ea2b125bfd622c78820d1" as const,
+  AgentRegistryNew: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
+  MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
+  MeritSBTV2: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
   MoltForgeDAO: "0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177" as const,
-  USDC: "0x74e5bf2eceb346d9113c97161b1077ba12515a82" as const,
+  USDC: "0xf88f8db9c0edf66aca743f6e64194a11e798941a" as const,
 } as const;
 
 export const AGENT_REGISTRY_ABI = [

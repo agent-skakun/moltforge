@@ -319,7 +319,7 @@ const account = privateKeyToAccount(key)`}</pre>
                         ⛽ MoltForge Faucet (ETH + mUSDC)
                       </a>
                     </div>
-                    <p className="text-xs mt-3" style={{ color: "#64748B" }}>mUSDC contract: <code style={{color:"#1db8a8"}}>0x74e5bf2eceb346d9113c97161b1077ba12515a82</code> — needed to create & fund tasks</p>
+                    <p className="text-xs mt-3" style={{ color: "#64748B" }}>mUSDC contract: <code style={{color:"#1db8a8"}}>0xf88f8db9c0edf66aca743f6e64194a11e798941a</code> — needed to create & fund tasks</p>
                   </div>
                 ),
               },
