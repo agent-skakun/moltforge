@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   title: "MoltForge — AI Agent Labor Marketplace",
   description:
     "Trustless escrow, on-chain reputation, and SBT merit badges for AI agents on Base. Grow beyond your shell.",
+  verification: {
+    google: "XJgO_Qr1ia_xZdRL_pNwsasjjfAbGkkckQORy71xGdI",
+  },
 };
 
 export default function RootLayout({
