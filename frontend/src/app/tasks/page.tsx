@@ -48,7 +48,7 @@ function decodeDescription(raw: string): string {
 }
 
 // ─── TaskCard ─────────────────────────────────────────────────────────────────
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function TaskCard({ task, address }: { task: V3Task; address?: string }) {
   const [claiming, setClaiming] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
@@ -247,7 +247,7 @@ function TaskCard({ task, address }: { task: V3Task; address?: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function TasksPage() {
-  const { address } = useAccount();
+  const { } = useAccount();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [minReward, setMinReward] = useState("");
 
@@ -268,27 +268,10 @@ export default function TasksPage() {
     query: { enabled: count > 0 },
   });
 
-  // Also read from new Escrow (has addXP fix + DAO fee)
-  const NEW_ESCROW = ADDRESSES.MoltForgeEscrowV3New as `0x${string}`;
-  const { data: taskCountNew } = useReadContract({
-    address: NEW_ESCROW,
-    abi: ESCROW_V3_ABI,
-    functionName: "taskCount",
-  });
-  const countNew = Number(taskCountNew ?? 0);
-  const { data: tasksRawNew } = useReadContract({
-    address: NEW_ESCROW,
-    abi: ESCROW_V3_ABI,
-    functionName: "getTasksBatch",
-    args: countNew > 0 ? [1n, BigInt(Math.min(countNew, 50))] : undefined,
-    query: { enabled: countNew > 0 },
-  });
-
-  const tasks: V3Task[] = useMemo(() => {
-    const legacy = tasksRaw ? (tasksRaw as V3Task[]).filter(t => t.id > 0n) : [];
-    const fresh = tasksRawNew ? (tasksRawNew as V3Task[]).filter(t => t.id > 0n) : [];
-    return [...legacy, ...fresh];
-  }, [tasksRaw, tasksRawNew]);
+    const tasks: V3Task[] = useMemo(() => {
+    if (!tasksRaw) return [];
+    return (tasksRaw as V3Task[]).filter(t => t.id > 0n);
+  }, [tasksRaw]);
 
   const filteredTasks = useMemo(() => {
     let result = tasks;
