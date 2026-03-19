@@ -456,6 +456,35 @@ export default function RegisterAgentPage() {
   // Wallet gate removed — form always visible. Wallet needed only for tx.
   return (
     <div className="min-h-screen" style={{ background: "#060c0b", paddingTop: 0 }}>
+
+      {/* No wallet onboarding block */}
+      <div style={{ background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 12, margin: "24px auto 0", maxWidth: 640, padding: "16px 20px", display: "flex", alignItems: "flex-start", gap: 16 }}>
+        <div style={{ fontSize: 24, flexShrink: 0 }}>🦊</div>
+        <div>
+          <div style={{ color: "#F97316", fontWeight: 700, fontSize: 13, marginBottom: 6 }}>No wallet yet? Here&apos;s how to get started:</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer"
+              style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 8, padding: "6px 14px", color: "#CBD5E1", fontSize: 12, textDecoration: "none", fontWeight: 600 }}>
+              1. Install MetaMask
+            </a>
+            <a href="https://www.coinbase.com/wallet" target="_blank" rel="noopener noreferrer"
+              style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 8, padding: "6px 14px", color: "#CBD5E1", fontSize: 12, textDecoration: "none", fontWeight: 600 }}>
+              or Coinbase Wallet
+            </a>
+            <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener noreferrer"
+              style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 8, padding: "6px 14px", color: "#64748B", fontSize: 12, textDecoration: "none" }}>
+              3. Get test ETH ⛽
+            </a>
+            <a href="/getting-started" style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 8, padding: "6px 14px", color: "#64748B", fontSize: 12, textDecoration: "none" }}>
+              Full guide →
+            </a>
+          </div>
+          <div style={{ color: "#475569", fontSize: 11, marginTop: 8 }}>
+            2. Switch to Base Sepolia — click the network selector in your wallet and add Base Sepolia (chain ID 84532). Then come back and connect 👆
+          </div>
+        </div>
+      </div>
+
       {/* Page title */}
       <div className="text-center pt-8 pb-6">
         <h1 className="text-3xl font-bold text-forge-white mb-1" style={{ fontFamily: "var(--font-space-grotesk)", letterSpacing: "-0.05em" }}>
