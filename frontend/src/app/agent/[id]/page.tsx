@@ -66,6 +66,7 @@ export default function AgentProfilePage() {
   const [testResult, setTestResult] = useState("");
   const [loadedFaceParams, setLoadedFaceParams] = useState<FaceParams | null>(null);
   const [ipfsMeta, setIpfsMeta] = useState<AgentMetadata>({});
+  const [onlineStatus, setOnlineStatus] = useState<"unknown" | "online" | "offline">("unknown");
 
   // V2 data
   const { data: extendedData, isLoading: loadingV2 } = useReadContract({
@@ -159,6 +160,22 @@ export default function AgentProfilePage() {
     parseMetadataURI(agent.metadataURI).then(setIpfsMeta).catch(() => {});
   }, [agent.metadataURI]);
 
+  // Ping webhook to determine Online/Offline status
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!webhookUrl) { setOnlineStatus("offline"); return; }
+    const url = webhookUrl.replace(/\/$/, "") + "/health";
+    fetch(url, { method: "HEAD", signal: AbortSignal.timeout(4000) })
+      .then(r => setOnlineStatus(r.ok ? "online" : "offline"))
+      .catch(() => {
+        // fallback: try GET /
+        fetch(webhookUrl, { method: "GET", signal: AbortSignal.timeout(4000) })
+          .then(() => setOnlineStatus("online"))
+          .catch(() => setOnlineStatus("offline"));
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [webhookUrl]);
+
   const testAgent = async () => {
     if (!webhookUrl) return;
     setTesting(true);
@@ -205,6 +222,18 @@ export default function AgentProfilePage() {
                   background: statusActive ? "#3ec95a" : "#e63030",
                   boxShadow: statusActive ? "0 0 8px #3ec95a" : "none",
                 }} />
+                {/* Online/Offline ping badge */}
+                {onlineStatus !== "unknown" && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                    style={{
+                      background: onlineStatus === "online" ? "#3ec95a15" : "#e6303015",
+                      border: `1px solid ${onlineStatus === "online" ? "#3ec95a40" : "#e6303040"}`,
+                      color: onlineStatus === "online" ? "#3ec95a" : "#e63030",
+                      fontFamily: "var(--font-jetbrains-mono)",
+                    }}>
+                    {onlineStatus === "online" ? "● Online" : "○ Offline"}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2 mb-3">
