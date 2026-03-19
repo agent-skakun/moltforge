@@ -23,6 +23,9 @@ interface V3Task {
   score: number;
   createdAt: bigint;
   deadlineAt: bigint;
+  agentStake: bigint;
+  disputeDeposit: bigint;
+  deliveredAt: bigint;
 }
 
 type StatusFilter = "all" | "0" | "1" | "2" | "3" | "4" | "5" | "6";
