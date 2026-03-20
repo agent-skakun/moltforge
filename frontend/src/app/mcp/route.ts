@@ -37,6 +37,74 @@ const ERC20_ABI = parseAbi([
   "function allowance(address owner, address spender) view returns (uint256)",
 ]);
 
+// ── Error decoder: translate contract reverts to human-readable messages ──────
+
+const REVERT_MESSAGES: Record<string, { message: string; hint: string }> = {
+  "0xc506f361": {
+    message: "NotOpenTask — this task type doesn't match your action",
+    hint: "If agentId=0 (open task), use apply_for_task instead of claim_task. If agentId>0 (direct-hire), use claim_task. See https://moltforge.cloud/docs#task-types",
+  },
+  "0x6c8a0fce": {
+    message: "AgentMismatch — this direct-hire task is assigned to a different agent",
+    hint: "This task was created for a specific agent (agentId > 0). Only that agent can claim it. Look for open tasks (agentId=0) or tasks matching your agent ID. See https://moltforge.cloud/docs#task-types",
+  },
+  "0x13d0ff59": {
+    message: "WrongStatus — task is not in the right status for this action",
+    hint: "Check task status with get_task tool. Open=can apply, Claimed=can submit, Delivered=can confirm/dispute. See https://moltforge.cloud/docs#task-types",
+  },
+  "0x82b42900": {
+    message: "ZeroReward — reward or stake amount too small",
+    hint: "Minimum stake for voting is 0.1% of task reward. For tasks, reward must be > 0. See https://moltforge.cloud/docs#staking",
+  },
+  "0x2e4c7d98": {
+    message: "AlreadyApplied — you already applied for this task",
+    hint: "You can only apply once per task. Use withdraw_application to remove your application, or wait for client to select.",
+  },
+  "0x9a7e4ab4": {
+    message: "AlreadyVoted — you already voted on this dispute",
+    hint: "Each validator can only vote once per dispute.",
+  },
+  "0xa1bff5e0": {
+    message: "DeadlineInPast — the deadline must be in the future",
+    hint: "Set deadlineHours > 0 when creating a task.",
+  },
+  "0x4d7e2640": {
+    message: "NotClient — only the task creator can perform this action",
+    hint: "Only the wallet that created the task can confirm, dispute, or select agents.",
+  },
+  "0x11c1b246": {
+    message: "NotAgent — only the assigned agent can perform this action",
+    hint: "Only the agent who was selected/claimed can submit results.",
+  },
+};
+
+function decodeRevertError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+
+  // Check for known revert selectors
+  for (const [selector, info] of Object.entries(REVERT_MESSAGES)) {
+    if (msg.includes(selector)) {
+      return `${info.message}\n\n💡 How to fix: ${info.hint}`;
+    }
+  }
+
+  // Check for common viem error patterns
+  if (msg.includes("insufficient funds")) {
+    return "Insufficient ETH for gas. Get test ETH: call get_faucet with your wallet address. Docs: https://moltforge.cloud/docs#quick-start";
+  }
+  if (msg.includes("insufficient allowance") || msg.includes("ERC20: insufficient allowance")) {
+    return "Insufficient mUSDC allowance. You need to approve mUSDC for the Escrow contract first. The apply_for_task and create_task tools do this automatically. If using cast send, run: cast send MUSDC_ADDRESS 'approve(address,uint256)' ESCROW_ADDRESS AMOUNT. Docs: https://moltforge.cloud/docs#staking";
+  }
+  if (msg.includes("transfer amount exceeds balance")) {
+    return "Insufficient mUSDC balance. Get test tokens: call get_faucet with your wallet address, or mint directly: cast send 0x74e5...82 'mint(address,uint256)' YOUR_WALLET 10000000000. Docs: https://moltforge.cloud/docs#quick-start";
+  }
+  if (msg.includes("execution reverted")) {
+    return `Transaction reverted. ${msg.slice(0, 200)}\n\n💡 Common causes: wrong task status, not authorized, insufficient balance/allowance. Check task details with get_task tool. Docs: https://moltforge.cloud/docs`;
+  }
+
+  return msg;
+}
+
 const publicClient = createPublicClient({ chain: baseSepolia, transport: http(RPC) });
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
@@ -616,7 +684,7 @@ export async function POST(req: Request) {
         { headers: cors }
       );
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = decodeRevertError(err);
       return NextResponse.json(
         { jsonrpc: "2.0", result: { content: [{ type: "text", text: `Error: ${message}` }], isError: true }, id },
         { headers: cors }

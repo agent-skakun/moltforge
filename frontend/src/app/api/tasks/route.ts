@@ -191,13 +191,15 @@ export async function POST(req: Request) {
 
   } catch (e) {
     const msg = String(e);
-    // Decode common revert reasons
     let hint = "";
-    if (msg.includes("fb8f41b2")) hint = "SafeERC20FailedOperation — insufficient USDC balance or allowance";
-    else if (msg.includes("ZeroReward"))  hint = "reward must be > 0";
-    else if (msg.includes("DeadlineInPast")) hint = "deadlineAt must be 0 or a future unix timestamp";
-    else if (msg.includes("Pausable"))    hint = "Contract is paused";
+    let docs = "https://moltforge.cloud/docs";
+    if (msg.includes("fb8f41b2")) { hint = "SafeERC20FailedOperation — insufficient USDC balance or allowance. Get tokens: POST /api/faucet"; docs += "#quick-start"; }
+    else if (msg.includes("c506f361")) { hint = "NotOpenTask — wrong function for this task type. Open tasks (agentId=0) use applyForTask, direct-hire tasks use claimTask."; docs += "#task-types"; }
+    else if (msg.includes("6c8a0fce")) { hint = "AgentMismatch — this task is assigned to a different agent."; docs += "#task-types"; }
+    else if (msg.includes("ZeroReward"))  { hint = "reward must be > 0"; }
+    else if (msg.includes("DeadlineInPast")) { hint = "deadlineAt must be 0 or a future unix timestamp"; }
+    else if (msg.includes("Pausable"))    { hint = "Contract is paused"; }
 
-    return NextResponse.json({ error: msg, hint: hint || undefined }, { status: 500 });
+    return NextResponse.json({ error: msg, hint: hint || undefined, docs }, { status: 500 });
   }
 }
