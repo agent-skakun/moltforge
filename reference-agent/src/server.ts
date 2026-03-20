@@ -2,9 +2,11 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { loadConfig } from "./config";
-import { createBlockchainClient } from "./blockchain";
+import { createBlockchainClient, checkClientTrust } from "./blockchain";
 import { executeResearch, buildMetadataURI } from "./agent";
 import { startTelegramBot } from "./telegram";
+import { checkAgentTrust } from "./trust";
+import { logExecution, createInputHash, createResultHash } from "./execution-log";
 import {
   issueChallenge,
   verifyRegistrationSignature,
@@ -24,7 +26,7 @@ app.use(express.json());
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-PAYMENT");
   if (req.method === "OPTIONS") return res.sendStatus(200);
   next();
 });
@@ -222,18 +224,37 @@ app.get("/skills", (_req, res) => {
 
 // POST /tasks — execute research
 app.post("/tasks", async (req, res) => {
-  const { query, systemPrompt, skills: requestSkills, apiKey, llmProvider, taskId } = req.body as {
+  // ERC-8004 trust check (non-blocking, log only)
+  const trust = await checkClientTrust(req.body?.clientWallet ?? "").catch(() => ({
+    trusted: true,
+    reason: "skipped",
+    score: 0,
+  }));
+  console.log("[erc8004-trust-check]", trust);
+
+  const { query, systemPrompt, skills: requestSkills, apiKey, llmProvider, taskId, agentAddress } = req.body as {
     query?: string;
     systemPrompt?: string;
     skills?: string[];
     apiKey?: string;           // user's own LLM API key (passed per-request, never stored)
     llmProvider?: string;      // "anthropic" | "openai" | "groq"
     taskId?: number | string;  // on-chain task ID (optional — if provided, submitResult() is called)
+    agentAddress?: string;     // optional — if provided, ERC-8004 trust-gating is applied
   };
 
   if (!query || typeof query !== "string") {
     res.status(400).json({ error: "query (string) is required" });
     return;
+  }
+
+  // Optional ERC-8004 trust-gating: if agentAddress is provided, verify trust
+  if (agentAddress) {
+    const trustResult = await checkAgentTrust(agentAddress, config.registryAddress, config.rpcUrl);
+    if (!trustResult.trusted) {
+      logExecution({ taskId: taskId ?? null, decision: "rejected-untrusted", toolsUsed: [], inputHash: createInputHash(query || ""), resultHash: "0x00000000", durationMs: 0, trustCheck: { trusted: false, score: trustResult.score, agentAddress } });
+      res.status(403).json({ error: "Agent not trusted", trust: trustResult });
+      return;
+    }
   }
 
   try {
@@ -273,10 +294,126 @@ app.post("/tasks", async (req, res) => {
       }
     }
 
+    logExecution({ taskId: taskId ?? null, decision: "executed", toolsUsed: ["executeResearch", "buildMetadataURI"], inputHash: createInputHash(query), resultHash: createResultHash(JSON.stringify(report)), durationMs: 0 });
     res.json({ report, metadataURI, onChainTxHash });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
+});
+
+// ─── x402 Payment Endpoints ──────────────────────────────────────────────────
+
+// GET /x402-info — pricing info for x402 protocol
+app.get("/x402-info", (_req, res) => {
+  res.json({
+    protocol: "x402",
+    description: "Pay-per-task research agent via x402 HTTP payment protocol",
+    pricing: {
+      currency: "USDC",
+      amount: "1.00",
+      network: "base",
+      chainId: 8453,
+      recipient: config.walletAddress,
+    },
+    endpoint: "/tasks/x402",
+    method: "POST",
+    headers: {
+      "X-PAYMENT": "Base64-encoded payment payload (x402 protocol)",
+    },
+  });
+});
+
+// POST /tasks/x402 — x402 payment-gated task execution (mock flow for hackathon)
+app.post("/tasks/x402", async (req, res) => {
+  const paymentHeader = req.headers["x-payment"] as string | undefined;
+
+  // If no payment header, return 402 with payment instructions
+  if (!paymentHeader) {
+    res.status(402).json({
+      error: "Payment Required",
+      protocol: "x402",
+      paymentInstructions: {
+        currency: "USDC",
+        amount: "1.00",
+        network: "base",
+        chainId: 8453,
+        recipient: config.walletAddress,
+        description: "Send 1 USDC on Base to execute a research task",
+        header: "X-PAYMENT",
+        format: "Include Base64-encoded payment proof in X-PAYMENT header",
+      },
+    });
+    return;
+  }
+
+  // Payment header present — accept for demo (mock verification)
+  console.log(`[x402] Payment header received: ${paymentHeader.slice(0, 32)}...`);
+
+  const { query, systemPrompt, skills: requestSkills, apiKey, llmProvider, taskId } = req.body as {
+    query?: string;
+    systemPrompt?: string;
+    skills?: string[];
+    apiKey?: string;
+    llmProvider?: string;
+    taskId?: number | string;
+  };
+
+  if (!query || typeof query !== "string") {
+    res.status(400).json({ error: "query (string) is required" });
+    return;
+  }
+
+  try {
+    let combinedSkills = skillsContext;
+    if (requestSkills && requestSkills.length > 0) {
+      const fetched = await fetchSkillsFromGitHub(requestSkills);
+      if (fetched) {
+        combinedSkills = combinedSkills ? `${combinedSkills}\n\n${fetched}` : fetched;
+      }
+    }
+
+    const report = await executeResearch(query, {
+      systemPrompt: systemPrompt ?? config.systemPrompt,
+      skillsContext: combinedSkills || undefined,
+      llmConfig: {
+        openaiApiKey:    (llmProvider === "openai"    ? apiKey : undefined) ?? config.openaiApiKey,
+        anthropicApiKey: (llmProvider === "anthropic" ? apiKey : undefined) ?? config.anthropicApiKey,
+        groqApiKey:      (llmProvider === "groq"      ? apiKey : undefined) ?? config.groqApiKey,
+        model: config.llmModel,
+        temperature: config.temperature,
+        maxTokens: config.maxTokens,
+      },
+    });
+    const metadataURI = buildMetadataURI(report);
+
+    let onChainTxHash: string | null = null;
+    if (taskId !== undefined && taskId !== null) {
+      try {
+        const id = BigInt(taskId);
+        onChainTxHash = await submitResult(id, metadataURI);
+      } catch (onChainErr) {
+        console.error(`[on-chain] submitResult failed for taskId=${taskId}:`, (onChainErr as Error).message);
+      }
+    }
+
+    logExecution({ taskId: taskId ?? null, decision: "executed-x402", toolsUsed: ["executeResearch", "buildMetadataURI"], inputHash: createInputHash(query), resultHash: createResultHash(JSON.stringify(report)), durationMs: 0 });
+    res.json({ report, metadataURI, onChainTxHash, payment: { accepted: true, protocol: "x402" } });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ─── Trust Check Endpoint ────────────────────────────────────────────────────
+
+// GET /trust-check?address=0x... — ERC-8004 trust assessment
+app.get("/trust-check", async (req, res) => {
+  const address = req.query.address as string | undefined;
+  if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
+    res.status(400).json({ error: "address query parameter (0x... format) is required" });
+    return;
+  }
+  const assessment = await checkAgentTrust(address, config.registryAddress, config.rpcUrl);
+  res.json({ address, ...assessment });
 });
 
 // ─── Agent Self-Registration API ─────────────────────────────────────────────
@@ -386,6 +523,41 @@ app.post("/api/register", async (req, res) => {
     console.error(`[self-register] ❌ "${name}":`, msg);
     res.status(400).json({ error: msg });
   }
+});
+
+// ─── x402 Paid Endpoint ───────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { paymentMiddleware } = require("x402-express") as {
+  paymentMiddleware: (
+    payTo: string,
+    routes: Record<string, { price: string; network: string }>,
+    facilitator?: { url: string },
+  ) => (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>;
+};
+
+app.use(
+  paymentMiddleware(
+    config.walletAddress,
+    {
+      "/api/task-preview/:taskId": {
+        price: "$0.001",
+        network: "base-sepolia",
+      },
+    },
+  ),
+);
+
+// GET /api/task-preview/:taskId — paid task preview (x402: 0.001 USDC)
+app.get("/api/task-preview/:taskId", (_req, res) => {
+  const taskId = _req.params.taskId;
+  // In a real implementation this would look up the task from storage
+  const placeholder = `Preview for task #${taskId}. This agent provides AI research services via MoltForge marketplace. Submit a full task request to POST /tasks to get started.`;
+  res.json({
+    taskId,
+    preview: placeholder.slice(0, 100),
+    note: "Full task details available after payment via x402 protocol",
+  });
 });
 
 // POST /config — accept agent config
