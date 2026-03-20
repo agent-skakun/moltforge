@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { isAddress, verifyMessage, createPublicClient, http } from "viem";
 import { baseSepolia } from "viem/chains";
-import { promises as fs } from "fs";
-import path from "path";
+import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
 
-const CLAIMS_FILE = path.join(process.cwd(), "src", "data", "claims.json");
-const REGISTRY = "0xB5Cee4234D4770C241a09d228F757C6473408827" as const;
-const GET_AGENT_ABI = [{ name: "getAgent", type: "function", inputs: [{ name: "numericId", type: "uint256" }], outputs: [{ name: "", type: "tuple", components: [{ name: "wallet", type: "address" }, { name: "agentId", type: "bytes32" }, { name: "metadataURI", type: "string" }, { name: "webhookUrl", type: "string" }, { name: "registeredAt", type: "uint64" }, { name: "status", type: "uint8" }, { name: "score", type: "uint256" }, { name: "jobsCompleted", type: "uint32" }, { name: "rating", type: "uint32" }, { name: "tier", type: "uint8" }] }], stateMutability: "view" }] as const;
+// ── Supabase client (no fs, works on Vercel serverless) ──────────────────────
+const SUPABASE_URL = "https://lfswbuoryxktimrzualq.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxmc3didW9yeXhrdGltcnp1YWxxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mzg0OTM2OCwiZXhwIjoyMDg5NDI1MzY4fQ.l6nz4CeVqsnZalmTEE-ihRSKuI9aUM3xXO0hrL8IWqE";
 
-const publicClient = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") });
+const sbHeaders = {
+  "apikey": SUPABASE_KEY,
+  "Authorization": `Bearer ${SUPABASE_KEY}`,
+  "Content-Type": "application/json",
+};
 
 export interface AgentClaim {
   agentId: number;
@@ -20,90 +23,152 @@ export interface AgentClaim {
   verified: boolean;
 }
 
-async function readClaims(): Promise<AgentClaim[]> {
-  try {
-    const raw = await fs.readFile(CLAIMS_FILE, "utf8");
-    return JSON.parse(raw) as AgentClaim[];
-  } catch { return []; }
+async function getClaims(manager: string): Promise<AgentClaim[]> {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/agent_claims?manager_wallet=eq.${manager.toLowerCase()}&order=claimed_at.desc`,
+    { headers: sbHeaders }
+  );
+  if (!res.ok) return [];
+  const rows = await res.json() as Array<{
+    agent_id: number; agent_wallet: string; manager_wallet: string;
+    signature: string; message: string; claimed_at: number; method: string;
+  }>;
+  return rows.map(r => ({
+    agentId: r.agent_id,
+    agentWallet: r.agent_wallet,
+    managerWallet: r.manager_wallet,
+    signature: r.signature,
+    message: r.message,
+    claimedAt: r.claimed_at,
+    verified: true,
+  }));
 }
 
-async function writeClaims(claims: AgentClaim[]): Promise<void> {
-  await fs.mkdir(path.dirname(CLAIMS_FILE), { recursive: true });
-  await fs.writeFile(CLAIMS_FILE, JSON.stringify(claims, null, 2), "utf8");
+async function upsertClaim(claim: Omit<AgentClaim, "verified"> & { method?: string }) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/agent_claims`, {
+    method: "POST",
+    headers: { ...sbHeaders, "Prefer": "resolution=merge-duplicates,return=representation" },
+    body: JSON.stringify({
+      agent_id: claim.agentId,
+      agent_wallet: claim.agentWallet.toLowerCase(),
+      manager_wallet: claim.managerWallet.toLowerCase(),
+      signature: claim.signature,
+      message: claim.message,
+      method: claim.method ?? "agent-signature",
+      claimed_at: claim.claimedAt,
+    }),
+  });
+  return res.ok;
 }
+
+async function deleteClaim(agentId: number, manager: string) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/agent_claims?agent_id=eq.${agentId}&manager_wallet=eq.${manager.toLowerCase()}`,
+    { method: "DELETE", headers: sbHeaders }
+  );
+  return res.ok;
+}
+
+// ── On-chain ─────────────────────────────────────────────────────────────────
+const publicClient = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") });
 
 async function resolveAgentWallet(agentId: number): Promise<string | null> {
   try {
-    const agent = await publicClient.readContract({ address: REGISTRY, abi: GET_AGENT_ABI, functionName: "getAgent", args: [BigInt(agentId)] }) as { wallet: string };
+    const agent = await publicClient.readContract({
+      address: ADDRESSES.AgentRegistry,
+      abi: AGENT_REGISTRY_ABI,
+      functionName: "getAgent",
+      args: [BigInt(agentId)],
+    }) as { wallet: string };
     if (!agent?.wallet || agent.wallet === "0x0000000000000000000000000000000000000000") return null;
     return agent.wallet.toLowerCase();
   } catch { return null; }
 }
 
+// ── Handlers ─────────────────────────────────────────────────────────────────
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const manager = searchParams.get("manager");
-  if (!manager || !isAddress(manager)) return NextResponse.json({ error: "manager address required" }, { status: 400 });
-  const claims = await readClaims();
-  return NextResponse.json({ claims: claims.filter(c => c.managerWallet.toLowerCase() === manager.toLowerCase()) });
+  if (!manager || !isAddress(manager)) {
+    return NextResponse.json({ error: "manager address required" }, { status: 400 });
+  }
+  const claims = await getClaims(manager);
+  return NextResponse.json({ claims });
 }
 
 export async function POST(req: Request) {
   let body: { agentId?: number; agentWallet?: string; managerWallet?: string; signature?: string; message?: string };
-  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  try { body = await req.json(); }
+  catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
   const { agentId, agentWallet, managerWallet, signature, message } = body;
   if (!agentId || !agentWallet || !managerWallet || !signature || !message) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    return NextResponse.json({ error: "Missing fields: agentId, agentWallet, managerWallet, signature, message" }, { status: 400 });
   }
   if (!isAddress(agentWallet) || !isAddress(managerWallet)) {
     return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 });
   }
 
-  // ── Verify signature: recovered address must match agent's on-chain wallet ──
+  // Verify on-chain wallet
   const onChainWallet = await resolveAgentWallet(Number(agentId));
   if (!onChainWallet) {
     return NextResponse.json({ error: `Agent #${agentId} not found on-chain` }, { status: 404 });
   }
-
-  let verified = false;
-  try {
-    const recovered = await verifyMessage({ address: agentWallet as `0x${string}`, message, signature: signature as `0x${string}` });
-    verified = recovered;
-    if (recovered && onChainWallet !== agentWallet.toLowerCase()) {
-      return NextResponse.json({
-        error: `Signature is valid but agentWallet ${agentWallet} does not match on-chain wallet ${onChainWallet}. Use the correct agent wallet.`
-      }, { status: 403 });
-    }
-    if (!recovered) {
-      return NextResponse.json({ error: "Signature verification failed — the signature does not match agentWallet. Sign the message with the agent's private key." }, { status: 403 });
-    }
-  } catch {
-    return NextResponse.json({ error: "Could not verify signature" }, { status: 400 });
+  if (onChainWallet !== agentWallet.toLowerCase()) {
+    return NextResponse.json({
+      error: `agentWallet ${agentWallet} does not match on-chain wallet ${onChainWallet}. Use the correct agent wallet.`
+    }, { status: 403 });
   }
 
-  // Expected message format
+  // Verify signature
   const expectedMessage = `I authorize ${managerWallet} to manage MoltForge agent #${agentId}`;
   if (message.toLowerCase() !== expectedMessage.toLowerCase()) {
     return NextResponse.json({ error: `Wrong message. Must be exactly: "${expectedMessage}"` }, { status: 400 });
   }
 
-  const claims = await readClaims();
-  const existing = claims.findIndex(c => c.agentId === Number(agentId) && c.managerWallet.toLowerCase() === managerWallet.toLowerCase());
-  const newClaim: AgentClaim = { agentId: Number(agentId), agentWallet: agentWallet.toLowerCase(), managerWallet: managerWallet.toLowerCase(), signature, message, claimedAt: Date.now(), verified };
+  let verified = false;
+  try {
+    verified = await verifyMessage({
+      address: agentWallet as `0x${string}`,
+      message,
+      signature: signature as `0x${string}`,
+    });
+  } catch {
+    return NextResponse.json({ error: "Could not verify signature" }, { status: 400 });
+  }
 
-  if (existing >= 0) claims[existing] = newClaim; else claims.push(newClaim);
-  await writeClaims(claims);
-  return NextResponse.json({ success: true, verified: true, claim: newClaim });
+  if (!verified) {
+    return NextResponse.json({
+      error: "Signature verification failed — sign the message with the agent's private key."
+    }, { status: 403 });
+  }
+
+  const claim = {
+    agentId: Number(agentId),
+    agentWallet: agentWallet.toLowerCase(),
+    managerWallet: managerWallet.toLowerCase(),
+    signature,
+    message,
+    claimedAt: Date.now(),
+    method: "agent-signature" as const,
+  };
+
+  const saved = await upsertClaim(claim);
+  if (!saved) {
+    return NextResponse.json({ error: "Failed to save claim to database" }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, verified: true, claim: { ...claim, verified: true } });
 }
 
 export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url);
   const agentId = Number(searchParams.get("agentId"));
   const manager = searchParams.get("manager");
-  if (!agentId || !manager) return NextResponse.json({ error: "agentId and manager required" }, { status: 400 });
-  const claims = await readClaims();
-  const filtered = claims.filter(c => !(c.agentId === agentId && c.managerWallet.toLowerCase() === manager.toLowerCase()));
-  await writeClaims(filtered);
-  return NextResponse.json({ success: true });
+  if (!agentId || !manager) {
+    return NextResponse.json({ error: "agentId and manager required" }, { status: 400 });
+  }
+  const ok = await deleteClaim(agentId, manager);
+  return NextResponse.json({ success: ok });
 }

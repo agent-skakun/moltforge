@@ -2,36 +2,26 @@ import { NextResponse } from "next/server";
 import { isAddress, recoverMessageAddress, createPublicClient, http } from "viem";
 import { baseSepolia } from "viem/chains";
 import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
-import { promises as fs } from "fs";
-import path from "path";
 
-const CLAIMS_FILE = path.join(process.cwd(), "src", "data", "claims.json");
+const SUPABASE_URL = "https://lfswbuoryxktimrzualq.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxmc3didW9yeXhrdGltcnp1YWxxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mzg0OTM2OCwiZXhwIjoyMDg5NDI1MzY4fQ.l6nz4CeVqsnZalmTEE-ihRSKuI9aUM3xXO0hrL8IWqE";
 
-interface AgentClaim {
-  agentId: number;
-  agentWallet: string;
-  managerWallet: string;
-  signature: string;
-  message: string;
-  claimedAt: number;
-  method?: "agent-signature" | "owner-wallet";
-}
-
-async function readClaims(): Promise<AgentClaim[]> {
-  try { return JSON.parse(await fs.readFile(CLAIMS_FILE, "utf8")) as AgentClaim[]; }
-  catch { return []; }
-}
-async function writeClaims(claims: AgentClaim[]) {
-  await fs.writeFile(CLAIMS_FILE, JSON.stringify(claims, null, 2), "utf8");
+async function upsertClaim(row: Record<string, unknown>) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/agent_claims`, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify(row),
+  });
+  return res.ok;
 }
 
 const rpcClient = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") });
 
-// POST /api/agent-claim/confirm
-// Body: { agentId, managerWallet, agentSignature? }
-// Two modes:
-//   - agentSignature provided → verify agent signed the authorization message (Level 2)
-//   - no agentSignature       → check ownerWallet in agent metadata (Level 1)
 export async function POST(req: Request) {
   let body: { agentId?: unknown; managerWallet?: unknown; agentSignature?: unknown };
   try { body = await req.json() as typeof body; }
@@ -65,7 +55,7 @@ export async function POST(req: Request) {
   let method: "agent-signature" | "owner-wallet";
 
   if (agentSignature) {
-    // ── Level 2: verify agent signed the authorization message ──────────────
+    // Level 2: verify agent signed the authorization message
     const expectedMsg = `I authorize ${manager} to manage MoltForge agent #${id}`;
     let recovered: string;
     try {
@@ -84,7 +74,7 @@ export async function POST(req: Request) {
     }
     method = "agent-signature";
   } else {
-    // ── Level 1: check ownerWallet in agent metadata ─────────────────────────
+    // Level 1: check ownerWallet in agent metadata
     let ownerInMeta: string | undefined;
     try {
       if (metadataURI.startsWith("data:application/json;base64,")) {
@@ -106,24 +96,26 @@ export async function POST(req: Request) {
     method = "owner-wallet";
   }
 
-  // ── Save confirmed claim ──────────────────────────────────────────────────
-  const claims = await readClaims();
-  const existing = claims.findIndex(c => c.agentId === id && c.managerWallet === manager);
-  const record: AgentClaim = {
-    agentId: id,
-    agentWallet,
-    managerWallet: manager,
+  // Save confirmed claim to Supabase
+  const saved = await upsertClaim({
+    agent_id: id,
+    agent_wallet: agentWallet,
+    manager_wallet: manager,
     signature: String(agentSignature ?? "owner-wallet-verified"),
     message: agentSignature
       ? `I authorize ${manager} to manage MoltForge agent #${id}`
       : `ownerWallet match in metadata`,
-    claimedAt: Date.now(),
     method,
-  };
+    claimed_at: Date.now(),
+  });
 
-  if (existing >= 0) claims[existing] = record;
-  else claims.push(record);
-  await writeClaims(claims);
+  if (!saved) {
+    return NextResponse.json({ error: "Failed to save claim" }, { status: 500 });
+  }
 
-  return NextResponse.json({ success: true, method, claim: record });
+  return NextResponse.json({
+    success: true,
+    method,
+    claim: { agentId: id, agentWallet, managerWallet: manager, method },
+  });
 }
