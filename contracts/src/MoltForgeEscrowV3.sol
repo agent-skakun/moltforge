@@ -429,11 +429,16 @@ contract MoltForgeEscrowV3 is
             try IMeritSBTV2(meritSBT).mintMerit(agentId, taskId, score, reward) {} catch {}
         }
 
-        // Add XP (non-reverting)
+        // Add XP (non-reverting, using low-level call to handle Panic errors)
         if (agentRegistry != address(0) && agentId > 0) {
             bool isLate = t.deadlineAt > 0 && block.timestamp > t.deadlineAt;
             uint256 rewardUsd = reward / 1e6;
-            try IAgentRegistry(agentRegistry).addXP(agentId, rewardUsd, uint32(score * 100), isLate, false, false) {} catch {}
+            bytes memory callData = abi.encodeWithSelector(
+                IAgentRegistry.addXP.selector,
+                agentId, rewardUsd, uint32(score * 100), isLate, false, false
+            );
+            // solhint-disable-next-line avoid-low-level-calls
+            agentRegistry.call(callData); // intentionally ignore return value and errors
         }
     }
 
@@ -694,9 +699,9 @@ contract MoltForgeEscrowV3 is
                 }
             }
 
-            // XP
+            // XP (low-level call to handle Panic errors from incompatible registries)
             if (agentRegistry != address(0) && t.agentId > 0) {
-                try IAgentRegistry(agentRegistry).addXP(t.agentId, t.reward / 1e6, 300, false, false, true) {} catch {}
+                agentRegistry.call(abi.encodeWithSelector(IAgentRegistry.addXP.selector, t.agentId, t.reward / 1e6, uint32(300), false, false, true));
             }
         } else {
             t.status = TaskStatus.Cancelled;
@@ -731,9 +736,9 @@ contract MoltForgeEscrowV3 is
                 token.safeTransfer(t.client, t.disputeDeposit);
             }
 
-            // XP
+            // XP (low-level call to handle Panic errors from incompatible registries)
             if (agentRegistry != address(0) && t.agentId > 0) {
-                try IAgentRegistry(agentRegistry).addXP(t.agentId, 0, 0, false, true, true) {} catch {}
+                agentRegistry.call(abi.encodeWithSelector(IAgentRegistry.addXP.selector, t.agentId, uint256(0), uint32(0), false, true, true));
             }
         }
         emit DisputeFinalized(taskId, agentWinsDispute, totalAgentStake, totalClientStake);
@@ -805,7 +810,7 @@ contract MoltForgeEscrowV3 is
             if (t.agentStake > 0) token.safeTransfer(t.claimedBy, t.agentStake);
             if (t.disputeDeposit > 0) token.safeTransfer(t.claimedBy, t.disputeDeposit);
             if (agentRegistry != address(0) && t.agentId > 0) {
-                try IAgentRegistry(agentRegistry).addXP(t.agentId, t.reward / 1e6, 300, false, false, true) {} catch {}
+                agentRegistry.call(abi.encodeWithSelector(IAgentRegistry.addXP.selector, t.agentId, t.reward / 1e6, uint32(300), false, false, true));
             }
         } else {
             t.status = TaskStatus.Cancelled;
@@ -816,7 +821,7 @@ contract MoltForgeEscrowV3 is
             if (t.agentStake > 0) token.safeTransfer(t.client, t.agentStake);
             if (t.disputeDeposit > 0) token.safeTransfer(t.client, t.disputeDeposit);
             if (agentRegistry != address(0) && t.agentId > 0) {
-                try IAgentRegistry(agentRegistry).addXP(t.agentId, 0, 0, false, true, true) {} catch {}
+                agentRegistry.call(abi.encodeWithSelector(IAgentRegistry.addXP.selector, t.agentId, uint256(0), uint32(0), false, true, true));
             }
         }
         emit DisputeResolved(taskId, agentWon);
