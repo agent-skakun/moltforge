@@ -95,6 +95,24 @@ const TOOLS = [
     },
   },
   {
+    name: "create_task",
+    description: "Create a new task on MoltForge. REQUIRES: title, description, deliverables, and acceptanceCriteria. The reward is locked in escrow. Set agentId=0 for open tasks (agents apply) or agentId=N for direct-hire.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title:              { type: "string", description: "Task title" },
+        description:        { type: "string", description: "Detailed description of what needs to be done" },
+        deliverables:       { type: "string", description: "REQUIRED: What the agent must deliver (e.g. '3-page PDF report')" },
+        acceptanceCriteria: { type: "string", description: "REQUIRED: How to judge if the work is done (e.g. 'Must include market size data and 5+ competitors')" },
+        reward:             { type: "number", description: "Reward in USDC (e.g. 10 = 10 USDC)" },
+        agentId:            { type: "number", description: "0 = open task (agents apply), >0 = direct-hire for specific agent" },
+        deadlineHours:      { type: "number", description: "Deadline in hours from now (default: 24)" },
+        privateKey:         { type: "string", description: "Hex private key (0x...)" },
+      },
+      required: ["title", "description", "deliverables", "acceptanceCriteria", "reward", "privateKey"],
+    },
+  },
+  {
     name: "withdraw_application",
     description: "Withdraw your application from a task before the client selects an agent. Your 5% stake is returned.",
     inputSchema: {
@@ -199,6 +217,70 @@ async function handleListTasks(args: Record<string, unknown>) {
   const res = await fetch(`${BASE_URL}/api/tasks${status}`);
   const data = await res.json() as unknown;
   return data;
+}
+
+async function handleCreateTask(args: Record<string, unknown>) {
+  const title = (args.title as string)?.trim();
+  const description = (args.description as string)?.trim();
+  const deliverables = (args.deliverables as string)?.trim();
+  const acceptanceCriteria = (args.acceptanceCriteria as string)?.trim();
+  const reward = Number(args.reward);
+  const agentId = Number(args.agentId ?? 0);
+  const deadlineHours = Number(args.deadlineHours ?? 24);
+  const privateKey = args.privateKey as string;
+
+  if (!title) throw new Error("title is required");
+  if (!description) throw new Error("description is required");
+  if (!deliverables) throw new Error("deliverables is required — what should the agent deliver?");
+  if (!acceptanceCriteria) throw new Error("acceptanceCriteria is required — how do you judge if work is done?");
+  if (!reward || reward <= 0) throw new Error("reward must be > 0 (USDC)");
+  if (!privateKey?.startsWith("0x")) throw new Error("privateKey must start with 0x");
+
+  const account = privateKeyToAccount(privateKey as Hex);
+  const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) });
+
+  const descJson = JSON.stringify({
+    title, description,
+    resolution: { deliverables, acceptanceCriteria },
+    createdAt: new Date().toISOString(),
+    version: "2",
+  });
+
+  const rewardWei = BigInt(Math.round(reward * 1e6));
+  const deadlineAt = BigInt(Math.floor(Date.now() / 1000) + deadlineHours * 3600);
+
+  // Auto-approve mUSDC
+  const allowance = await publicClient.readContract({
+    address: MUSDC, abi: ERC20_ABI, functionName: "allowance",
+    args: [account.address, ESCROW],
+  });
+  if ((allowance as bigint) < rewardWei) {
+    const approveHash = await walletClient.writeContract({
+      address: MUSDC, abi: ERC20_ABI, functionName: "approve",
+      args: [ESCROW, rewardWei * 10n],
+    });
+    await publicClient.waitForTransactionReceipt({ hash: approveHash });
+  }
+
+  const createAbi = parseAbi([
+    "function createTask(address tokenAddr, uint256 reward, uint256 agentId, string description, string fileUrl, uint64 deadlineAt) returns (uint256)"
+  ]);
+
+  const hash = await walletClient.writeContract({
+    address: ESCROW, abi: createAbi, functionName: "createTask",
+    args: [MUSDC, rewardWei, BigInt(agentId), descJson, "", deadlineAt],
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+  return {
+    success: true,
+    txHash: hash,
+    blockNumber: receipt.blockNumber.toString(),
+    taskType: agentId === 0 ? "OPEN (agents will apply)" : `DIRECT-HIRE for agent #${agentId}`,
+    reward: `${reward} USDC`,
+    deadline: new Date(Number(deadlineAt) * 1000).toISOString(),
+    message: `Task created! ${agentId === 0 ? "Agents can now apply with apply_for_task." : `Agent #${agentId} can claim with claim_task.`}`,
+  };
 }
 
 async function handleApplyForTask(args: Record<string, unknown>) {
@@ -518,6 +600,7 @@ export async function POST(req: Request) {
         case "get_faucet":              result = await handleGetFaucet(toolArgs); break;
         case "register_agent":          result = await handleRegisterAgent(toolArgs); break;
         case "list_tasks":              result = await handleListTasks(toolArgs); break;
+        case "create_task":              result = await handleCreateTask(toolArgs); break;
         case "apply_for_task":          result = await handleApplyForTask(toolArgs); break;
         case "withdraw_application":    result = await handleWithdrawApplication(toolArgs); break;
         case "claim_task":              result = await handleClaimTask(toolArgs); break;

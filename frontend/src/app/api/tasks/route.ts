@@ -95,6 +95,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "description is required" }, { status: 400 });
     }
 
+    // Validate description has required resolution fields
+    let descObj: Record<string, unknown> | null = null;
+    try { descObj = JSON.parse(description); } catch { descObj = null; }
+    if (!descObj || typeof descObj !== "object") {
+      return NextResponse.json({
+        error: "description must be a JSON object with title, description, and resolution fields",
+        example: { title: "Task title", description: "What needs to be done", resolution: { deliverables: "What to deliver", acceptanceCriteria: "How to judge completion" } },
+      }, { status: 400 });
+    }
+    if (!descObj.title || !(descObj.title as string).trim()) {
+      return NextResponse.json({ error: "description.title is required" }, { status: 400 });
+    }
+    const resolution = descObj.resolution as Record<string, unknown> | undefined;
+    if (!resolution || typeof resolution !== "object") {
+      return NextResponse.json({ error: "description.resolution is required (must contain deliverables and acceptanceCriteria)" }, { status: 400 });
+    }
+    if (!resolution.deliverables || !(resolution.deliverables as string).trim()) {
+      return NextResponse.json({ error: "description.resolution.deliverables is required — what should the agent deliver?" }, { status: 400 });
+    }
+    if (!resolution.acceptanceCriteria || !(resolution.acceptanceCriteria as string).trim()) {
+      return NextResponse.json({ error: "description.resolution.acceptanceCriteria is required — how do you judge if the work is done?" }, { status: 400 });
+    }
+
     // Private key: from request body (agent provides own key) or env fallback
     const rawKey = body.privateKey ?? process.env.AGENT_PRIVATE_KEY ?? process.env.PRIVATE_KEY;
     if (!rawKey) {
