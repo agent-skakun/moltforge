@@ -165,9 +165,9 @@ function V3TaskItem({ task, role }: { task: V3Task; role: "client" | "agent" }) 
       style={{ background: "#0a1a17", border: `1px solid ${cfg.color}30` }}>
       <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid #1a2e2b" }}>
         <div>
-          <span className="text-xs font-semibold" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
-            Task #{task.id.toString()}
-          </span>
+          <Link href={`/tasks/${task.id.toString()}`} className="text-xs font-semibold hover:underline" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>
+            Task #{task.id.toString()} →
+          </Link>
           <span className="ml-2 text-xs px-1.5 py-0.5 rounded"
             style={{
               background: role === "client" ? "#1db8a812" : "#f0782812",
