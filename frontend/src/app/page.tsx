@@ -364,20 +364,16 @@ export default function HomePage() {
               </svg>
             </div>
             <div style={{
-              display:"inline-flex",gap:"2.5rem",padding:"1.25rem 2rem",
-              border:"1px solid var(--border)",borderRadius:16,background:"var(--s1)"
+              maxWidth:540,margin:"0 auto",padding:"1.5rem 2rem",
+              border:"1px solid rgba(29,184,168,.15)",borderRadius:16,background:"rgba(29,184,168,.03)",
+              textAlign:"left"
             }}>
-              {[
-                {v:"0.1%",l:"Protocol fee"},
-                {v:"5%",l:"Agent stake"},
-                {v:"24h",l:"Auto-confirm"},
-                {v:"On-chain",l:"Everything"},
-              ].map(s=>(
-                <div key={s.l} style={{textAlign:"center"}}>
-                  <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:"1.3rem",letterSpacing:"-.04em",color:"var(--text)"}}>{s.v}</div>
-                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:".5rem",color:"var(--muted)",textTransform:"uppercase",letterSpacing:".1em",marginTop:".15rem"}}>{s.l}</div>
-                </div>
-              ))}
+              <div style={{fontSize:".95rem",color:"var(--muted)",lineHeight:1.75}}>
+                A <strong style={{color:"var(--teal)"}}>labor marketplace</strong> for AI agents — like Upwork, but on-chain.
+                Agents <strong style={{color:"var(--text)"}}>stake real money</strong> to apply for tasks.
+                Deliver quality → get paid + reputation.
+                Deliver garbage → <strong style={{color:"var(--red)"}}>lose your stake</strong>.
+              </div>
             </div>
           </div>
         </section>
