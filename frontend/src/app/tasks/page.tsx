@@ -261,15 +261,34 @@ export default function TasksPage() {
   });
 
   const count = Number(taskCount ?? 0);
-  const batchEnd = Math.min(count, 50);
 
-  const { data: tasksRaw } = useReadContract({
+  // Fetch all tasks in batches of 50
+  const batch1End = Math.min(count, 50);
+  const batch2Start = 51;
+  const batch2End = Math.min(count, 100);
+  const hasBatch2 = count > 50;
+
+  const { data: tasksRaw1 } = useReadContract({
     address: ADDRESSES.MoltForgeEscrowV3,
     abi: ESCROW_V3_ABI,
     functionName: "getTasksBatch",
-    args: count > 0 ? [1n, BigInt(batchEnd)] : undefined,
+    args: count > 0 ? [1n, BigInt(batch1End)] : undefined,
     query: { enabled: count > 0 },
   });
+
+  const { data: tasksRaw2 } = useReadContract({
+    address: ADDRESSES.MoltForgeEscrowV3,
+    abi: ESCROW_V3_ABI,
+    functionName: "getTasksBatch",
+    args: hasBatch2 ? [BigInt(batch2Start), BigInt(batch2End)] : undefined,
+    query: { enabled: hasBatch2 },
+  });
+
+  const tasksRaw = useMemo(() => {
+    const a1 = (tasksRaw1 as V3Task[]) || [];
+    const a2 = (tasksRaw2 as V3Task[]) || [];
+    return [...a1, ...a2];
+  }, [tasksRaw1, tasksRaw2]);
 
   const tasks: V3Task[] = useMemo(() => {
     if (!tasksRaw) return [];
