@@ -345,6 +345,29 @@ function V3TaskItem({ task, role }: { task: V3Task; role: "client" | "agent" }) 
 
 // ─── Edit Profile Modal ───────────────────────────────────────────────────────
 
+// ─── Constants for Edit Profile ──────────────────────────────────────────────
+const EDIT_SPECIALIZATIONS = [
+  { id: "research",   emoji: "🔬", label: "Research"   },
+  { id: "coding",     emoji: "💻", label: "Coding"     },
+  { id: "analysis",   emoji: "📊", label: "Analysis"   },
+  { id: "writing",    emoji: "✍️",  label: "Writing"   },
+  { id: "trading",    emoji: "📈", label: "Trading"    },
+  { id: "design",     emoji: "🎨", label: "Design"     },
+  { id: "defi",       emoji: "💱", label: "DeFi"       },
+  { id: "prediction", emoji: "🎯", label: "Prediction" },
+];
+const EDIT_LLM_PROVIDERS = [
+  { id: "anthropic",  emoji: "🟣", label: "Claude (Anthropic)" },
+  { id: "openai",     emoji: "🟢", label: "GPT-4o (OpenAI)"    },
+  { id: "groq",       emoji: "🟡", label: "Llama (Groq)"       },
+  { id: "custom",     emoji: "⚙️",  label: "Custom"            },
+];
+const EDIT_CAPABILITIES = [
+  "text generation", "web search", "code execution",
+  "data analysis", "image generation", "api calls",
+  "blockchain queries", "market analysis",
+];
+
 function EditProfileModal({ numericId, currentMeta, onClose }: {
   numericId: bigint;
   currentMeta: AgentMetadata;
@@ -354,8 +377,8 @@ function EditProfileModal({ numericId, currentMeta, onClose }: {
   const [description, setDescription] = useState(currentMeta.description ?? "");
   const [agentUrl, setAgentUrl]       = useState(currentMeta.agentUrl ?? "");
   const [llmProvider, setLlmProvider] = useState(currentMeta.llmProvider ?? "");
-  const [capabilities, setCapabilities] = useState((currentMeta.capabilities ?? []).join(", "));
   const [specialization, setSpec]     = useState(currentMeta.specialization ?? "");
+  const [selectedCaps, setSelectedCaps] = useState<string[]>(currentMeta.capabilities ?? []);
   const [status, setStatus]           = useState<"idle"|"pending"|"done"|"error">("idle");
   const [errMsg, setErrMsg]           = useState("");
 
@@ -365,6 +388,9 @@ function EditProfileModal({ numericId, currentMeta, onClose }: {
   useEffect(() => {
     if (done) { setStatus("done"); setTimeout(onClose, 1500); }
   }, [done, onClose]);
+
+  const toggleCap = (cap: string) =>
+    setSelectedCaps(prev => prev.includes(cap) ? prev.filter(c => c !== cap) : [...prev, cap]);
 
   const handleSave = () => {
     setStatus("pending");
@@ -377,7 +403,7 @@ function EditProfileModal({ numericId, currentMeta, onClose }: {
         agentUrl: agentUrl.trim() || undefined,
         llmProvider: llmProvider.trim() || undefined,
         specialization: specialization.trim() || undefined,
-        capabilities: capabilities.split(",").map(c => c.trim()).filter(Boolean),
+        capabilities: selectedCaps,
       };
       const metaURI = metadataToDataURI(newMeta);
       writeContract({
@@ -392,16 +418,17 @@ function EditProfileModal({ numericId, currentMeta, onClose }: {
     }
   };
 
-  const inputStyle = {
+  const inputStyle: React.CSSProperties = {
     width: "100%", padding: "8px 12px", borderRadius: "10px", fontSize: "0.85rem",
     background: "#060c0b", border: "1px solid #1a2e2b", color: "#e8f5f3", outline: "none",
+    fontFamily: "inherit",
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.8)" }} onClick={onClose}>
-      <div className="rounded-2xl p-6 w-full max-w-md mx-4"
-        style={{ background: "#0d1c18", border: "1px solid #1db8a8" }}
+      style={{ background: "rgba(0,0,0,0.85)" }} onClick={onClose}>
+      <div className="rounded-2xl p-6 w-full max-w-md mx-4 overflow-y-auto"
+        style={{ background: "#0d1c18", border: "1px solid #1db8a8", maxHeight: "90vh" }}
         onClick={e => e.stopPropagation()}>
 
         <h2 className="text-sm font-bold uppercase tracking-wider mb-5"
@@ -409,26 +436,96 @@ function EditProfileModal({ numericId, currentMeta, onClose }: {
           Edit Agent Profile
         </h2>
 
-        <div className="space-y-3">
-          {[
-            { label: "Name", value: name, set: setName, placeholder: "Agent name" },
-            { label: "Description", value: description, set: setDescription, placeholder: "What does your agent do?" },
-            { label: "Agent URL", value: agentUrl, set: setAgentUrl, placeholder: "https://your-agent.railway.app" },
-            { label: "LLM Provider", value: llmProvider, set: setLlmProvider, placeholder: "anthropic / openai / groq" },
-            { label: "Specialization", value: specialization, set: setSpec, placeholder: "research / coding / trading…" },
-            { label: "Capabilities", value: capabilities, set: setCapabilities, placeholder: "text generation, websearch, …" },
-          ].map(({ label, value, set, placeholder }) => (
-            <div key={label}>
-              <label className="text-xs mb-1 block" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
-                {label}
-              </label>
-              <input value={value} onChange={e => set(e.target.value)} placeholder={placeholder} style={inputStyle} />
+        <div className="space-y-4">
+          {/* Name */}
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Name</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Agent name" style={inputStyle} />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Description</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)}
+              placeholder="What does your agent do?" rows={2}
+              style={{ ...inputStyle, resize: "none" }} />
+          </div>
+
+          {/* Specialization — pill selector */}
+          <div>
+            <label className="text-xs mb-2 block" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Specialization</label>
+            <div className="flex flex-wrap gap-2">
+              {EDIT_SPECIALIZATIONS.map(s => (
+                <button key={s.id} type="button"
+                  onClick={() => setSpec(prev => prev === s.id ? "" : s.id)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+                  style={{
+                    background: specialization === s.id ? "#1db8a820" : "#060c0b",
+                    border: `1px solid ${specialization === s.id ? "#1db8a8" : "#1a2e2b"}`,
+                    color: specialization === s.id ? "#1db8a8" : "#5a807a",
+                    cursor: "pointer",
+                  }}>
+                  {s.emoji} {s.label}
+                </button>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* LLM Provider — pill selector */}
+          <div>
+            <label className="text-xs mb-2 block" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>LLM Provider</label>
+            <div className="flex flex-wrap gap-2">
+              {EDIT_LLM_PROVIDERS.map(p => (
+                <button key={p.id} type="button"
+                  onClick={() => setLlmProvider(prev => prev === p.id ? "" : p.id)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+                  style={{
+                    background: llmProvider === p.id ? "#f0782820" : "#060c0b",
+                    border: `1px solid ${llmProvider === p.id ? "#f07828" : "#1a2e2b"}`,
+                    color: llmProvider === p.id ? "#f07828" : "#5a807a",
+                    cursor: "pointer",
+                  }}>
+                  {p.emoji} {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Capabilities — multi-select pills */}
+          <div>
+            <label className="text-xs mb-2 block" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Capabilities</label>
+            <div className="flex flex-wrap gap-2">
+              {EDIT_CAPABILITIES.map(cap => (
+                <button key={cap} type="button" onClick={() => toggleCap(cap)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+                  style={{
+                    background: selectedCaps.includes(cap) ? "#3ec95a20" : "#060c0b",
+                    border: `1px solid ${selectedCaps.includes(cap) ? "#3ec95a" : "#1a2e2b"}`,
+                    color: selectedCaps.includes(cap) ? "#3ec95a" : "#5a807a",
+                    cursor: "pointer",
+                  }}>
+                  {cap}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Agent URL — advanced, collapsible hint */}
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+              Agent Endpoint URL
+              <span className="ml-2 px-1.5 py-0.5 rounded text-xs" style={{ background: "#1a2e2b", color: "#5a807a" }}>optional</span>
+            </label>
+            <input value={agentUrl} onChange={e => setAgentUrl(e.target.value)}
+              placeholder="https://your-agent.up.railway.app" style={inputStyle} />
+            <p className="text-xs mt-1" style={{ color: "#3a5550" }}>
+              HTTP endpoint where your agent receives tasks (POST /tasks). Leave empty if not self-hosted.
+            </p>
+          </div>
         </div>
 
-        <p className="text-xs mt-3 mb-4" style={{ color: "#3a5550" }}>
-          Metadata stored as data: URI on-chain. Callable only by your registered wallet.
+        <p className="text-xs mt-4 mb-4" style={{ color: "#3a5550" }}>
+          ⛓️ Metadata stored on-chain. Requires wallet signature.
         </p>
 
         {errMsg && <p className="text-xs mb-3" style={{ color: "#e63030" }}>{errMsg}</p>}
@@ -436,12 +533,12 @@ function EditProfileModal({ numericId, currentMeta, onClose }: {
 
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-2 rounded-xl text-sm"
-            style={{ background: "#1a2e2b", color: "#5a807a", border: "1px solid #1a2e2b" }}>
+            style={{ background: "#1a2e2b", color: "#5a807a", border: "1px solid #1a2e2b", cursor: "pointer" }}>
             Cancel
           </button>
           <button onClick={handleSave} disabled={isPending || waiting}
             className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
-            style={{ background: isPending || waiting ? "#1db8a830" : "#1db8a8", color: "#060c0b" }}>
+            style={{ background: isPending || waiting ? "#1db8a830" : "#1db8a8", color: "#060c0b", cursor: "pointer" }}>
             {isPending ? "Signing…" : waiting ? "Confirming…" : "Save On-Chain"}
           </button>
         </div>
@@ -449,6 +546,7 @@ function EditProfileModal({ numericId, currentMeta, onClose }: {
     </div>
   );
 }
+
 
 // ─── V3 Tasks Section ─────────────────────────────────────────────────────────
 
