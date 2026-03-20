@@ -1,9 +1,103 @@
 # Synthesis Hackathon 2026 — Collaboration Log
 
-**Team:** SKAKUN (human) + BigBoss (AI agent)
+**Team:** SKAKUN (human) + BigBoss (AI orchestrator) + multi-agent system
 **Team ID:** 4761f094667a4488aa8bf9f202fe278b
 **Participant ID:** fbde6f14d66d40b2a225a2a86f085462
 **Repo:** https://github.com/agent-skakun/moltforge
+
+---
+
+## Team Composition
+
+### 🧑 SKAKUN — Founder & Strategist
+**Role:** Product vision, strategic decisions, architecture direction, quality control
+**Skills:** Business development, product thinking, market strategy, fundraising
+**Contribution:**
+- Conceived MoltForge concept (pivot from AgentScore on March 13)
+- "Character Creator" insight — turned agent registration into Sims-style UX
+- Defined ERC-8004 + x402 integration direction
+- Approved all major technical and product decisions
+- Hackathon track selection strategy ($37K target: Protocol Labs x2 + Base)
+
+---
+
+### 🤖 BigBoss — AI Orchestrator & Chief of Staff
+**Model:** Claude Opus / Sonnet (via OpenClaw)
+**Role:** Multi-agent coordination, product management, architecture oversight, code review
+**Skills:** System design, agent orchestration, Ethereum/EVM, documentation, strategic planning
+**Contribution:**
+- Mapped hackathon stack and competitive landscape on Day 1
+- Architected the full MoltForge system (contracts → frontend → agent runtime)
+- Coordinated DEVMUS, BALABOLIK, PROMETHEUS, LEONARDO in parallel
+- Implemented ERC-8004 agent-to-agent discovery (`fetchAgentCard`, `POST /agent-interact`)
+- Added `fetch_agent_card` + `agent_interact` MCP tools
+- Fixed contract addresses in ARCHITECTURE.md and ROADMAP.md
+- Maintained COLLABORATION_LOG, ROADMAP, MEMORY across the entire hackathon
+- Diagnosed and resolved Railway SSL/DNS issue for `agent.moltforge.cloud`
+- Cleaned git history of leaked secrets (GitHub token + private key)
+
+---
+
+### ⚙️ DEVMUS — Lead Engineer
+**Model:** Claude Sonnet (via OpenClaw, Slack channel: #devmus)
+**Role:** Smart contract development, frontend, backend, DevOps
+**Skills:** Solidity, Foundry, TypeScript, Next.js, wagmi, RainbowKit, Railway, Vercel, Docker
+**Contribution:**
+- Built and deployed all smart contracts (AgentRegistry V0→V2, MoltForgeEscrow V0→V3, MeritSBT V0→V2, MoltForgeDAO)
+- Upgraded to UUPS proxy pattern (V1), extended metadata (V2), added DAO treasury (V3)
+- Built entire Next.js 14 frontend (8+ pages): landing, marketplace, register-agent, tasks, dashboard, docs, getting-started, MCP
+- Built SVG Avatar Builder (AvatarFace.tsx) — 500M+ unique agent portraits
+- Integrated wagmi v2 + RainbowKit v2, on-chain reads via viem
+- Built reference agent runtime (TypeScript, Express) with full ERC-8004 + x402 support
+- Deployed to Railway (agent.moltforge.cloud) + Vercel (moltforge.cloud)
+- Configured DNS and SSL for custom domains
+- Built MCP server with 10+ tools for AI agent integration
+
+---
+
+### ✍️ BALABOLIK — Copywriter & Content Strategist
+**Model:** Claude Sonnet (via OpenClaw, Slack channel: #content)
+**Role:** Copywriting, pitch materials, documentation, storytelling
+**Skills:** Technical writing, pitch decks, video scripting, narrative strategy, Web3 content
+**Contribution:**
+- Wrote PITCH_DECK_v2.md — full pitch deck aligned to hackathon judge criteria
+- Wrote VIDEO_SCRIPT.md — 2-minute demo video script (8 scenes, timestamped)
+- Studied The Synthesis hackathon requirements and judge expectations
+- Framed MoltForge narrative: problem → solution → tech → traction → roadmap
+
+---
+
+### 📊 PROMETHEUS — Research Analyst
+**Model:** Claude Sonnet (via OpenClaw, Slack channel: #analytics)
+**Role:** Market research, competitive analysis, financial modeling, strategic planning
+**Skills:** DeFi research, tokenomics, market analysis, scenario planning, data synthesis
+**Contribution:**
+- Analyzed hackathon tracks and prize pools to define $37K target strategy
+- Research on ERC-8004 and x402 standards landscape
+- Competitive analysis of other hackathon teams and approaches
+- Gap analysis: what MoltForge has vs. what judges require per track
+
+---
+
+### 🎨 LEONARDO — Designer
+**Model:** Claude Sonnet (via OpenClaw, Slack channel: #design)
+**Role:** UI/UX design, brand identity, visual direction
+**Skills:** UI design, brand systems, color theory, Web3 design patterns
+**Contribution:**
+- Defined MoltForge visual identity (dark theme, teal #1db8a8 accent, monospace fonts)
+- Art direction for landing page and marketing materials
+- Input on Agent Builder UX layout (Character Creator pattern)
+- Brand consistency across all frontend pages
+
+---
+
+### 🤵 JARVIS — Public Relations Agent
+**Model:** Claude Sonnet (via OpenClaw, Slack channel: #general)
+**Role:** External communications, community management
+**Skills:** Communication, community building, PR
+**Contribution:**
+- Available for public-facing communications and community interactions
+- Received EthSkills training for accurate Web3 communication
 
 ---
 
