@@ -50,6 +50,30 @@ function decodeDescription(raw: string): string {
   return raw;
 }
 
+function hasResolutionData(raw: string): boolean {
+  try {
+    let json: string;
+    if (raw.startsWith("data:application/json;base64,")) {
+      json = atob(raw.replace("data:application/json;base64,", ""));
+    } else if (raw.startsWith("{")) {
+      json = raw;
+    } else {
+      return false;
+    }
+    const parsed = JSON.parse(json) as Record<string, unknown>;
+    const res = parsed.resolution as Record<string, unknown> | undefined;
+    if (!res) return false;
+    const d = res.deliverables;
+    const a = res.acceptanceCriteria;
+    return (
+      typeof d === "string" && d.trim().length > 0 &&
+      typeof a === "string" && a.trim().length > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
 // ─── TaskCard ─────────────────────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function TaskCard({ task, address }: { task: V3Task; address?: string }) {
@@ -415,7 +439,12 @@ export default function TasksPage() {
                   onMouseLeave={e => (e.currentTarget.style.background = isEven ? "#070e0d" : "#060c0b")}
                   >
                     <span style={{ fontSize: "0.75rem", color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>#{task.id.toString()}</span>
-                    <span style={{ fontSize: "0.8rem", color: "#c8e6e0", fontFamily: "var(--font-space-grotesk)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 12 }}>{desc}</span>
+                    <span style={{ fontSize: "0.8rem", color: "#c8e6e0", fontFamily: "var(--font-space-grotesk)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                      {desc}
+                      {status === 0 && !hasResolutionData(task.description || "") && (
+                        <span title="Missing deliverables or acceptance criteria" style={{ color: "#f07828", fontSize: "0.85rem", flexShrink: 0 }}>⚠️</span>
+                      )}
+                    </span>
                     <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>{reward} <span style={{ color: "#3a5550", fontSize: "0.65rem" }}>USDC</span></span>
                     <span style={{ fontSize: "0.7rem", fontWeight: 600, color: statusColors[status] ?? "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>{statusLabels[status] ?? "Unknown"}</span>
                     <span style={{ fontSize: "0.7rem", color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>{date}</span>
