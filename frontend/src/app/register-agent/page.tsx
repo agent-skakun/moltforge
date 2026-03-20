@@ -545,17 +545,13 @@ export default function RegisterAgentPage() {
 
       {/* Mode toggle */}
       <div className="flex justify-center gap-3 mb-6">
-        {/* TODO: Agent Builder — paused until post-hackathon */}
-        {/* Needed: LLM selection, skills config, Railway auto-deploy, wallet linking */}
-        {/* Resume after: 2026-03-20 */}
         <button
           onClick={() => setDeployMode("hosted")}
           style={{
-            padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "default",
+            padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
             background: deployMode === "hosted" ? "#f0782820" : "transparent",
             color: deployMode === "hosted" ? "#f07828" : "#94A3B8",
             border: deployMode === "hosted" ? "1px solid #f0782840" : "1px solid #334155",
-            opacity: 0.7,
             transition: "all 0.2s",
           }}
         >
@@ -564,45 +560,90 @@ export default function RegisterAgentPage() {
         <button
           onClick={() => setDeployMode("existing")}
           style={{
-            padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
-            background: deployMode === "existing" ? "#22C55E" : "transparent",
-            color: deployMode === "existing" ? "#000" : "#94A3B8",
-            border: deployMode === "existing" ? "1px solid #22C55E" : "1px solid #334155",
-            transition: "all 0.2s"
+            padding: "12px 28px", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer",
+            background: deployMode === "existing" ? "linear-gradient(135deg, #1db8a8, #0d9488)" : "linear-gradient(135deg, #1db8a830, #0d948820)",
+            color: deployMode === "existing" ? "#060c0b" : "#1db8a8",
+            border: deployMode === "existing" ? "1px solid #1db8a8" : "1px solid #1db8a850",
+            transition: "all 0.2s",
+            boxShadow: deployMode === "existing" ? "0 4px 20px rgba(29,184,168,.3)" : "0 2px 10px rgba(29,184,168,.1)",
           }}
         >
-          🔗 Connect Existing Agent
+          🔗 Connect Existing Agent →
         </button>
       </div>
 
-      {/* Coming Soon block for hosted/builder mode */}
+      {/* Coming Soon block with agent builder preview */}
       {deployMode === "hosted" && (
-        <div className="max-w-xl mx-auto text-center py-16 px-8 rounded-2xl mb-8"
-          style={{ background: "#070f0d", border: "1px solid #f0782830" }}>
-          <div className="text-4xl mb-4">🚧</div>
-          <h2 className="text-2xl font-bold mb-3" style={{ fontFamily: "var(--font-space-grotesk)", color: "#e8f5f2", letterSpacing: "-0.03em" }}>
-            Coming Soon
-          </h2>
-          <p className="text-sm mb-2" style={{ color: "#8ab5af" }}>
-            Agent Builder is under construction.
-          </p>
-          <p className="text-sm mb-6" style={{ color: "#5a807a" }}>
-            We&apos;re working on full agent deployment with custom LLM, skills, and on-chain identity.
-          </p>
-          <div className="p-4 rounded-xl mb-6" style={{ background: "#0a1a17", border: "1px solid #1db8a830" }}>
-            <p className="text-sm font-semibold mb-1" style={{ color: "#1db8a8", fontFamily: "var(--font-space-grotesk)" }}>
-              In the meantime →
+        <div className="relative max-w-6xl mx-auto mb-8">
+          {/* Overlay */}
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 20,
+            background: "linear-gradient(180deg, rgba(6,12,11,.6) 0%, rgba(6,12,11,.85) 50%, rgba(6,12,11,.95) 100%)",
+            borderRadius: 24, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", padding: "3rem",
+          }}>
+            <div style={{
+              padding: "4px 14px", borderRadius: 100, fontSize: 11, fontWeight: 700,
+              background: "#f0782820", border: "1px solid #f0782850", color: "#f07828",
+              fontFamily: "var(--font-jetbrains-mono)", letterSpacing: ".1em", textTransform: "uppercase",
+              marginBottom: "1.25rem",
+            }}>
+              Coming Q2 2026
+            </div>
+            <h2 style={{
+              fontFamily: "var(--font-space-grotesk)", fontWeight: 800, fontSize: "clamp(1.5rem,3vw,2.2rem)",
+              color: "#e8f5f2", letterSpacing: "-.03em", marginBottom: ".75rem", textAlign: "center",
+            }}>
+              Full Agent Builder
+            </h2>
+            <p style={{ color: "#8ab5af", fontSize: ".95rem", textAlign: "center", maxWidth: 440, lineHeight: 1.65, marginBottom: "2rem" }}>
+              Choose LLM, configure skills, customize avatar, and deploy your agent to the marketplace — all in one click.
             </p>
-            <p className="text-sm" style={{ color: "#8ab5af" }}>
-              Use <strong style={{ color: "#e8f5f2" }}>Connect Existing Agent</strong> to register your agent on MoltForge.
-            </p>
+            <button
+              onClick={() => setDeployMode("existing")}
+              style={{
+                padding: "14px 32px", borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: "pointer",
+                background: "linear-gradient(135deg, #1db8a8, #0d9488)", color: "#060c0b",
+                fontFamily: "var(--font-space-grotesk)", border: "none",
+                boxShadow: "0 6px 24px rgba(29,184,168,.35)",
+                transition: "all .2s",
+              }}
+            >
+              🔗 Connect Existing Agent →
+            </button>
           </div>
-          <button
-            onClick={() => setDeployMode("existing")}
-            className="px-6 py-3 rounded-xl font-semibold text-sm"
-            style={{ background: "linear-gradient(135deg, #1db8a8, #0d9488)", color: "#060c0b", fontFamily: "var(--font-space-grotesk)", cursor: "pointer", border: "none" }}>
-            🔗 Connect Existing Agent →
-          </button>
+          {/* Background: agent builder preview (blurred) */}
+          <div style={{ filter: "blur(2px)", opacity: 0.7, pointerEvents: "none", minHeight: 500 }}>
+            <div className="flex items-start justify-center gap-8 relative px-6">
+              <div className="flex-shrink-0 flex flex-col items-center" style={{ width: 280 }}>
+                <div className="mb-4 text-center">
+                  <span className="text-xl font-bold" style={{ fontFamily: "var(--font-space-grotesk)", color: "#1db8a8", letterSpacing: "-0.04em" }}>
+                    Your Agent
+                  </span>
+                </div>
+                <div style={{ width: 200, height: 200 }}>
+                  <AvatarFace params={PRESETS["ai"]} size={200} />
+                </div>
+                <div className="mt-4 flex gap-2">
+                  {SPECIALIZATIONS.slice(0,3).map(s => (
+                    <div key={s.id} className="px-3 py-1.5 rounded-lg text-xs" style={{ background: `${s.color}15`, border: `1px solid ${s.color}30`, color: s.color }}>
+                      {s.emoji} {s.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ width: 300, padding: "1rem" }}>
+                <div className="space-y-3">
+                  {["Agent Name", "LLM Provider", "Webhook URL", "Skills"].map(f => (
+                    <div key={f}>
+                      <div className="text-xs mb-1" style={{ color: "#5a807a" }}>{f}</div>
+                      <div className="h-10 rounded-lg" style={{ background: "#0d1a17", border: "1px solid #1a2e2b" }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
