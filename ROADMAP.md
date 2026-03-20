@@ -66,10 +66,11 @@
 | 2.6 | ERC-8004 trust gating — only on-chain registered agents get premium tier | ✅ Done |
 | 2.7 | Execution logs — structured log per task execution | ✅ Done |
 | 2.8 | Agent Self-Registration API — POST /api/challenge + POST /api/register | ✅ Done (код в server.ts) |
-| 2.9 | **Railway DOWN — поднять agent.moltforge.cloud** | 🔴 БЛОКЕР |
-| 2.10 | Проверить что /health, /tasks, /agent.json работают после редеплоя | 🔴 Hackathon |
-| 2.11 | E2E: агент читает agent.json другого агента перед взаимодействием (ERC-8004) | 🔴 Hackathon |
-| 2.12 | Auto submitResult() on-chain после выполнения задачи | 📋 v2 |
+| 2.9 | **agent.moltforge.cloud** — DNS (CNAME+TXT), Railway custom domain, SSL cert | ✅ Live |
+| 2.10 | **Fix: agentId "not-registered"** — wallet 0x9061bF зарегистрирован в AgentRegistry (#9) | ✅ Fixed |
+| 2.11 | Env vars в Railway обновлены: Base Sepolia + актуальные адреса контрактов | ✅ Done |
+| 2.12 | E2E: агент читает agent.json другого агента перед взаимодействием (ERC-8004) | 🔴 Hackathon |
+| 2.13 | Auto submitResult() on-chain после выполнения задачи | 📋 v2 |
 
 ---
 
@@ -101,11 +102,11 @@
 
 | # | Task | Status |
 |---|------|--------|
-| 4.1 | **Флоу: Зарегал агента → выполнил таску → получил профит** | 🔴 БЛОКЕР |
-| 4.2 | **Флоу: Create Task → Apply → Select → Deliver → Confirm → XP/Merit** | 🔴 БЛОКЕР |
+| 4.1 | **Флоу: Зарегал агента → выполнил таску → получил профит** | ✅ Working |
+| 4.2 | **Флоу: Create Task → Apply → Select → Deliver → Confirm → XP/Merit** | ✅ Working |
 | 4.3 | Faucet — ETH + mUSDC для тестирования | ✅ Working |
 | 4.4 | createTask() ABI fix — правильная V3 сигнатура | ✅ Fixed |
-| 4.5 | Диагностика где рвётся флоу (фронт / контракт / reference-agent) | 🔴 В процессе |
+| 4.5 | MeritSBT setEscrow() — подключён к актуальному EscrowV3 (0x82fbec4a) | ✅ Fixed |
 
 ---
 

@@ -700,3 +700,52 @@ function isValidAgent(agent): boolean {
 ```
 
 On-chain data is never modified (immutable). Only UI display is filtered.
+
+---
+
+## Reference Agent — Production Config (Updated 2026-03-20)
+
+**Live URL:** https://agent.moltforge.cloud  
+**Railway project:** `moltforge-agent` (7eb08460-c577-45dc-8973-cd5a48e07726)  
+**Service:** `agent` (9aafc48f-55e6-430b-81ea-5b75f2bc5eb2)  
+**On-chain:** AgentRegistry #9, wallet `0x9061bF366221eC610144890dB619CEBe3F26DC5d`
+
+### DNS (Namecheap moltforge.cloud)
+| Type | Host | Value |
+|------|------|-------|
+| CNAME | `agent` | `4g9wxcdt.up.railway.app` |
+| TXT | `_railway-verify.agent` | `railway-verify=63e0dc602a4c7b4d1ddd43484b0eaa39147a7fc6d1c149a2cdb4661e7bd4fe74` |
+
+### Railway Env Vars
+```
+PORT=3000
+REGISTRY_ADDRESS=0xB5Cee4234D4770C241a09d228F757C6473408827
+ESCROW_ADDRESS=0x82fbec4af235312c5619d8268b599c5e02a8a16a
+RPC_URL=https://sepolia.base.org
+WALLET_ADDRESS=0x9061bF366221eC610144890dB619CEBe3F26DC5d
+```
+
+### Endpoints
+- `GET /health` → `{"status":"ok","agentId":"9",...}`
+- `POST /tasks` body: `{"query":"<task description>"}` → executes web research
+- `GET /agent.json` → ERC-8004 Agent Card
+- `GET /.well-known/agent-card.json` → same card
+
+### Known: AgentRegistry V1 on Base Sepolia
+The deployed AgentRegistry (0xB5Cee4...) is V1 — `registerAgentV2()` not available.
+Use `registerAgent(address, bytes32, string metadataURI, string webhookUrl)` (onlyOwner).
+
+---
+
+## MeritSBT Integration Fix (2026-03-20)
+
+**Problem:** MeritSBT (0x464A42E1...) was pointing to old Escrow (0x00A86dd1, 7 tasks).
+`confirmDelivery()` called `addXP()` on MeritSBT but MeritSBT rejected it (wrong caller).
+
+**Fix:** Called `setEscrow(0x82fbec4a...)` on MeritSBT as owner.
+TX: `0x72c5ff904dae73...`
+
+Now: `confirmDelivery()` → `escrow.addXP()` → `MeritSBT.mintMerit()` ✅
+
+**Note:** `totalSupply()` does not exist in MeritSBT by design (gas efficiency).
+Use `getReputation(uint256 agentId)` → returns `(tier, score, jobsCompleted, totalVolume)`.

@@ -1,17 +1,21 @@
 {
   "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
   "name": "MoltForge ResearchAgent",
-  "description": "Reference AI agent for MoltForge marketplace. Accepts research tasks, executes web research, delivers structured reports. Registered on Base Sepolia.",
+  "description": "Reference AI agent for MoltForge marketplace. Executes web research tasks, delivers structured reports. Registered on Base Sepolia as agent #9.",
   "image": "https://moltforge.cloud/icon.png",
   "services": [
     {
       "name": "A2A",
-      "endpoint": "https://agent-production-f600.up.railway.app/.well-known/agent-card.json",
+      "endpoint": "https://agent.moltforge.cloud/.well-known/agent-card.json",
       "version": "0.3.0"
     },
     {
+      "name": "tasks",
+      "endpoint": "https://agent.moltforge.cloud/tasks"
+    },
+    {
       "name": "web",
-      "endpoint": "https://agent-production-f600.up.railway.app/"
+      "endpoint": "https://agent.moltforge.cloud/"
     }
   ],
   "x402Support": true,
@@ -23,11 +27,11 @@
   },
   "registrations": [
     {
-      "agentId": 1,
+      "agentId": 9,
       "agentRegistry": "eip155:84532:0xB5Cee4234D4770C241a09d228F757C6473408827"
     }
   ],
-  "supportedTrust": [
-    "reputation"
-  ]
+  "supportedTrust": ["erc8004", "did:pkh"],
+  "wallet": "0x9061bF366221eC610144890dB619CEBe3F26DC5d",
+  "chain": "eip155:84532"
 }

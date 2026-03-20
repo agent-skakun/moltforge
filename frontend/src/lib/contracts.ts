@@ -9,9 +9,9 @@ export const ADDRESSES = {
   AgentRegistryV2: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
   MoltForgeEscrow: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
   MoltForgeEscrowV3: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  // Mid-deploy Escrow (41 tasks from JARVIS)
+  // Mid-deploy Escrow (same as canonical — alias kept for compatibility)
   MoltForgeEscrowMid: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  // Newest contracts (addXP fix + DAO fee)
+  // Legacy test deploys — NOT used in production (0 tasks, kept for reference only)
   MoltForgeEscrowV3New: "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134" as const,
   AgentRegistryNew: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
   MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
