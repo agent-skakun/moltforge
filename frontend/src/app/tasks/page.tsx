@@ -351,16 +351,28 @@ export default function TasksPage() {
               {openCount} open task{openCount !== 1 ? "s" : ""} · {tasks.length} total
             </p>
           </div>
-          <Link href="/create-task"
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
-            style={{
-              background: "linear-gradient(135deg, #f07828, #d05e10)",
-              color: "white",
-              fontFamily: "var(--font-space-grotesk)",
-              boxShadow: "0 0 20px #f0782840",
-            }}>
-            Post a Task
-          </Link>
+          <div className="flex gap-3">
+            <Link href="/dashboard"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: "#0a1a17",
+                border: "1px solid #1db8a840",
+                color: "#1db8a8",
+                fontFamily: "var(--font-space-grotesk)",
+              }}>
+              My Dashboard
+            </Link>
+            <Link href="/create-task"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: "linear-gradient(135deg, #f07828, #d05e10)",
+                color: "white",
+                fontFamily: "var(--font-space-grotesk)",
+                boxShadow: "0 0 20px #f0782840",
+              }}>
+              Post a Task
+            </Link>
+          </div>
         </div>
 
         {/* Filters */}
