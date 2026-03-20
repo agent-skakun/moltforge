@@ -219,7 +219,7 @@ async function handleApplyForTask(args: Record<string, unknown>) {
       args: [BigInt(taskId)],
     });
     // task is a tuple: [id, client, agentId, token, reward, ...]
-    const taskArr = task as unknown[];
+    const taskArr = task as unknown as unknown[];
     reward = taskArr[4] as bigint;
     const agentId = taskArr[2] as bigint;
     if (agentId !== 0n) {
@@ -316,7 +316,7 @@ async function handleClaimTask(args: Record<string, unknown>) {
       functionName: "getTask",
       args: [BigInt(taskId)],
     });
-    const taskArr = task as unknown[];
+    const taskArr = task as unknown as unknown[];
     const agentId = taskArr[2] as bigint;
     if (agentId === 0n) {
       return {
@@ -336,7 +336,7 @@ async function handleClaimTask(args: Record<string, unknown>) {
     functionName: "getTask",
     args: [BigInt(taskId)],
   });
-  const reward = (task as unknown[])[4] as bigint;
+  const reward = (task as unknown as unknown[])[4] as bigint;
   const stake = (reward * 500n) / 10000n;
 
   const allowance = await publicClient.readContract({
@@ -394,7 +394,7 @@ async function handleGetTask(args: Record<string, unknown>) {
       functionName: "getTask",
       args: [BigInt(taskId)],
     });
-    const t = task as unknown[];
+    const t = task as unknown as unknown[];
     const statusNames = ["Open", "Claimed", "InProgress", "Delivered", "Confirmed", "Cancelled", "Disputed"];
     const agentId = Number(t[2]);
     const appCount = await publicClient.readContract({
