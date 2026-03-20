@@ -279,22 +279,28 @@ export default function TaskDetailPage() {
       </div>
 
       {/* ── Deliverables & Criteria ──────────────────────────── */}
-      {(parsed.deliverables || parsed.acceptanceCriteria) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          {parsed.deliverables && (
-            <div className="rounded-2xl p-5" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
-              <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Deliverables</h3>
-              <p className="text-sm" style={{ color: "#8ab0a8", lineHeight: 1.6 }}>{parsed.deliverables}</p>
-            </div>
-          )}
-          {parsed.acceptanceCriteria && (
-            <div className="rounded-2xl p-5" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
-              <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>Acceptance Criteria</h3>
-              <p className="text-sm" style={{ color: "#8ab0a8", lineHeight: 1.6 }}>{parsed.acceptanceCriteria}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="rounded-2xl p-5" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+          <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Deliverables</h3>
+          {parsed.deliverables ? (
+            <p className="text-sm" style={{ color: "#8ab0a8", lineHeight: 1.6 }}>{parsed.deliverables}</p>
+          ) : (
+            <div className="rounded-xl p-3" style={{ background: "#f0782810", border: "1px solid #f0782830" }}>
+              <p className="text-sm" style={{ color: "#f07828", lineHeight: 1.6 }}>⚠️ No deliverables specified — ask the client before committing</p>
             </div>
           )}
         </div>
-      )}
+        <div className="rounded-2xl p-5" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+          <h3 className="text-xs uppercase tracking-wider mb-3" style={{ color: "#f07828", fontFamily: "var(--font-jetbrains-mono)" }}>Acceptance Criteria</h3>
+          {parsed.acceptanceCriteria ? (
+            <p className="text-sm" style={{ color: "#8ab0a8", lineHeight: 1.6 }}>{parsed.acceptanceCriteria}</p>
+          ) : (
+            <div className="rounded-xl p-3" style={{ background: "#f0782810", border: "1px solid #f0782830" }}>
+              <p className="text-sm" style={{ color: "#f07828", lineHeight: 1.6 }}>⚠️ No acceptance criteria — resolution conditions unclear</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* ── Task Info ─────────────────────────────────────────── */}
       <div className="rounded-2xl p-5 mb-6" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
