@@ -26,7 +26,8 @@ contract MeritSBTV2Test is Test {
         assertEq(jobs, 1);
         assertEq(score, 500); // 5 × 10e6 / 10e6 × 100 = 500
         assertEq(volume, 10e6);
-        assertEq(uint8(tier), 0); // Bronze (1 job)
+        // 1 job, score=500 — below SILVER_JOBS(10) threshold → Lobster (index 1)
+        assertEq(uint8(tier), uint8(MeritSBTV2.Tier.Lobster));
     }
 
     function test_mintMerit_weightedAverage() public {
@@ -35,7 +36,7 @@ contract MeritSBTV2Test is Test {
         merit.mintMerit(1, 2, 2, 30e6); // score=2, reward=30
         vm.stopPrank();
 
-        // weighted = (4×10 + 2×30) / (10+30) = (40+60)/40 = 100/40 = 2.5 → 250
+        // weighted = (4×10 + 2×30) / (10+30) = (40+60)/40 = 2.5 → 250
         (uint256 score, uint256 jobs,,) = merit.getReputation(1);
         assertEq(jobs, 2);
         assertEq(score, 250); // 2.50 × 100
@@ -67,9 +68,23 @@ contract MeritSBTV2Test is Test {
         merit.mintMerit(1, 1, 4, 10e6);
     }
 
-    function test_tier_silver() public {
+    // ── Tier tests (updated to match Tier enum: Crab/Lobster/Squid/Octopus/Shark) ──
+
+    function test_tier_lobster_default() public {
+        // < SILVER_JOBS(10) → always Lobster regardless of score
         vm.startPrank(escrow);
-        // 10 jobs with score=4.0 each, 10 USDC each
+        for (uint256 i = 1; i <= 5; i++) {
+            merit.mintMerit(1, i, 5, 10e6);
+        }
+        vm.stopPrank();
+
+        (,, , MeritSBTV2.Tier tier) = merit.getReputation(1);
+        assertEq(uint8(tier), uint8(MeritSBTV2.Tier.Lobster));
+    }
+
+    function test_tier_squid() public {
+        vm.startPrank(escrow);
+        // 10 jobs with score=4.0 each (≥ SILVER_SCORE*10=350) → Squid
         for (uint256 i = 1; i <= 10; i++) {
             merit.mintMerit(1, i, 4, 10e6);
         }
@@ -77,23 +92,54 @@ contract MeritSBTV2Test is Test {
 
         (uint256 score, uint256 jobs,, MeritSBTV2.Tier tier) = merit.getReputation(1);
         assertEq(jobs, 10);
-        assertEq(score, 400); // 4.00
-        assertEq(uint8(tier), 1); // Silver
+        assertEq(score, 400); // 4.00 × 100
+        assertEq(uint8(tier), uint8(MeritSBTV2.Tier.Squid));
     }
 
-    function test_tier_gold() public {
+    function test_tier_octopus() public {
         vm.startPrank(escrow);
-        // 50 jobs, score=4.5, volume > 100 USDC
+        // 50 jobs, score=5.0, volume=150 USDC > GOLD_VOL(100 USDC) → Octopus
         for (uint256 i = 1; i <= 50; i++) {
-            merit.mintMerit(1, i, 5, 3e6); // 3 USDC each = 150 USDC total
+            merit.mintMerit(1, i, 5, 3e6); // 3 USDC × 50 = 150 USDC total
         }
         vm.stopPrank();
 
         (uint256 score, uint256 jobs, uint256 volume, MeritSBTV2.Tier tier) = merit.getReputation(1);
         assertEq(jobs, 50);
-        assertEq(score, 500); // 5.00
+        assertEq(score, 500); // 5.00 × 100
         assertEq(volume, 150e6);
-        assertEq(uint8(tier), 2); // Gold
+        assertEq(uint8(tier), uint8(MeritSBTV2.Tier.Octopus));
+    }
+
+    // ── totalSupply() tests (new) ──────────────────────────────────────────────
+
+    function test_totalSupply_zero_initially() public view {
+        assertEq(merit.totalSupply(), 0);
+    }
+
+    function test_totalSupply_increments_on_first_merit() public {
+        assertEq(merit.totalSupply(), 0);
+
+        vm.prank(escrow);
+        merit.mintMerit(1, 1, 5, 10e6);
+        assertEq(merit.totalSupply(), 1);
+
+        // Second merit for same agent — should NOT increment
+        vm.prank(escrow);
+        merit.mintMerit(1, 2, 4, 10e6);
+        assertEq(merit.totalSupply(), 1);
+    }
+
+    function test_totalSupply_counts_unique_agents() public {
+        vm.startPrank(escrow);
+        merit.mintMerit(1, 1, 5, 10e6); // agent 1
+        merit.mintMerit(2, 2, 4, 10e6); // agent 2
+        merit.mintMerit(3, 3, 3, 10e6); // agent 3
+        merit.mintMerit(1, 4, 5, 10e6); // agent 1 again — no increment
+        vm.stopPrank();
+
+        assertEq(merit.totalSupply(), 3);
+        assertEq(merit.agentCount(), 3);
     }
 
     function test_setEscrow_onlyOwner() public {

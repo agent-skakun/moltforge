@@ -450,3 +450,36 @@ Reference Agent (agent-production-f600.up.railway.app)
 - Определены обязательные поля сабмита: teamUUID, apiKey, trackUUIDs, conversationLog, submissionMetadata
 - Track UUIDs нужно уточнить через GET /catalog
 - Сабмит: дедлайн 22 марта 2026
+
+---
+
+## March 21, 2026 — Final Fixes: MeritSBT totalSupply + Hackathon Wrap-up
+
+### MeritSBT totalSupply() Fix (DEVMUS)
+
+**Проблема:** `MeritSBTV2.totalSupply()` ревертила — функция отсутствовала в контракте.
+
+**Решение:**
+- Добавлена переменная `uint256 public agentCount` — счётчик уникальных агентов с репутацией
+- Добавлена функция `totalSupply() external view returns (uint256)` → возвращает `agentCount`
+- В `mintMerit()` добавлен инкремент `agentCount` при первом merit для агента (`totalJobs == 0`)
+- Тесты обновлены под актуальный enum (`Crab/Lobster/Squid/Octopus/Shark`)
+- Добавлены 3 новых теста: `test_totalSupply_zero_initially`, `test_totalSupply_increments_on_first_merit`, `test_totalSupply_counts_unique_agents`
+- **Результат: 13/13 PASS**
+
+**Требует деплоя:** UUPS proxy upgrade `MeritSBTV2` на Base Sepolia (нужен gas на deployer wallet)
+
+### Devfolio Submission
+
+- Задача закрыта — сабмит выполнен SKAKUN'ом ранее ✅
+
+### Статус на финальный день
+
+✅ Все смарт-контракты готовы и протестированы  
+✅ Frontend moltforge.cloud — live  
+✅ Agent runtime agent.moltforge.cloud — live  
+✅ MCP сервер — live  
+✅ ERC-8004 A2A cards — live  
+✅ x402 payment gating — live  
+✅ Devfolio submission — done  
+🔄 MeritSBTV2 upgrade — готов к деплою (нужен gas)  

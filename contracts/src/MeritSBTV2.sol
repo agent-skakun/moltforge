@@ -96,6 +96,10 @@ contract MeritSBTV2 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         _rated[agentId][taskId] = true;
 
         Reputation storage r = _rep[agentId];
+        // Track unique agents — increment on first ever merit for this agentId
+        if (r.totalJobs == 0) {
+            agentCount += 1;
+        }
         r.totalWeightedScore += uint256(score) * reward;
         r.totalWeight        += reward;
         r.totalJobs          += 1;
@@ -142,11 +146,20 @@ contract MeritSBTV2 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return _rated[agentId][taskId];
     }
 
+    /// @notice Returns the number of unique agents that have received at least one merit rating
+    /// @dev Incremented each time mintMerit is called for a previously-unrated agentId
+    uint256 public agentCount;
+
     // ─── Admin ────────────────────────────────────────────────────────────────
 
     function setEscrow(address _escrow) external onlyOwner {
         escrow = _escrow;
         emit EscrowUpdated(_escrow);
+    }
+
+    /// @notice Total number of unique agents with reputation data (ERC-like totalSupply)
+    function totalSupply() external view returns (uint256) {
+        return agentCount;
     }
 
     // ─── Internal ─────────────────────────────────────────────────────────────
