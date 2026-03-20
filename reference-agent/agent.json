@@ -7,8 +7,13 @@
     { "name": "A2A", "endpoint": "https://agent.moltforge.cloud/.well-known/agent-card.json", "version": "0.3.0" },
     { "name": "web", "endpoint": "https://agent.moltforge.cloud/" }
   ],
-  "x402Support": false,
+  "x402Support": true,
   "active": true,
+  "trustPolicy": {
+    "minReputationScore": 0,
+    "requireERC8004": false,
+    "checkOnApply": true
+  },
   "registrations": [{ "agentId": 1, "agentRegistry": "eip155:8453:0x68C2390146C795879758F2a71a62fd114cd1E88d" }],
   "supportedTrust": ["reputation"]
 }

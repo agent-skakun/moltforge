@@ -155,3 +155,159 @@ export function createBlockchainClient(config: Config) {
 
   return { client, getAgentId, getAgentExtended, submitResult };
 }
+
+// ─── ERC-8004 Trust Check ──────────────────────────────────────────────────────
+
+const TRUST_REGISTRY_ADDRESS = "0x98b19578289ded629a0992403942adeb2ff217c8" as const;
+const MERIT_SBT_ADDRESS = "0xe3C5b5a24fB481302C13E5e069ddD77E700C2113" as const;
+const BASE_SEPOLIA_RPC = "https://sepolia.base.org";
+
+const TRUST_REGISTRY_ABI = [
+  {
+    type: "function",
+    name: "getAgentIdByWallet",
+    inputs: [{ name: "wallet", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getAgentExtended",
+    inputs: [{ name: "numericId", type: "uint256" }],
+    outputs: [
+      {
+        name: "agent",
+        type: "tuple",
+        components: [
+          { name: "wallet", type: "address" },
+          { name: "agentId", type: "bytes32" },
+          { name: "metadataURI", type: "string" },
+          { name: "webhookUrl", type: "string" },
+          { name: "registeredAt", type: "uint64" },
+          { name: "status", type: "uint8" },
+          { name: "score", type: "uint256" },
+          { name: "jobsCompleted", type: "uint32" },
+          { name: "rating", type: "uint32" },
+          { name: "tier", type: "uint8" },
+        ],
+      },
+      { name: "avatarHash", type: "bytes32" },
+      { name: "skills", type: "string[]" },
+      { name: "tools", type: "string[]" },
+      { name: "_agentUrl", type: "string" },
+    ],
+    stateMutability: "view",
+  },
+] as const;
+
+const MERIT_SBT_ABI = [
+  {
+    type: "function",
+    name: "getReputation",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+] as const;
+
+export async function checkClientTrust(
+  clientWallet: string,
+  _config?: any,
+): Promise<{ trusted: boolean; reason: string; score: number }> {
+  if (!clientWallet || !/^0x[0-9a-fA-F]{40}$/.test(clientWallet)) {
+    return { trusted: true, reason: "no wallet provided", score: 0 };
+  }
+
+  const wallet = clientWallet as Address;
+  const client = createPublicClient({
+    chain: baseSepolia,
+    transport: http(BASE_SEPOLIA_RPC),
+  });
+
+  let erc8004Compliant = false;
+  let agentUrl = "";
+
+  // Step 1: Check AgentRegistry for ERC-8004 compliance
+  try {
+    const numericId = await client.readContract({
+      address: TRUST_REGISTRY_ADDRESS,
+      abi: TRUST_REGISTRY_ABI,
+      functionName: "getAgentIdByWallet",
+      args: [wallet],
+    });
+
+    if (numericId > 0n) {
+      const result = await client.readContract({
+        address: TRUST_REGISTRY_ADDRESS,
+        abi: TRUST_REGISTRY_ABI,
+        functionName: "getAgentExtended",
+        args: [numericId],
+      });
+      const [, , , , fetchedUrl] = result as readonly [any, any, any, any, string];
+      agentUrl = fetchedUrl;
+
+      if (agentUrl) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 3000);
+          const resp = await fetch(`${agentUrl}/agent.json`, { signal: controller.signal });
+          clearTimeout(timeout);
+          if (resp.ok) {
+            const agentJson = await resp.json() as Record<string, any>;
+            if (
+              typeof agentJson.type === "string" &&
+              agentJson.type.toLowerCase().includes("eip-8004") &&
+              agentJson.active === true
+            ) {
+              erc8004Compliant = true;
+            }
+          }
+        } catch {
+          // agent.json fetch failed — not fatal
+        }
+      }
+    }
+  } catch {
+    // Registry lookup failed — not fatal
+  }
+
+  // Step 2: Check MeritSBT reputation
+  let score = 0;
+  try {
+    score = Number(
+      await client.readContract({
+        address: MERIT_SBT_ADDRESS,
+        abi: MERIT_SBT_ABI,
+        functionName: "getReputation",
+        args: [wallet],
+      }),
+    );
+  } catch {
+    try {
+      score = Number(
+        await client.readContract({
+          address: MERIT_SBT_ADDRESS,
+          abi: MERIT_SBT_ABI,
+          functionName: "balanceOf",
+          args: [wallet],
+        }),
+      );
+    } catch {
+      score = 0;
+    }
+  }
+
+  const parts: string[] = [];
+  parts.push(erc8004Compliant ? "erc8004:compliant" : "erc8004:not-found");
+  parts.push(`reputation:${score}`);
+  if (agentUrl) parts.push(`url:${agentUrl}`);
+
+  return { trusted: true, reason: parts.join(", "), score };
+}
