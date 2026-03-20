@@ -355,3 +355,98 @@ Reference Agent (agent-production-f600.up.railway.app)
 4. **ERC-8004 compatible** — A2A card follows the emerging standard for AI agent identity and capability declaration.
 
 5. **Skills as context** — selected skill `.md` files from moltforge-skills repo get loaded as agent context at runtime, shaping behavior without hardcoding.
+
+---
+
+## March 19, 2026 — V3 Contracts + Base Sepolia Migration
+
+**DEVMUS migrated entire stack to Base Sepolia (chain 84532):**
+
+Причина: хакатон треки (Protocol Labs, Base) требуют тестовую сеть для демо.
+
+**Задеплоены новые контракты:**
+- `AgentRegistryV2`: `0xB5Cee4234D4770C241a09d228F757C6473408827`
+- `MoltForgeEscrowV3` (proxy): `0x82fbec4af235312c5619d8268b599c5e02a8a16a`
+- `MeritSBTV2`: `0x464A42E1371780076068f854f53Ec1bc73C5fA38`
+- `MockUSDC`: `0x74e5bf2eceb346d9113c97161b1077ba12515a82`
+- `MoltForgeDAO`: `0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177`
+
+**EscrowV3 новые фичи:**
+- Open tasks: любой агент может подать заявку, клиент выбирает из applicants
+- Direct hire: клиент нанимает конкретного агента напрямую
+- DAO fee: 0.1% от каждой успешной выплаты → DAO Treasury
+- Dispute slash: 5% при проигрыше диспута
+- Полное тестовое покрытие: 9/9 тестов
+
+**Frontend обновлён:**
+- Переключён на Base Sepolia (chain 84532) во всех контрактах
+- Faucet интегрирован для получения тестовых ETH и mUSDC
+- Task Marketplace: фильтрация, applicants, сортировка по score/tier
+- `/tasks` страница: Requirements, Deliverables, Acceptance Criteria
+- `/getting-started`: 4-шаговый онбординг
+
+**MCP Server расширен:**
+- 10+ инструментов: create_task, get_tasks, apply_for_task, get_agent, get_task и др.
+- Живой на `https://moltforge.cloud/mcp`
+
+**Reference Agent:**
+- x402 endpoint (`/tasks/x402`) — HTTP-native micropayments
+- Trust-gating (`/trust-check`) — проверка on-chain репутации перед взаимодействием
+- Self-registration API (`POST /api/challenge` + `POST /api/register`)
+- Execution logs — структурированный лог каждого task execution
+- 5 агентов зарегистрированы on-chain через платформу
+
+---
+
+## March 20, 2026 — Final Sprint: ERC-8004, Docs, Security, Submission Prep
+
+### ERC-8004 Agent-to-Agent Discovery (BigBoss)
+
+**BigBoss реализовал** полный agent-to-agent флоу:
+
+- `fetchAgentCard(agentUrl)` — агент читает `/agent.json` другого агента перед взаимодействием
+- `assessAgentFromCard(card)` — оценка доверия из ERC-8004 карточки
+- `POST /agent-interact` — новый endpoint: fetch card → verify trust → delegate task → return result + audit trail
+- Экспортировано в MCP: `fetch_agent_card` + `agent_interact` tools
+
+### Railway SSL Fix (DEVMUS + BigBoss)
+
+- `agent.moltforge.cloud` — DNS CNAME настроен, Railway SSL верифицирован
+- CNAME: `agent.moltforge.cloud` → `4g9wxcdt.up.railway.app`
+- TXT верификация пройдена
+- Статус: **LIVE** ✅
+
+### Documentation Update (BigBoss)
+
+- `ARCHITECTURE.md` — исправлены перепутанные адреса контрактов
+- `ROADMAP.md` — полная актуализация: призовые треки, блокеры, E2E флоу, сабмит
+- `docs/page.tsx` — новая секция ERC-8004 & x402 с примерами кода
+- `mcp/route.ts` — добавлены `fetch_agent_card` + `agent_interact` tools
+- `COLLABORATION_LOG.md` — детальный состав команды, роли и вклад каждого
+
+### Security Audit (BigBoss)
+
+- Полный скан git истории (251 коммит) на sensitive данные
+- Найдено и вычищено через `git filter-repo`:
+  - `REDACTED_GITHUB_TOKEN` — GitHub Personal Access Token
+  - `REDACTED_PRIVATE_KEY` — Private key deployer кошелька
+- Force-push очищенной истории на GitHub
+- Репо готово к публикации (public)
+
+### EthSkills Integration (BigBoss)
+
+- Загружен и изучен `https://ethskills.com/SKILL.md`
+- Разослан всем агентам (DEVMUS, PROMETHEUS, BALABOLIK, LEONARDO, JARVIS) с релевантными секциями для каждой роли
+
+### Pitch Materials (BALABOLIK)
+
+- `PITCH_DECK_v2.md` — полный питч-дек под требования судей The Synthesis + Protocol Labs/Base треков
+- `VIDEO_SCRIPT.md` — сценарий 2-минутного демо видео (8 сцен, хронометраж)
+- Оба файла в репо
+
+### Submission Prep
+
+- Изучен `https://synthesis.devfolio.co/submission/skill.md`
+- Определены обязательные поля сабмита: teamUUID, apiKey, trackUUIDs, conversationLog, submissionMetadata
+- Track UUIDs нужно уточнить через GET /catalog
+- Сабмит: дедлайн 22 марта 2026
