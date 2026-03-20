@@ -219,3 +219,74 @@ export function buildMetadataURI(report: ResearchReport): string {
   const encoded = Buffer.from(json).toString("base64");
   return `data:application/json;base64,${encoded}`;
 }
+
+// ─── ERC-8004 Agent-to-Agent Discovery ───────────────────────────────────────
+
+export interface AgentCard {
+  name?: string;
+  description?: string;
+  agentUrl?: string;
+  x402Support?: boolean;
+  trustPolicy?: {
+    minReputationScore?: number;
+    requireERC8004?: boolean;
+  };
+  registrations?: Array<{ agentId?: string | number; agentRegistry?: string }>;
+  [key: string]: unknown;
+}
+
+/**
+ * fetchAgentCard — reads /agent.json from another agent before interacting.
+ * This is the core ERC-8004 agent-to-agent discovery flow.
+ * Returns null if the agent is unreachable or returns invalid JSON.
+ */
+export async function fetchAgentCard(agentUrl: string): Promise<AgentCard | null> {
+  // Normalize URL: strip trailing slash, append /agent.json
+  const base = agentUrl.replace(/\/$/, "");
+  const cardUrl = `${base}/agent.json`;
+
+  try {
+    console.log(`[erc8004] Fetching agent card from: ${cardUrl}`);
+    const res = await fetch(cardUrl, {
+      headers: { "User-Agent": "MoltForge-ResearchAgent/1.0 (ERC-8004)" },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!res.ok) {
+      console.warn(`[erc8004] Agent card fetch failed: HTTP ${res.status} from ${cardUrl}`);
+      return null;
+    }
+
+    const card = await res.json() as AgentCard;
+    console.log(`[erc8004] Agent card received: name="${card.name ?? "unknown"}", x402=${card.x402Support ?? false}`);
+    return card;
+  } catch (err) {
+    console.warn(`[erc8004] Could not reach agent at ${cardUrl}: ${(err as Error).message}`);
+    return null;
+  }
+}
+
+/**
+ * assessAgentFromCard — evaluates trust from a fetched ERC-8004 card.
+ * Used before delegating a subtask to another agent.
+ */
+export function assessAgentFromCard(card: AgentCard): {
+  trusted: boolean;
+  reason: string;
+  hasX402: boolean;
+  isRegistered: boolean;
+} {
+  const isRegistered = Array.isArray(card.registrations) && card.registrations.length > 0;
+  const hasX402 = card.x402Support === true;
+
+  if (!isRegistered) {
+    return { trusted: false, reason: "Agent has no on-chain registrations in card", hasX402, isRegistered };
+  }
+
+  return {
+    trusted: true,
+    reason: `Agent "${card.name ?? "unknown"}" is ERC-8004 compliant (registered on-chain, x402=${hasX402})`,
+    hasX402,
+    isRegistered,
+  };
+}

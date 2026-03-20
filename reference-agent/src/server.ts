@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import { loadConfig } from "./config";
 import { createBlockchainClient, checkClientTrust } from "./blockchain";
-import { executeResearch, buildMetadataURI } from "./agent";
+import { executeResearch, buildMetadataURI, fetchAgentCard, assessAgentFromCard } from "./agent";
 import { startTelegramBot } from "./telegram";
 import { checkAgentTrust } from "./trust";
 import { logExecution, createInputHash, createResultHash } from "./execution-log";
@@ -414,6 +414,87 @@ app.get("/trust-check", async (req, res) => {
   }
   const assessment = await checkAgentTrust(address, config.registryAddress, config.rpcUrl);
   res.json({ address, ...assessment });
+});
+
+// ─── ERC-8004 Agent-to-Agent Interaction ────────────────────────────────────
+
+/**
+ * POST /agent-interact
+ * Body: { agentUrl: string, query: string }
+ * ERC-8004 flow: fetch /agent.json → assess trust → delegate task if trusted
+ */
+app.post("/agent-interact", async (req, res) => {
+  const { agentUrl, query } = req.body as { agentUrl?: string; query?: string };
+
+  if (!agentUrl || typeof agentUrl !== "string") {
+    res.status(400).json({ error: "agentUrl (string) is required" });
+    return;
+  }
+  if (!query || typeof query !== "string") {
+    res.status(400).json({ error: "query (string) is required" });
+    return;
+  }
+
+  // Step 1: Fetch ERC-8004 agent card
+  const card = await fetchAgentCard(agentUrl);
+  if (!card) {
+    res.status(502).json({
+      error: "Could not fetch agent card",
+      agentUrl,
+      erc8004: false,
+    });
+    return;
+  }
+
+  // Step 2: Assess trust from card
+  const assessment = assessAgentFromCard(card);
+  console.log(`[agent-interact] Trust assessment: ${assessment.reason}`);
+
+  if (!assessment.trusted) {
+    res.status(403).json({
+      error: "Agent not trusted per ERC-8004 assessment",
+      reason: assessment.reason,
+      card,
+      erc8004: true,
+    });
+    return;
+  }
+
+  // Step 3: Delegate task via POST /tasks (or x402 if supported)
+  const taskEndpoint = assessment.hasX402
+    ? `${agentUrl.replace(/\/$/, "")}/tasks/x402`
+    : `${agentUrl.replace(/\/$/, "")}/tasks`;
+
+  try {
+    const taskRes = await fetch(taskEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "MoltForge-ResearchAgent/1.0 (ERC-8004)",
+      },
+      body: JSON.stringify({ query }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    const taskData = await taskRes.json();
+
+    res.json({
+      erc8004: true,
+      agentName: card.name ?? "unknown",
+      trusted: true,
+      trustReason: assessment.reason,
+      hasX402: assessment.hasX402,
+      usedEndpoint: taskEndpoint,
+      result: taskData,
+    });
+  } catch (err) {
+    res.status(502).json({
+      error: `Failed to delegate task to agent: ${(err as Error).message}`,
+      agentUrl,
+      erc8004: true,
+      trusted: true,
+    });
+  }
 });
 
 // ─── Agent Self-Registration API ─────────────────────────────────────────────
