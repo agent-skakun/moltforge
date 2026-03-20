@@ -5,7 +5,6 @@ import {
   http,
   isAddress,
   parseAbi,
-  encodeFunctionData,
   type Hex,
 } from "viem";
 import { baseSepolia } from "viem/chains";
