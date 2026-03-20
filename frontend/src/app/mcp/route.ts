@@ -239,6 +239,29 @@ const TOOLS = [
       required: ["agentId"],
     },
   },
+  {
+    name: "fetch_agent_card",
+    description: "ERC-8004: Fetch the agent.json card from another agent's URL before interacting with it. Returns name, x402 support, on-chain registrations, and trust policy. Use this before delegating a task to an external agent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agentUrl: { type: "string", description: "Base URL of the target agent (e.g. https://agent.moltforge.cloud)" },
+      },
+      required: ["agentUrl"],
+    },
+  },
+  {
+    name: "agent_interact",
+    description: "ERC-8004 agent-to-agent interaction: fetches the target agent's card, verifies trust, then delegates a task query to it. Returns result from the remote agent. Use when you want to outsource a subtask to another registered agent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agentUrl: { type: "string", description: "Base URL of the target agent" },
+        query:    { type: "string", description: "The task query to send to the agent" },
+      },
+      required: ["agentUrl", "query"],
+    },
+  },
 ];
 
 // ── Tool handlers ─────────────────────────────────────────────────────────────
@@ -586,6 +609,43 @@ async function handleGetAgent(args: Record<string, unknown>) {
   return await res.json();
 }
 
+async function handleFetchAgentCard(args: Record<string, unknown>) {
+  const agentUrl = (args.agentUrl as string).replace(/\/$/, "");
+  const res = await fetch(`${agentUrl}/agent.json`, {
+    headers: { "User-Agent": "MoltForge-MCP/1.0 (ERC-8004)" },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`Could not fetch agent card: HTTP ${res.status} from ${agentUrl}/agent.json`);
+  const card = await res.json() as Record<string, unknown>;
+  const isRegistered = Array.isArray(card.registrations) && (card.registrations as unknown[]).length > 0;
+  return {
+    ...card,
+    _assessment: {
+      erc8004: true,
+      isRegistered,
+      hasX402: card.x402Support === true,
+      trusted: isRegistered,
+      reason: isRegistered
+        ? `Agent "${card.name ?? "unknown"}" is ERC-8004 compliant with on-chain registration`
+        : "Agent card fetched but no on-chain registrations found",
+    },
+  };
+}
+
+async function handleAgentInteract(args: Record<string, unknown>) {
+  const agentUrl = (args.agentUrl as string).replace(/\/$/, "");
+  const query = args.query as string;
+  const res = await fetch(`${agentUrl}/agent-interact`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "User-Agent": "MoltForge-MCP/1.0 (ERC-8004)" },
+    body: JSON.stringify({ agentUrl, query }),
+    signal: AbortSignal.timeout(35000),
+  });
+  const data = await res.json() as Record<string, unknown>;
+  if (!res.ok) throw new Error((data.error as string) || `Agent interaction failed: HTTP ${res.status}`);
+  return data;
+}
+
 // ── Route handlers ────────────────────────────────────────────────────────────
 
 export async function GET() {
@@ -675,6 +735,8 @@ export async function POST(req: Request) {
         case "submit_result":           result = await handleSubmitResult(toolArgs); break;
         case "get_task":                result = await handleGetTask(toolArgs); break;
         case "get_agent":               result = await handleGetAgent(toolArgs); break;
+        case "fetch_agent_card":        result = await handleFetchAgentCard(toolArgs); break;
+        case "agent_interact":          result = await handleAgentInteract(toolArgs); break;
         default:
           return NextResponse.json({ jsonrpc: "2.0", error: { code: -32601, message: `Unknown tool: ${toolName}` }, id }, { status: 404, headers: cors });
       }
