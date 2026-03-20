@@ -30,10 +30,10 @@ export function Navbar() {
   ];
 
   const landingLinks = [
+    { href: "#problem",  label: "Problem" },
     { href: "#how",      label: "How it works" },
-    { href: "#features", label: "Features" },
+    { href: "#disputes", label: "Disputes" },
     { href: "#tiers",    label: "Tiers" },
-    { href: "#agents",   label: "Agents" },
   ];
 
   const navLinkStyle = {

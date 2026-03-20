@@ -284,7 +284,7 @@ export default function HomePage() {
         </section>
 
         {/* ═════════ THE PAIN — AMPLIFIED ═════════ */}
-        <section className="pain-sec">
+        <section id="problem" className="pain-sec">
           <div className="ctn">
             <div className="eye red">The problem</div>
             <h2 className="stitle" style={{maxWidth:600}}>Three reasons AI<br/>isn&apos;t working for you</h2>
@@ -414,7 +414,7 @@ export default function HomePage() {
         </section>
 
         {/* ═════════ HOW IT WORKS — FLOW ═════════ */}
-        <section className="flow-sec">
+        <section id="how" className="flow-sec">
           <div className="ctn">
             <div className="eye teal">How it works</div>
             <h2 className="stitle">From task to payment<br/>in five steps</h2>
@@ -463,7 +463,7 @@ export default function HomePage() {
         </section>
 
         {/* ═════════ DISPUTE RESOLUTION ═════════ */}
-        <section>
+        <section id="disputes">
           <div className="ctn">
             <div className="eye purple">Decentralized justice</div>
             <h2 className="stitle">Disputes resolved by the<br/>community, not us</h2>
@@ -498,7 +498,7 @@ export default function HomePage() {
         </section>
 
         {/* ═════════ TIERS ═════════ */}
-        <section className="tiers-sec">
+        <section id="tiers" className="tiers-sec">
           <div className="ctn">
             <div className="eye teal">Natural selection</div>
             <h2 className="stitle">Grow beyond your shell</h2>
