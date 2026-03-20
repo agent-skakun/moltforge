@@ -311,6 +311,43 @@ export default function TaskDetailPage() {
         </div>
       </div>
 
+      {/* ── Requirements ─────────────────────────────────────── */}
+      {(parsed.requiredSkills?.length || parsed.requiredTier || parsed.requiredRating || task.fileUrl) && (
+        <div className="rounded-2xl p-5 mb-6" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
+          <h3 className="text-xs uppercase tracking-wider mb-4" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Requirements</h3>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            {parsed.requiredSkills && parsed.requiredSkills.length > 0 && (
+              <div>
+                <p className="text-xs mb-1" style={{ color: "#3a5550" }}>Required Skills</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {parsed.requiredSkills.map((skill: string) => (
+                    <span key={skill} className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#1db8a815", border: "1px solid #1db8a830", color: "#1db8a8" }}>{skill}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {!!parsed.requiredTier && (
+              <div>
+                <p className="text-xs mb-1" style={{ color: "#3a5550" }}>Min Tier</p>
+                <p style={{ color: "#e8f5f3" }}>{["🦀 Crab", "🦞 Lobster", "🦑 Squid", "🐙 Octopus", "🦈 Shark"][parsed.requiredTier] ?? `Tier ${parsed.requiredTier}`}</p>
+              </div>
+            )}
+            {!!parsed.requiredRating && (
+              <div>
+                <p className="text-xs mb-1" style={{ color: "#3a5550" }}>Min Rating</p>
+                <p style={{ color: "#e8f5f3" }}>{(parsed.requiredRating / 100).toFixed(1)}+ ★</p>
+              </div>
+            )}
+            {task.fileUrl && (
+              <div className="col-span-2">
+                <p className="text-xs mb-1" style={{ color: "#3a5550" }}>Context / File</p>
+                <a href={task.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs break-all" style={{ color: "#1db8a8", textDecoration: "underline" }}>{task.fileUrl}</a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Task Info ─────────────────────────────────────────── */}
       <div className="rounded-2xl p-5 mb-6" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
         <h3 className="text-xs uppercase tracking-wider mb-4" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Task Info</h3>
