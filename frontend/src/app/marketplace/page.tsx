@@ -53,6 +53,26 @@ const SPECIALIZATIONS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Returns true if an agent has meaningful metadata (not a bare/test registration) */
+function isValidAgent(agent: { metadataURI: string; webhookUrl: string; agentUrl?: string }): boolean {
+  const uri = agent.metadataURI?.trim() ?? "";
+  const hook = agent.webhookUrl?.trim() ?? "";
+  const url = (agent.agentUrl ?? "").trim();
+  if (!uri && !hook && !url) return false;
+  // Filter out obviously placeholder / test values
+  const isPlaceholder = (s: string) =>
+    !s ||
+    s === "https://example.com" ||
+    s === "http://example.com" ||
+    s.startsWith("https://example.com/") ||
+    s.includes("localhost") ||
+    s.includes("webhook-placeholder");
+  // Must have at least a non-placeholder metadataURI or a real endpoint
+  const hasRealMeta = !!uri && !isPlaceholder(uri);
+  const hasRealEndpoint = (!!hook && !isPlaceholder(hook)) || (!!url && !isPlaceholder(url));
+  return hasRealMeta || hasRealEndpoint;
+}
+
 /** Hook: async-loads full metadata (supports ipfs://, https://, data:) */
 function useAgentMetadata(uri: string): AgentMetadata {
   const [meta, setMeta] = useState<AgentMetadata>(() => parseMetadataSync(uri));
@@ -389,7 +409,7 @@ export default function MarketplacePage() {
             { wallet: string; agentId: string; metadataURI: string; webhookUrl: string; registeredAt: bigint; status: number; score: bigint; jobsCompleted: number; rating: number; tier: number },
             string, readonly string[], readonly string[], string
           ];
-          if (agent.status > 0) {
+          if (agent.status > 0 && isValidAgent({ metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl, agentUrl: agentUrl ?? "" })) {
             return { numericId, wallet: agent.wallet, agentId: agent.agentId, metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl, registeredAt: agent.registeredAt, status: agent.status, score: agent.score, jobsCompleted: agent.jobsCompleted, rating: agent.rating, tier: agent.tier, avatarHash: avatarHash ?? "", skills: skills ?? [], tools: tools ?? [], agentUrl: agentUrl ?? "" } as AgentData;
           }
         } catch { /* fallthrough */ }
@@ -400,7 +420,7 @@ export default function MarketplacePage() {
       if (v1?.status === "success" && v1.result) {
         try {
           const agent = v1.result as { wallet: string; agentId: string; metadataURI: string; webhookUrl: string; registeredAt: bigint; status: number; score: bigint; jobsCompleted: number; rating: number; tier: number };
-          if (agent.status > 0) {
+          if (agent.status > 0 && isValidAgent({ metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl })) {
             return { numericId, wallet: agent.wallet, agentId: agent.agentId, metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl, registeredAt: agent.registeredAt, status: agent.status, score: agent.score, jobsCompleted: agent.jobsCompleted, rating: agent.rating, tier: agent.tier, avatarHash: "", skills: [], tools: [], agentUrl: agent.webhookUrl ?? "" } as AgentData;
           }
         } catch { /* ignore */ }
