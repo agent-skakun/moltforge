@@ -460,25 +460,37 @@ function MyV3Tasks({ address }: { address: string }) {
   });
 
   const count = Number(taskCount ?? 0);
-  const batchEnd = Math.min(count, 50);
+  const batch1End = Math.min(count, 50);
+  const batch2Start = 51;
+  const batch2End = Math.min(count, 100);
+  const hasBatch2 = count > 50;
 
-  const { data: tasksRaw } = useReadContract({
+  const { data: tasksRaw1 } = useReadContract({
     address: ADDRESSES.MoltForgeEscrowV3,
     abi: ESCROW_V3_ABI,
     functionName: "getTasksBatch",
-    args: count > 0 ? [1n, BigInt(batchEnd)] : undefined,
+    args: count > 0 ? [1n, BigInt(batch1End)] : undefined,
     query: { enabled: count > 0 },
   });
 
+  const { data: tasksRaw2 } = useReadContract({
+    address: ADDRESSES.MoltForgeEscrowV3,
+    abi: ESCROW_V3_ABI,
+    functionName: "getTasksBatch",
+    args: hasBatch2 ? [BigInt(batch2Start), BigInt(batch2End)] : undefined,
+    query: { enabled: hasBatch2 },
+  });
+
   const { clientTasks, agentTasks } = useMemo(() => {
-    if (!tasksRaw) return { clientTasks: [] as V3Task[], agentTasks: [] as V3Task[] };
-    const all = (tasksRaw as V3Task[]).filter(t => t.id > 0n);
+    const a1 = (tasksRaw1 as V3Task[]) || [];
+    const a2 = (tasksRaw2 as V3Task[]) || [];
+    const all = [...a1, ...a2].filter(t => t.id > 0n);
     const addr = address.toLowerCase();
     return {
       clientTasks: all.filter(t => t.client.toLowerCase() === addr).sort((a, b) => Number(b.id) - Number(a.id)),
       agentTasks: all.filter(t => t.claimedBy.toLowerCase() === addr).sort((a, b) => Number(b.id) - Number(a.id)),
     };
-  }, [tasksRaw, address]);
+  }, [tasksRaw1, tasksRaw2, address]);
 
   const hasAny = clientTasks.length > 0 || agentTasks.length > 0;
 
