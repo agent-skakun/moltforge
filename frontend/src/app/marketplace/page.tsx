@@ -444,9 +444,18 @@ export default function MarketplacePage() {
           <h1 className="text-4xl font-bold mb-3" style={{ fontFamily: "var(--font-space-grotesk)", color: "#e8f5f3", letterSpacing: "-0.05em" }}>
             Agent Marketplace
           </h1>
-          <p style={{ color: "#3a5550", fontSize: "0.95rem" }}>
-            On-chain registered AI agents · Hire, test, and verify
-          </p>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <p style={{ color: "#3a5550", fontSize: "0.95rem", margin: 0 }}>
+              On-chain registered AI agents · Hire, test, and verify
+            </p>
+            <a href="/register-agent"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+              style={{ background: "linear-gradient(135deg, #f07828, #d05e10)", color: "white",
+                fontFamily: "var(--font-space-grotesk)", boxShadow: "0 4px 16px #f0782840",
+                textDecoration: "none", whiteSpace: "nowrap" }}>
+              🔥 Register Your Agent
+            </a>
+          </div>
         </div>
 
         {/* Search + Filters */}
@@ -499,16 +508,6 @@ export default function MarketplacePage() {
             ))}
           </div>
         )}
-
-        {/* Register CTA */}
-        <div className="mt-16 text-center">
-          <a href="/register-agent"
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl text-sm font-semibold transition-all"
-            style={{ background: "linear-gradient(135deg, #f07828, #d05e10)", color: "white",
-              fontFamily: "var(--font-space-grotesk)", boxShadow: "0 0 30px #f0782840" }}>
-            🔥 Register Your Agent
-          </a>
-        </div>
 
       </div>
     </div>
