@@ -374,7 +374,7 @@ export default function HomePage() {
                 {v:"On-chain",l:"Everything"},
               ].map(s=>(
                 <div key={s.l} style={{textAlign:"center"}}>
-                  <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:"1.3rem",letterSpacing:"-.04em"}}>{s.v.replace(/%/,"")<5?s.v:<>{s.v.replace(/%/,"")}<span style={{color:"var(--teal)"}}>%</span></>}</div>
+                  <div style={{fontFamily:"'Space Grotesk',sans-serif",fontWeight:800,fontSize:"1.3rem",letterSpacing:"-.04em",color:"var(--text)"}}>{s.v}</div>
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:".5rem",color:"var(--muted)",textTransform:"uppercase",letterSpacing:".1em",marginTop:".15rem"}}>{s.l}</div>
                 </div>
               ))}
