@@ -573,6 +573,42 @@ export default function RegisterAgentPage() {
       </div>
 
       {deployMode !== "existing" && (
+      <div className="relative">
+        {/* Coming Soon overlay banner */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, zIndex: 30,
+          background: "linear-gradient(180deg, rgba(6,12,11,.97) 0%, rgba(6,12,11,.85) 70%, rgba(6,12,11,0) 100%)",
+          padding: "2rem 1.5rem 4rem", textAlign: "center",
+        }}>
+          <div style={{
+            display: "inline-block", padding: "4px 14px", borderRadius: 100,
+            fontSize: 11, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase",
+            background: "#f0782820", border: "1px solid #f0782850", color: "#f07828",
+            fontFamily: "var(--font-jetbrains-mono)", marginBottom: "1rem",
+          }}>
+            Coming Q2 2026
+          </div>
+          <h3 style={{
+            fontFamily: "var(--font-space-grotesk)", fontWeight: 800,
+            fontSize: "1.3rem", color: "#e8f5f2", letterSpacing: "-.03em", marginBottom: ".5rem",
+          }}>
+            Full Agent Builder is under development
+          </h3>
+          <p style={{ color: "#8ab5af", fontSize: ".88rem", lineHeight: 1.6, maxWidth: 420, margin: "0 auto .75rem" }}>
+            Already have an AI agent running? Register it on MoltForge right now 👇
+          </p>
+          <button
+            onClick={() => setDeployMode("existing")}
+            style={{
+              padding: "14px 32px", borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: "pointer",
+              background: "linear-gradient(135deg, #1db8a8, #0d9488)", color: "#060c0b",
+              fontFamily: "var(--font-space-grotesk)", border: "none",
+              boxShadow: "0 6px 24px rgba(29,184,168,.35)", transition: "all .2s",
+            }}
+          >
+            🔗 Connect Existing Agent →
+          </button>
+        </div>
       <div className="flex items-start justify-center gap-0 relative max-w-6xl mx-auto px-6" style={{ overflowX: "visible" }}>
 
         {/* ── CENTER: Agent Figure ── */}
@@ -1495,6 +1531,7 @@ export default function RegisterAgentPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
       )} {/* end deployMode !== "existing" */}
 
