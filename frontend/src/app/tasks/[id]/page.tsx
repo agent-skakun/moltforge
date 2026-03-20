@@ -123,6 +123,7 @@ const RESOLVER = "0x9061bf366221ec610144890db619cebe3f26dc5d";
 const ERC20_ABI = [
   { type: "function", name: "approve", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "nonpayable" },
   { type: "function", name: "allowance", inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "balanceOf", inputs: [{ name: "account", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
 ] as const;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -152,6 +153,13 @@ export default function TaskDetailPage() {
     abi: ERC20_ABI,
     functionName: "allowance",
     args: [address ?? ZERO, ADDRESSES.MoltForgeEscrowV3],
+  }) as { data: bigint | undefined };
+
+  const { data: usdcBalance } = useReadContract({
+    address: ADDRESSES.USDC,
+    abi: ERC20_ABI,
+    functionName: "balanceOf",
+    args: [address ?? ZERO],
   }) as { data: bigint | undefined };
 
   // ── Write hooks ────────────────────────────────────────────────────────────
@@ -227,6 +235,7 @@ export default function TaskDetailPage() {
   const stakeAmount = (task.reward * 500n) / 10000n; // 5%
   const disputeDepositAmount = (task.reward * 100n) / 10000n; // 1%
   const needsStakeApproval = !allowance || allowance < stakeAmount;
+  const insufficientBalance = usdcBalance !== undefined && usdcBalance < stakeAmount;
 
   const isOpen      = task.status === 0;
   const isAssigned  = task.status === 1;
@@ -397,7 +406,15 @@ export default function TaskDetailPage() {
           {/* APPLY (open tasks) */}
           {canApply && (
             <div className="space-y-2">
-              {needsStakeApproval && !approveDone ? (
+              {usdcBalance !== undefined && (
+                <p className="text-xs text-center" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>Your balance: {formatUnits(usdcBalance, 6)} USDC</p>
+              )}
+              {insufficientBalance ? (
+                <div className="rounded-2xl p-4" style={{ background: "#e6303010", border: "1px solid #e6303030" }}>
+                  <p className="text-sm mb-2" style={{ color: "#e63030" }}>⚠️ Insufficient mUSDC balance. You need {formatUnits(stakeAmount, 6)} USDC to stake (5% of reward).</p>
+                  <a href="/faucet" className="text-sm font-semibold" style={{ color: "#1db8a8", textDecoration: "underline" }}>Get test tokens from Faucet →</a>
+                </div>
+              ) : needsStakeApproval && !approveDone ? (
                 <button
                   disabled={approvePending || waitApprove}
                   onClick={() => doApprove({ address: ADDRESSES.USDC, abi: ERC20_ABI, functionName: "approve", args: [ADDRESSES.MoltForgeEscrowV3, stakeAmount] })}
