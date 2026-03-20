@@ -60,7 +60,7 @@ interface AgentReputation {
   metadataURI: string;
 }
 
-type SortKey = "applied" | "score" | "rating" | "tier" | "jobs";
+type SortKey = "applied" | "score" | "jobs" | "rating" | "tier";
 
 const TIER_LABELS = ["🦀 Crab", "🦞 Lobster", "🦑 Squid", "🐙 Octopus", "🦈 Shark"] as const;
 const TIER_COLORS = ["#5a807a", "#cd7f32", "#1db8a8", "#a855f7", "#e63030"] as const;
@@ -87,34 +87,70 @@ function parseAgentName(metadataURI: string, id: number): string {
 // ─── Applicant Agent Data Hook ────────────────────────────────────────────────
 
 function useApplicantAgents(applications: Application[]): Map<string, AgentReputation> {
-  // Batch-fetch getAgent for each applicant with agentId > 0
-  const agentCalls = useMemo(() =>
+  const walletKey = applications.filter(a => !a.withdrawn).map(a => a.agent).join(",");
+
+  // Step 1: for apps with agentId=0 (open tasks), look up numericId by wallet
+  const walletLookupCalls = useMemo(() =>
     applications
-      .filter(a => !a.withdrawn && a.agentId > 0n)
+      .filter(a => !a.withdrawn && a.agentId === 0n)
       .map(a => ({
         address: ADDRESSES.AgentRegistry as `0x${string}`,
         abi: AGENT_REGISTRY_ABI,
-        functionName: "getAgent" as const,
-        args: [a.agentId],
+        functionName: "getAgentIdByWallet" as const,
+        args: [a.agent as `0x${string}`],
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [applications.map(a => `${a.agent}-${a.agentId}`).join(",")]
+    [walletKey]
   );
+  const { data: walletIdsRaw } = useReadContracts({ contracts: walletLookupCalls });
 
+  // Build effective numericId per applicant (from agentId field OR wallet lookup)
+  const effectiveIds = useMemo(() => {
+    const walletApps = applications.filter(a => !a.withdrawn && a.agentId === 0n);
+    const walletIdMap = new Map<string, bigint>();
+    walletApps.forEach((app, i) => {
+      const r = walletIdsRaw?.[i];
+      if (r?.status === "success" && r.result !== undefined && (r.result as bigint) > 0n) {
+        walletIdMap.set(app.agent.toLowerCase(), r.result as bigint);
+      }
+    });
+    return applications.filter(a => !a.withdrawn).map(a => {
+      if (a.agentId > 0n) return a.agentId;
+      return walletIdMap.get(a.agent.toLowerCase()) ?? 0n;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletKey, walletIdsRaw]);
+
+  // Step 2: fetch getAgent for all resolved numericIds
+  const agentCalls = useMemo(() =>
+    effectiveIds
+      .map(id => id > 0n ? ({
+        address: ADDRESSES.AgentRegistry as `0x${string}`,
+        abi: AGENT_REGISTRY_ABI,
+        functionName: "getAgent" as const,
+        args: [id],
+      }) : null)
+      .filter((c): c is NonNullable<typeof c> => c !== null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [effectiveIds.join(",")]
+  );
   const { data: agentsRaw } = useReadContracts({ contracts: agentCalls });
 
   return useMemo(() => {
     const map = new Map<string, AgentReputation>();
-    const active = applications.filter(a => !a.withdrawn && a.agentId > 0n);
+    const active = applications.filter(a => !a.withdrawn);
+    let agentIdx = 0;
     active.forEach((app, i) => {
-      const r = agentsRaw?.[i];
+      const id = effectiveIds[i];
+      if (!id || id === 0n) return;
+      const r = agentsRaw?.[agentIdx++];
       if (r?.status === "success" && r.result) {
         const agent = r.result as {
           wallet: string; agentId: string; metadataURI: string; webhookUrl: string;
           registeredAt: bigint; status: number; score: bigint;
           jobsCompleted: number; rating: number; tier: number;
         };
-        const numericId = Number(app.agentId);
+        const numericId = Number(id);
         map.set(app.agent.toLowerCase(), {
           numericId,
           score: agent.score,
@@ -129,7 +165,7 @@ function useApplicantAgents(applications: Application[]): Map<string, AgentReput
     });
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applications.map(a => `${a.agent}-${a.agentId}`).join(","), agentsRaw]);
+  }, [walletKey, agentsRaw, effectiveIds.join(",")]);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -321,10 +357,9 @@ export default function TaskDetailPage() {
   const myApp = applications.find(a => address && a.agent.toLowerCase() === address.toLowerCase() && !a.withdrawn);
 
   // Sorted applicants
-  const getRep = (a: Application) => reputationMap.get(a.agent.toLowerCase());
   const sortedActiveApps = [...activeApps].sort((a, b) => {
-    const ra = getRep(a);
-    const rb = getRep(b);
+    const ra = reputationMap.get(a.agent.toLowerCase());
+    const rb = reputationMap.get(b.agent.toLowerCase());
     let diff = 0;
     if (sortKey === "applied") diff = Number(a.appliedAt) - Number(b.appliedAt);
     else if (sortKey === "score") diff = Number((ra?.score ?? 0n) - (rb?.score ?? 0n));
@@ -515,7 +550,7 @@ export default function TaskDetailPage() {
             </div>
           </div>
           <div className="space-y-3">
-            {sortedActiveApps.map((app, displayIdx) => {
+            {sortedActiveApps.map((app) => {
               const origIdx = applications.findIndex(a => a.agent === app.agent && !a.withdrawn);
               const rep = reputationMap.get(app.agent.toLowerCase());
               const tierColor = TIER_COLORS[rep?.tier ?? 0] ?? TIER_COLORS[0];
@@ -532,24 +567,34 @@ export default function TaskDetailPage() {
                           boxShadow: isActive ? "0 0 6px #3ec95a" : "none" }} />
                       )}
                       <div className="min-w-0">
-                        <Link href={`/agent/${app.agent}`} className="text-xs break-all hover:underline"
-                          style={{ color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)" }}>
-                          {app.agent.slice(0, 6)}…{app.agent.slice(-4)}
-                        </Link>
-                        {rep && (
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
-                              #{rep.numericId}
-                            </span>
-                            {tierLabel && (
-                              <span className="px-1.5 py-0 rounded-full text-xs"
-                                style={{ background: `${tierColor}20`, border: `1px solid ${tierColor}60`,
-                                  color: tierColor, fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem" }}>
-                                {tierLabel}
-                              </span>
-                            )}
-                          </div>
+                        {rep ? (
+                          <Link href={`/agent/${rep.numericId}`} className="text-sm font-semibold hover:underline"
+                            style={{ color: "#e8f5f2" }}>
+                            {rep.name}
+                          </Link>
+                        ) : (
+                          <span className="text-sm" style={{ color: "#5a807a" }}>Unregistered</span>
                         )}
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-xs break-all" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                            {app.agent.slice(0, 6)}…{app.agent.slice(-4)}
+                          </span>
+                          {rep && (
+                            <>
+                              <span className="text-xs" style={{ color: "#3a5550" }}>·</span>
+                              <span className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                                #{rep.numericId}
+                              </span>
+                            </>
+                          )}
+                          {tierLabel && rep && (
+                            <span className="px-1.5 py-0 rounded-full text-xs"
+                              style={{ background: `${tierColor}20`, border: `1px solid ${tierColor}60`,
+                                color: tierColor, fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem" }}>
+                              {tierLabel}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <button
@@ -594,7 +639,6 @@ export default function TaskDetailPage() {
                   <div className="px-3 py-1.5" style={{ borderTop: "1px solid #1a2e2b" }}>
                     <span className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
                       Applied: {new Date(Number(app.appliedAt) * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      {displayIdx === 0 && sortKey === "score" && rep && <span className="ml-2 px-1.5 py-0 rounded" style={{ background: "#1db8a820", color: "#1db8a8", fontSize: "0.6rem" }}>🏆 Top Score</span>}
                     </span>
                   </div>
                 </div>
