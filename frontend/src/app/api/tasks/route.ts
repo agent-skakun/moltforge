@@ -2,11 +2,33 @@ import { NextResponse } from "next/server";
 import { createPublicClient, createWalletClient, http, parseUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
-import { ADDRESSES, ESCROW_V3_ABI } from "@/lib/contracts";
+import { ADDRESSES, ESCROW_V3_ABI, AGENT_REGISTRY_ABI } from "@/lib/contracts";
 
 const RPC = "https://sepolia.base.org";
 
 const publicClient = createPublicClient({ chain: baseSepolia, transport: http(RPC) });
+
+// Cache wallet→agentId lookups to avoid hammering RPC on every /api/tasks call
+const agentIdCache = new Map<string, number>();
+
+async function resolveAgentId(wallet: string, contractAgentId: number): Promise<number> {
+  const key = wallet.toLowerCase();
+  if (key === "0x0000000000000000000000000000000000000000") return contractAgentId;
+  if (agentIdCache.has(key)) return agentIdCache.get(key)!;
+  try {
+    const id = await publicClient.readContract({
+      address: ADDRESSES.AgentRegistry,
+      abi: AGENT_REGISTRY_ABI,
+      functionName: "getAgentIdByWallet",
+      args: [wallet as `0x${string}`],
+    }) as bigint;
+    const resolved = Number(id);
+    if (resolved > 0) agentIdCache.set(key, resolved);
+    return resolved > 0 ? resolved : contractAgentId;
+  } catch {
+    return contractAgentId;
+  }
+}
 
 const ERC20_ABI = [
   { type: "function", name: "approve",     inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "nonpayable" },
@@ -44,13 +66,19 @@ export async function GET(req: Request) {
           if (statusFilter && statusStr.toLowerCase() !== statusFilter.toLowerCase()) continue;
 
           const agentAddr = t.claimedBy ?? (t as { agent?: string }).agent ?? null;
+          const agentAddrClean = agentAddr !== "0x0000000000000000000000000000000000000000" ? agentAddr : null;
+
+          // Resolve on-chain agentId from canonical Registry (fixes #6 vs #9 mismatch)
+          const resolvedAgentId = agentAddrClean
+            ? await resolveAgentId(agentAddrClean, Number(t.agentId))
+            : Number(t.agentId);
 
           tasks.push({
             id: `${esc.prefix}${i}`,
             escrow: esc.address,
             client: t.client,
-            agent: agentAddr !== "0x0000000000000000000000000000000000000000" ? agentAddr : null,
-            agentId: Number(t.agentId),
+            agent: agentAddrClean,
+            agentId: resolvedAgentId,
             token: t.token,
             reward: Number(t.reward) / 1e6,
             fee: Number(t.fee ?? 0n) / 1e6,
