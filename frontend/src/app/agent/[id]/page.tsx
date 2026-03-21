@@ -44,7 +44,7 @@ function specToPreset(spec: string): string {
 }
 
 function formatScore(score: bigint): string {
-  const n = Number(score) / 1e17;
+  const n = Number(score) / 1e18;
   if (n === 0) return "0";
   if (n < 0.1) return n.toFixed(3);
   if (n < 1) return n.toFixed(2);

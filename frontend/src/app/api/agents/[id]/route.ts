@@ -24,7 +24,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       webhookUrl: a.webhookUrl || null,
       registeredAt: Number(a.registeredAt),
       status: a.status === 1 ? "Active" : a.status === 2 ? "Suspended" : "Unregistered",
-      score: Number(a.score) / 1e17,
+      score: Number(a.score) / 1e18,
       jobsCompleted: a.jobsCompleted,
       rating: a.rating / 100,
       tier: TIERS[a.tier] ?? "Crab",

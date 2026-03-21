@@ -104,7 +104,7 @@ function specToPreset(spec: string): string {
 }
 
 function formatScore(score: bigint): string {
-  const n = Number(score) / 1e17;
+  const n = Number(score) / 1e18;
   if (n === 0) return "0";
   if (n < 0.1) return n.toFixed(3);
   if (n < 1) return n.toFixed(2);
@@ -410,7 +410,7 @@ export default function MarketplacePage() {
 
   const { data: meritScoresRaw } = useReadContracts({ contracts: meritCalls });
 
-  // ── MeritSBTV2 reputation calls (numericId-based, source of truth) ──────────
+  // ── MeritSBTV2 reputation calls (tier only — source of truth for tier) ──────
   const reputationCalls = useMemo(() =>
     Array.from({ length: count }, (_, i) => ({
       address: ADDRESSES.MeritSBTV2 as `0x${string}`,
@@ -422,6 +422,19 @@ export default function MarketplacePage() {
   );
 
   const { data: reputationsRaw } = useReadContracts({ contracts: reputationCalls });
+
+  // ── AgentRegistry V3 profile calls (jobsCompleted + score — source of truth) ─
+  const profileCalls = useMemo(() =>
+    Array.from({ length: count }, (_, i) => ({
+      address: ADDRESSES.AgentRegistry as `0x${string}`,
+      abi: AGENT_REGISTRY_ABI,
+      functionName: "getAgentProfile" as const,
+      args: [BigInt(i + 1)] as const,
+    })),
+    [count]
+  );
+
+  const { data: profilesRaw } = useReadContracts({ contracts: profileCalls });
 
   // ── Merge both registries: new preferred, legacy fills gaps ─────────────────
   const mergedAgents: AgentData[] = useMemo(() => {
@@ -462,22 +475,24 @@ export default function MarketplacePage() {
       }
     }
 
-    // Attach merit scores + override score/jobs/tier from MeritSBTV2 (source of truth)
+    // Attach merit scores + override tier/jobs/score from canonical sources
     newAgents.forEach((a, idx) => {
       const merit = meritScoresRaw?.[idx];
       if (merit?.status === "success" && merit.result !== undefined) {
         a.meritScore = merit.result as bigint;
       }
-      // Override tier from MeritSBTV2 (source of truth for tier/merit)
-      // Score and Jobs come from AgentRegistry XP system (score / 1e17)
+      // Tier: MeritSBTV2 (source of truth for tier)
       const rep = reputationsRaw?.[idx];
       if (rep?.status === "success" && rep.result) {
-        const [, totalJobs, , tier] = rep.result as [bigint, bigint, bigint, number];
+        const [, , , tier] = rep.result as [bigint, bigint, bigint, number];
         a.tier = Number(tier);
-        if (totalJobs > 0n) {
-          a.jobsCompleted = Number(totalJobs);
-        }
-        // Note: a.score stays as AgentRegistry XP (score / 1e17 in formatScore)
+      }
+      // Jobs + Score: AgentRegistry V3 getAgentProfile (source of truth)
+      const profile = profilesRaw?.[idx];
+      if (profile?.status === "success" && profile.result) {
+        const [, jobsCompleted, , score] = profile.result as [number, number, number, bigint, number];
+        a.jobsCompleted = Number(jobsCompleted);
+        a.score = score; // raw bigint, formatScore divides by 1e18
       }
     });
 
@@ -515,7 +530,7 @@ export default function MarketplacePage() {
     }
 
     return [...newAgents, ...legacyAgents];
-  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw, reputationsRaw, legacyCount, legacyAgentsRaw]);
+  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw, reputationsRaw, profilesRaw, legacyCount, legacyAgentsRaw]);
 
   const filtered = useMemo(() => {
     let list = mergedAgents;
