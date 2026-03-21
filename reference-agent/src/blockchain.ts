@@ -367,14 +367,29 @@ export function createBlockchainClient(config: Config) {
 
   async function getOpenTasks(offset = 0n, limit = 20n): Promise<Array<{ id: bigint; agentId: bigint; reward: bigint; deadlineAt: bigint }>> {
     try {
-      const result = await client.readContract({
+      // Read taskCount and scan backwards for Open tasks
+      const taskCount = await client.readContract({
         address: config.escrowAddress,
-        abi: ESCROW_V3_ABI,
-        functionName: "getOpenTasks",
-        args: [offset, limit],
-      }) as Array<{ id: bigint; agentId: bigint; reward: bigint; deadlineAt: bigint }>;
-      return result;
-    } catch {
+        abi: [{ type: "function", name: "taskCount", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" }] as const,
+        functionName: "taskCount",
+      }) as bigint;
+
+      const results: Array<{ id: bigint; agentId: bigint; reward: bigint; deadlineAt: bigint }> = [];
+      const start = taskCount > 0n ? taskCount : 0n;
+      const checked = 0n;
+
+      // Scan from latest backwards
+      for (let i = start; i >= 1n && BigInt(results.length) < limit; i--) {
+        try {
+          const task = await getTask(i);
+          if (task.status === 0) {  // Open
+            results.push({ id: i, agentId: task.agentId, reward: task.reward, deadlineAt: task.deadlineAt });
+          }
+        } catch { continue; }
+      }
+      return results;
+    } catch (e) {
+      console.warn("[blockchain] getOpenTasks error:", (e as Error).message?.slice(0, 80));
       return [];
     }
   }
