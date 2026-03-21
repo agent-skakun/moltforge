@@ -174,21 +174,25 @@ export default function AgentProfilePage() {
   const faceParams: FaceParams = loadedFaceParams ?? (agent?.wallet ? walletToFaceParams(agent.wallet) : PRESETS[preset] ?? PRESETS["ai"]);
   // MeritSBTV2 is the single source of truth for tier, score, jobs, rating
   const rep = meritReputation as [bigint, bigint, bigint, number] | undefined;
-  const repWeightedScore = rep ? rep[0] : undefined; // ×100, e.g. 140 = 1.40
+  const repWeightedScore = rep ? rep[0] : undefined; // ×100, e.g. 300 = 3.00
   const repTotalJobs = rep ? Number(rep[1]) : undefined;
   const repTier = rep ? Number(rep[3]) : undefined;
 
-  // Tier: prefer MeritSBTV2, fall back to AgentRegistry
-  const tier = repTier !== undefined ? repTier : (agentOk && agent ? agent.tier : 0);
+  // Tier: ONLY from MeritSBTV2 — never fall back to AgentRegistry to avoid Crab/Lobster mismatch
+  // While MeritSBTV2 is loading, show Lobster (minimum tier that contract returns)
+  const tier = repTier !== undefined ? repTier : (numericId > 0n ? undefined : 0);
   const statusActive = agentOk && agent ? agent.status === 1 : false;
-  // Rating: weightedScore from MeritSBTV2 (÷100 for display), fall back to AgentRegistry
+  // Rating: weightedScore from MeritSBTV2 (÷100 for display)
   const ratingDisplay = repWeightedScore !== undefined && repWeightedScore > 0n
     ? (Number(repWeightedScore) / 100).toFixed(2)
-    : (agentOk && agent ? (agent.rating / 100).toFixed(2) : "0.00");
+    : rep !== undefined ? "0.00"   // loaded but zero
+    : "—";                          // not loaded yet
   // Merit badge: tier emoji + name from MeritSBTV2
   const TIER_EMOJIS = ["🦀", "🦞", "🦑", "🐙", "🦈"];
   const TIER_LABEL_NAMES = ["Crab", "Lobster", "Squid", "Octopus", "Shark"];
-  const meritBadge = `${TIER_EMOJIS[tier] ?? "🦀"} ${TIER_LABEL_NAMES[tier] ?? "Crab"}`;
+  const meritBadge = tier !== undefined
+    ? `${TIER_EMOJIS[tier] ?? "🦀"} ${TIER_LABEL_NAMES[tier] ?? "Crab"}`
+    : "—";
   const capabilities = ((meta as AgentMetadata).capabilities && (meta as AgentMetadata).capabilities!.length > 0) ? (meta as AgentMetadata).capabilities! : ["general"];
   const metaTools = (meta as AgentMetadata).tools ?? [];
   const metaAgentUrl = (meta as AgentMetadata).agentUrl || webhookUrl;
@@ -252,7 +256,7 @@ export default function AgentProfilePage() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* ── Header Card ────────────────────────────────────────── */}
-      <div className={`bg-gradient-to-r ${TIER_COLORS[tier] ?? TIER_COLORS[0]} rounded-2xl p-[1px] mb-8`}>
+      <div className={`bg-gradient-to-r ${TIER_COLORS[tier ?? 1] ?? TIER_COLORS[1]} rounded-2xl p-[1px] mb-8`}>
         <div className="rounded-2xl p-8" style={{ background: "#060c0b" }}>
           <div className="flex items-start gap-6">
             {/* Avatar */}
@@ -293,8 +297,8 @@ export default function AgentProfilePage() {
                 <span className="text-xs font-jetbrainsMono" style={{ color: "#3a5550" }}>#{id}</span>
                 <span>{SPEC_ICONS[spec] ?? "\uD83D\uDCC4"}</span>
                 <span className="text-sm capitalize" style={{ color: "#5a807a" }}>{spec}</span>
-                <span className={`text-sm font-bold bg-gradient-to-r ${TIER_COLORS[tier] ?? TIER_COLORS[0]} bg-clip-text text-transparent`}>
-                  {TIER_BADGES[tier] ?? ""} {DISPLAY_TIER_NAMES[tier] ?? "Unknown"}
+                <span className={`text-sm font-bold bg-gradient-to-r ${TIER_COLORS[tier ?? 1] ?? TIER_COLORS[1]} bg-clip-text text-transparent`}>
+                  {tier !== undefined ? `${TIER_BADGES[tier] ?? ""} ${DISPLAY_TIER_NAMES[tier] ?? ""}` : "…"}
                 </span>
               </div>
 

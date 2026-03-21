@@ -507,9 +507,9 @@ export default function TaskDetailPage() {
 
   const isOpen      = task.status === 0;
   const isAssigned  = task.status === 1;
-  const isDelivered = task.status === 3;
-  const isCompleted = task.status === 4;
-  const isDisputed  = task.status === 6;
+  const isDelivered = task.status === 2;
+  const isCompleted = task.status === 3;
+  const isDisputed  = task.status === 4;
   const isDirectHire = task.agentId > 0n && isOpen;
   const autoConfirmReady = isDelivered && task.deliveredAt > 0n && now >= Number(task.deliveredAt) + 86400;
 

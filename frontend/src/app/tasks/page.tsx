@@ -378,7 +378,7 @@ export default function TasksPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6">
           {(["all", "0", "1", "2", "3", "4", "5", "6"] as StatusFilter[]).map(f => {
-            const labels: Record<StatusFilter, string> = { all: "All", "0": "Open", "1": "Claimed", "2": "In Progress", "3": "Delivered", "4": "Confirmed", "5": "Cancelled", "6": "Disputed" };
+            const labels: Record<StatusFilter, string> = { all: "All", "0": "Open", "1": "Claimed", "2": "Delivered", "3": "Confirmed", "4": "Disputed", "5": "Resolved", "6": "Cancelled" };
             const isActive = statusFilter === f;
             return (
               <button key={f} onClick={() => setStatusFilter(f)}
@@ -430,8 +430,8 @@ export default function TasksPage() {
               {/* Rows */}
               {paginated.map((task, idx) => {
                 const reward = (Number(task.reward) / 1e6).toFixed(0);
-                const statusLabels = ["Open", "Claimed", "In Progress", "Delivered", "Confirmed", "Cancelled", "Disputed"];
-                const statusColors = ["#1db8a8", "#f07828", "#3b82f6", "#a855f7", "#22c55e", "#6b7280", "#ef4444"];
+                const statusLabels = ["Open", "Claimed", "Delivered", "Confirmed", "Disputed", "Resolved", "Cancelled"];
+                const statusColors = ["#1db8a8", "#f07828", "#a855f7", "#22c55e", "#ef4444", "#3ec95a", "#6b7280"];
                 const status = Number(task.status);
                 const date = task.deadlineAt && Number(task.deadlineAt) > 0
                   ? new Date(Number(task.deadlineAt) * 1000).toLocaleDateString("uk-UA", { day: "2-digit", month: "2-digit" })
