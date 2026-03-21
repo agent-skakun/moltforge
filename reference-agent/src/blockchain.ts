@@ -23,20 +23,32 @@ const ESCROW_V3_ABI = [
   },
   {
     type: "function",
-    name: "tasks",
+    name: "getTask",
     inputs: [{ name: "taskId", type: "uint256" }],
     outputs: [
-      { name: "client", type: "address" },
-      { name: "agentId", type: "uint256" },
-      { name: "token", type: "address" },
-      { name: "reward", type: "uint256" },
-      { name: "agentStake", type: "uint256" },
-      { name: "description", type: "string" },
-      { name: "fileUrl", type: "string" },
-      { name: "claimedBy", type: "address" },
-      { name: "deadlineAt", type: "uint64" },
-      { name: "deliveredAt", type: "uint64" },
-      { name: "status", type: "uint8" },
+      {
+        name: "",
+        type: "tuple",
+        components: [
+          { name: "id",              type: "uint256" },
+          { name: "client",         type: "address" },
+          { name: "agentId",        type: "uint256" },
+          { name: "token",          type: "address" },
+          { name: "reward",         type: "uint256" },
+          { name: "fee",            type: "uint256" },
+          { name: "description",    type: "string"  },
+          { name: "fileUrl",        type: "string"  },
+          { name: "resultUrl",      type: "string"  },
+          { name: "status",         type: "uint8"   },
+          { name: "claimedBy",      type: "address" },
+          { name: "score",          type: "uint8"   },
+          { name: "createdAt",      type: "uint64"  },
+          { name: "deadlineAt",     type: "uint64"  },
+          { name: "agentStake",     type: "uint256" },
+          { name: "disputeDeposit", type: "uint256" },
+          { name: "deliveredAt",    type: "uint64"  },
+        ],
+      },
     ],
     stateMutability: "view",
   },
@@ -57,17 +69,23 @@ const ERC20_ABI = [
 ] as const;
 
 export interface TaskInfo {
+  id: bigint;
   client: Address;
   agentId: bigint;
   token: Address;
   reward: bigint;
-  agentStake: bigint;
+  fee: bigint;
   description: string;
   fileUrl: string;
+  resultUrl: string;
+  status: number; // 0=Open,1=Claimed,2=Delivered,3=Confirmed,4=Disputed,5=Resolved,6=Cancelled
   claimedBy: Address;
+  score: number;
+  createdAt: bigint;
   deadlineAt: bigint;
+  agentStake: bigint;
+  disputeDeposit: bigint;
   deliveredAt: bigint;
-  status: number; // 0=Open, 1=Claimed, 2=Delivered, 3=Confirmed, 4=Disputed, 5=Resolved, 6=Cancelled
 }
 
 // Agent self-assessment: can we handle this task?
@@ -242,22 +260,15 @@ export function createBlockchainClient(config: Config) {
     const result = await client.readContract({
       address: config.escrowAddress,
       abi: ESCROW_V3_ABI,
-      functionName: "tasks",
+      functionName: "getTask",
       args: [taskId],
-    }) as readonly [Address, bigint, Address, bigint, bigint, string, string, Address, bigint, bigint, number];
-    return {
-      client:      result[0],
-      agentId:     result[1],
-      token:       result[2],
-      reward:      result[3],
-      agentStake:  result[4],
-      description: result[5],
-      fileUrl:     result[6],
-      claimedBy:   result[7],
-      deadlineAt:  result[8],
-      deliveredAt: result[9],
-      status:      result[10],
+    }) as {
+      id: bigint; client: Address; agentId: bigint; token: Address;
+      reward: bigint; fee: bigint; description: string; fileUrl: string; resultUrl: string;
+      status: number; claimedBy: Address; score: number; createdAt: bigint;
+      deadlineAt: bigint; agentStake: bigint; disputeDeposit: bigint; deliveredAt: bigint;
     };
+    return result;
   }
 
   async function claimTask(taskId: bigint): Promise<`0x${string}`> {
