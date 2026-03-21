@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { loadConfig } from "./config";
-import { createBlockchainClient, checkClientTrust } from "./blockchain";
+import { createBlockchainClient, checkClientTrust, canHandleTask } from "./blockchain";
 import { executeResearch, buildMetadataURI, fetchAgentCard, assessAgentFromCard } from "./agent";
 import { startTelegramBot } from "./telegram";
 import { checkAgentTrust } from "./trust";
@@ -17,7 +17,7 @@ import {
 import type { RegisterRequest } from "./self-register";
 
 const config = loadConfig();
-const { getAgentId, getAgentExtended, submitResult } = createBlockchainClient(config);
+const { getAgentId, getAgentExtended, submitResult, getTask, claimTask } = createBlockchainClient(config);
 const app = express();
 
 // ─── Result store — maps resultId → JSON payload ─────────────────────────────
@@ -238,38 +238,100 @@ app.get("/skills", (_req, res) => {
   res.json({ loaded: loadedSkillFiles, count: loadedSkillFiles.length });
 });
 
-// POST /tasks — execute research
+// POST /tasks — webhook from Escrow OR direct API call
+// When called by Escrow webhook: body contains { taskId, description, reward, client }
+// When called directly (test/A2A): body contains { query, taskId?, ... }
 app.post("/tasks", async (req, res) => {
   // ERC-8004 trust check (non-blocking, log only)
-  const trust = await checkClientTrust(req.body?.clientWallet ?? "").catch(() => ({
+  const trust = await checkClientTrust(req.body?.clientWallet ?? req.body?.client ?? "").catch(() => ({
     trusted: true,
     reason: "skipped",
     score: 0,
   }));
   console.log("[erc8004-trust-check]", trust);
 
-  const { query, systemPrompt, skills: requestSkills, apiKey, llmProvider, taskId, agentAddress } = req.body as {
+  const {
+    query,
+    description,
+    systemPrompt,
+    skills: requestSkills,
+    apiKey,
+    llmProvider,
+    taskId,
+    agentAddress,
+  } = req.body as {
     query?: string;
+    description?: string;       // from Escrow webhook
     systemPrompt?: string;
     skills?: string[];
-    apiKey?: string;           // user's own LLM API key (passed per-request, never stored)
-    llmProvider?: string;      // "anthropic" | "openai" | "groq"
-    taskId?: number | string;  // on-chain task ID (optional — if provided, submitResult() is called)
-    agentAddress?: string;     // optional — if provided, ERC-8004 trust-gating is applied
+    apiKey?: string;
+    llmProvider?: string;
+    taskId?: number | string;   // on-chain task ID
+    agentAddress?: string;
   };
 
-  if (!query || typeof query !== "string") {
-    res.status(400).json({ error: "query (string) is required" });
+  // Resolve query: prefer explicit "query", fallback to "description" (Escrow webhook)
+  // description may be JSON: {"title":"...","description":"..."}
+  let resolvedQuery = query ?? description ?? "";
+  if (!resolvedQuery && taskId) {
+    // Try to fetch description from on-chain
+    try {
+      const task = await getTask(BigInt(taskId));
+      resolvedQuery = task.description;
+    } catch { /* ignore */ }
+  }
+  try {
+    const parsed = JSON.parse(resolvedQuery);
+    resolvedQuery = parsed.description ?? parsed.title ?? resolvedQuery;
+  } catch { /* raw string — keep as is */ }
+
+  if (!resolvedQuery || typeof resolvedQuery !== "string" || resolvedQuery.trim().length < 3) {
+    res.status(400).json({ error: "query or description (string) is required" });
     return;
   }
 
-  // Optional ERC-8004 trust-gating: if agentAddress is provided, verify trust
+  // Optional ERC-8004 trust-gating
   if (agentAddress) {
     const trustResult = await checkAgentTrust(agentAddress, config.registryAddress, config.rpcUrl);
     if (!trustResult.trusted) {
-      logExecution({ taskId: taskId ?? null, decision: "rejected-untrusted", toolsUsed: [], inputHash: createInputHash(query || ""), resultHash: "0x00000000", durationMs: 0, trustCheck: { trusted: false, score: trustResult.score, agentAddress } });
+      logExecution({ taskId: taskId ?? null, decision: "rejected-untrusted", toolsUsed: [], inputHash: createInputHash(resolvedQuery), resultHash: "0x00000000", durationMs: 0, trustCheck: { trusted: false, score: trustResult.score, agentAddress } });
       res.status(403).json({ error: "Agent not trusted", trust: trustResult });
       return;
+    }
+  }
+
+  // ── On-chain flow: evaluate → claim → execute → submit ────────────────────
+  let claimTxHash: string | null = null;
+  let taskInfo: Awaited<ReturnType<typeof getTask>> | null = null;
+
+  if (taskId !== undefined && taskId !== null) {
+    const id = BigInt(taskId);
+    try {
+      taskInfo = await getTask(id);
+      const myId = await getAgentId();
+
+      const { canHandle, reason } = canHandleTask(taskInfo, myId);
+      if (!canHandle) {
+        console.log(`[agent] Skipping task #${taskId}: ${reason}`);
+        res.json({ skipped: true, reason, taskId });
+        return;
+      }
+
+      // If task is Open (status=0) → claim it first
+      if (taskInfo.status === 0) {
+        try {
+          claimTxHash = await claimTask(id);
+          console.log(`[agent] Claimed task #${taskId} → ${claimTxHash}`);
+          // Wait for claim tx to land
+          await new Promise(r => setTimeout(r, 4000));
+        } catch (claimErr) {
+          console.error(`[agent] claimTask failed for #${taskId}:`, (claimErr as Error).message);
+          // Non-fatal for direct-hire tasks that are already Claimed
+        }
+      }
+    } catch (fetchErr) {
+      console.warn(`[agent] Could not fetch task #${taskId} from chain:`, (fetchErr as Error).message);
+      // Continue without on-chain claim — might be a direct API call
     }
   }
 
@@ -278,16 +340,13 @@ app.post("/tasks", async (req, res) => {
     let combinedSkills = skillsContext;
     if (requestSkills && requestSkills.length > 0) {
       const fetched = await fetchSkillsFromGitHub(requestSkills);
-      if (fetched) {
-        combinedSkills = combinedSkills ? `${combinedSkills}\n\n${fetched}` : fetched;
-      }
+      if (fetched) combinedSkills = combinedSkills ? `${combinedSkills}\n\n${fetched}` : fetched;
     }
 
-    const report = await executeResearch(query, {
+    const report = await executeResearch(resolvedQuery, {
       systemPrompt: systemPrompt ?? config.systemPrompt,
       skillsContext: combinedSkills || undefined,
       llmConfig: {
-        // Per-request key overrides env vars — user pays with their own key
         openaiApiKey:    (llmProvider === "openai"    ? apiKey : undefined) ?? config.openaiApiKey,
         anthropicApiKey: (llmProvider === "anthropic" ? apiKey : undefined) ?? config.anthropicApiKey,
         groqApiKey:      (llmProvider === "groq"      ? apiKey : undefined) ?? config.groqApiKey,
@@ -297,27 +356,25 @@ app.post("/tasks", async (req, res) => {
       },
     });
 
-    // Store result and build HTTP resultUrl (instead of data: URI)
     const resultId = storeResult(report);
-    const agentUrl = process.env.AGENT_URL || "https://agent.moltforge.cloud";
-    const resultUrl = `${agentUrl}/results/${resultId}`;
-    // Keep data: URI as fallback for on-chain storage (contracts have size limits)
+    const agentBaseUrl = process.env.AGENT_URL || "https://agent.moltforge.cloud";
+    const resultUrl = `${agentBaseUrl}/results/${resultId}`;
     const metadataURI = buildMetadataURI(report);
 
-    // Auto-submit on-chain if taskId was provided
+    // Submit result on-chain
     let onChainTxHash: string | null = null;
     if (taskId !== undefined && taskId !== null) {
       try {
         const id = BigInt(taskId);
         onChainTxHash = await submitResult(id, resultUrl);
-      } catch (onChainErr) {
-        console.error(`[on-chain] submitResult failed for taskId=${taskId}:`, (onChainErr as Error).message);
-        // Non-fatal: return result anyway, log the error
+        console.log(`[agent] submitResult(#${taskId}) → ${onChainTxHash}`);
+      } catch (submitErr) {
+        console.error(`[on-chain] submitResult failed for taskId=${taskId}:`, (submitErr as Error).message);
       }
     }
 
-    logExecution({ taskId: taskId ?? null, decision: "executed", toolsUsed: ["executeResearch", "buildMetadataURI"], inputHash: createInputHash(query), resultHash: createResultHash(JSON.stringify(report)), durationMs: 0 });
-    res.json({ report, resultUrl, metadataURI, onChainTxHash });
+    logExecution({ taskId: taskId ?? null, decision: "executed", toolsUsed: ["executeResearch", "buildMetadataURI"], inputHash: createInputHash(resolvedQuery), resultHash: createResultHash(JSON.stringify(report)), durationMs: 0 });
+    res.json({ report, resultUrl, metadataURI, claimTxHash, onChainTxHash });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

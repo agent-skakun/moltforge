@@ -14,7 +14,92 @@ const ESCROW_V3_ABI = [
     outputs: [],
     stateMutability: "nonpayable",
   },
+  {
+    type: "function",
+    name: "claimTask",
+    inputs: [{ name: "taskId", type: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "tasks",
+    inputs: [{ name: "taskId", type: "uint256" }],
+    outputs: [
+      { name: "client", type: "address" },
+      { name: "agentId", type: "uint256" },
+      { name: "token", type: "address" },
+      { name: "reward", type: "uint256" },
+      { name: "agentStake", type: "uint256" },
+      { name: "description", type: "string" },
+      { name: "fileUrl", type: "string" },
+      { name: "claimedBy", type: "address" },
+      { name: "deadlineAt", type: "uint64" },
+      { name: "deliveredAt", type: "uint64" },
+      { name: "status", type: "uint8" },
+    ],
+    stateMutability: "view",
+  },
 ] as const;
+
+// ERC-20 minimal ABI for stake approval
+const ERC20_ABI = [
+  {
+    type: "function",
+    name: "approve",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+  },
+] as const;
+
+export interface TaskInfo {
+  client: Address;
+  agentId: bigint;
+  token: Address;
+  reward: bigint;
+  agentStake: bigint;
+  description: string;
+  fileUrl: string;
+  claimedBy: Address;
+  deadlineAt: bigint;
+  deliveredAt: bigint;
+  status: number; // 0=Open, 1=Claimed, 2=Delivered, 3=Confirmed, 4=Disputed, 5=Resolved, 6=Cancelled
+}
+
+// Agent self-assessment: can we handle this task?
+export function canHandleTask(task: TaskInfo, agentId: bigint): {
+  canHandle: boolean;
+  reason: string;
+} {
+  // Check task is Open or Claimed-by-us
+  if (task.status !== 0 && task.status !== 1) {
+    return { canHandle: false, reason: `wrong status: ${task.status}` };
+  }
+
+  // Direct-hire: check agentId matches (0 = open task, anyone can apply)
+  if (task.agentId !== 0n && task.agentId !== agentId) {
+    return { canHandle: false, reason: `direct-hire for agent ${task.agentId}, we are ${agentId}` };
+  }
+
+  // Check deadline: need at least 2 minutes to execute
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  if (task.deadlineAt !== 0n && task.deadlineAt < now + 120n) {
+    return { canHandle: false, reason: "deadline too close (< 2 min)" };
+  }
+
+  // Check description has a query we can process
+  let desc = task.description;
+  try { desc = JSON.parse(task.description)?.title ?? task.description; } catch { /* raw string */ }
+  if (!desc || desc.trim().length < 3) {
+    return { canHandle: false, reason: "empty or too-short description" };
+  }
+
+  return { canHandle: true, reason: "ok" };
+}
 
 const AGENT_REGISTRY_ABI = [
   {
@@ -153,7 +238,65 @@ export function createBlockchainClient(config: Config) {
     return txHash;
   }
 
-  return { client, getAgentId, getAgentExtended, submitResult };
+  async function getTask(taskId: bigint): Promise<TaskInfo> {
+    const result = await client.readContract({
+      address: config.escrowAddress,
+      abi: ESCROW_V3_ABI,
+      functionName: "tasks",
+      args: [taskId],
+    }) as readonly [Address, bigint, Address, bigint, bigint, string, string, Address, bigint, bigint, number];
+    return {
+      client:      result[0],
+      agentId:     result[1],
+      token:       result[2],
+      reward:      result[3],
+      agentStake:  result[4],
+      description: result[5],
+      fileUrl:     result[6],
+      claimedBy:   result[7],
+      deadlineAt:  result[8],
+      deliveredAt: result[9],
+      status:      result[10],
+    };
+  }
+
+  async function claimTask(taskId: bigint): Promise<`0x${string}`> {
+    const privateKey = process.env.AGENT_PRIVATE_KEY as `0x${string}` | undefined;
+    if (!privateKey || privateKey.length < 10) {
+      throw new Error("AGENT_PRIVATE_KEY not set — cannot claim on-chain");
+    }
+    const account = privateKeyToAccount(privateKey);
+    const walletClient = createWalletClient({ account, chain, transport: http(config.rpcUrl) });
+
+    // Fetch task to know stake amount and token
+    const task = await getTask(taskId);
+    const AGENT_STAKE_BPS = 500n; // 5%
+    const stake = (task.reward * AGENT_STAKE_BPS) / 10000n;
+
+    // Approve stake
+    if (stake > 0n) {
+      const approveTx = await walletClient.writeContract({
+        address: task.token,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [config.escrowAddress, stake],
+      });
+      console.log(`[on-chain] approve stake ${stake} → ${approveTx}`);
+      // Wait a couple seconds for approval to land
+      await new Promise(r => setTimeout(r, 3000));
+    }
+
+    const txHash = await walletClient.writeContract({
+      address: config.escrowAddress,
+      abi: ESCROW_V3_ABI,
+      functionName: "claimTask",
+      args: [taskId],
+    });
+    console.log(`[on-chain] claimTask(taskId=${taskId}) → txHash: ${txHash}`);
+    return txHash;
+  }
+
+  return { client, getAgentId, getAgentExtended, submitResult, getTask, claimTask };
 }
 
 // ─── ERC-8004 Trust Check ──────────────────────────────────────────────────────
