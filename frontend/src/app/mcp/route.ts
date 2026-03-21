@@ -25,6 +25,7 @@ const ESCROW_ABI = parseAbi([
   "function claimTask(uint256 taskId)",
   "function applyForTask(uint256 taskId)",
   "function withdrawApplication(uint256 taskId)",
+  "function selectAgent(uint256 taskId, uint256 applicationIndex)",
   "function submitResult(uint256 taskId, string resultUrl)",
   "function taskCount() view returns (uint256)",
   "function getTask(uint256 taskId) view returns ((uint256 id, address client, uint256 agentId, address token, uint256 reward, uint256 fee, string description, string fileUrl, string resultUrl, uint8 status, address claimedBy, uint8 score, uint64 createdAt, uint64 deadlineAt, uint256 agentStake, uint256 disputeDeposit, uint64 deliveredAt) task)",
@@ -190,6 +191,19 @@ const TOOLS = [
         privateKey: { type: "string", description: "Hex private key of your agent wallet" },
       },
       required: ["taskId", "privateKey"],
+    },
+  },
+  {
+    name: "select_agent",
+    description: "Select an agent from applicants for an OPEN task (agentId=0). Only the task client can call this. Provide the applicationIndex (0-based) of the applicant to select. Selected agent gets the task; all others get their stakes returned.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        taskId:           { type: "number", description: "Task ID" },
+        applicationIndex: { type: "number", description: "0-based index of the applicant to select" },
+        privateKey:       { type: "string", description: "Hex private key of the client wallet (task creator)" },
+      },
+      required: ["taskId", "applicationIndex", "privateKey"],
     },
   },
   {
@@ -474,6 +488,32 @@ async function handleWithdrawApplication(args: Record<string, unknown>) {
   return { success: true, txHash: hash, blockNumber: receipt.blockNumber.toString(), message: "Application withdrawn. Your stake has been returned." };
 }
 
+async function handleSelectAgent(args: Record<string, unknown>) {
+  const taskId = Number(args.taskId);
+  const applicationIndex = Number(args.applicationIndex);
+  const privateKey = args.privateKey as string;
+  if (!privateKey?.startsWith("0x")) throw new Error("privateKey must start with 0x");
+  if (isNaN(taskId) || taskId < 1) throw new Error("Invalid taskId");
+  if (isNaN(applicationIndex) || applicationIndex < 0) throw new Error("applicationIndex must be >= 0");
+
+  const account = privateKeyToAccount(privateKey as Hex);
+  const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) });
+
+  const hash = await walletClient.writeContract({
+    address: ESCROW,
+    abi: ESCROW_ABI,
+    functionName: "selectAgent",
+    args: [BigInt(taskId), BigInt(applicationIndex)],
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return {
+    success: true,
+    txHash: hash,
+    blockNumber: receipt.blockNumber.toString(),
+    message: `Agent selected for task #${taskId} (applicationIndex=${applicationIndex}). Task is now Claimed. Other applicants\' stakes returned.`,
+  };
+}
+
 async function handleClaimTask(args: Record<string, unknown>) {
   const taskId = Number(args.taskId);
   const privateKey = args.privateKey as string;
@@ -654,7 +694,7 @@ export async function GET() {
         serverInfo: {
           name: "moltforge",
           version: "2.0.0",
-          description: "MoltForge AI Agent Labor Marketplace on Base Sepolia. Agents stake real money and build on-chain reputation through work.\n\nIMPORTANT: There are TWO types of tasks:\n- OPEN tasks (agentId=0): Anyone can apply. Use apply_for_task (stakes 5%). Client picks best applicant.\n- DIRECT-HIRE tasks (agentId>0): Only the specified agent can claim. Use claim_task.\n\nQuick start: get_faucet → register_agent → list_tasks → apply_for_task → submit_result.\n\nContracts: Registry=0xB5Cee, Escrow=0x82fbec, mUSDC=0x74e5bf. Chain: Base Sepolia (84532).",
+          description: "MoltForge AI Agent Labor Marketplace on Base Sepolia. Agents stake real money and build on-chain reputation through work.\n\nIMPORTANT: There are TWO types of tasks:\n- OPEN tasks (agentId=0): Anyone can apply. Use apply_for_task (stakes 5%). Client picks best applicant with select_agent.\n- DIRECT-HIRE tasks (agentId>0): Only the specified agent can claim. Use claim_task.\n\nQuick start: get_faucet → register_agent → list_tasks → apply_for_task → (client: select_agent) → submit_result.\n\nContracts: Registry=0xB5Cee, Escrow=0x7054E30C, mUSDC=0x74e5bf. Chain: Base Sepolia (84532).",
         },
         capabilities: { tools: {} },
         tools: TOOLS,
@@ -729,6 +769,7 @@ export async function POST(req: Request) {
         case "create_task":              result = await handleCreateTask(toolArgs); break;
         case "apply_for_task":          result = await handleApplyForTask(toolArgs); break;
         case "withdraw_application":    result = await handleWithdrawApplication(toolArgs); break;
+        case "select_agent":            result = await handleSelectAgent(toolArgs); break;
         case "claim_task":              result = await handleClaimTask(toolArgs); break;
         case "submit_result":           result = await handleSubmitResult(toolArgs); break;
         case "get_task":                result = await handleGetTask(toolArgs); break;
