@@ -487,8 +487,8 @@ async function handleClaimTask(args: Record<string, unknown>) {
       functionName: "getTask",
       args: [BigInt(taskId)],
     });
-    const taskArr = task as unknown as unknown[];
-    const agentId = taskArr[2] as bigint;
+    const taskCheck = task as { agentId: bigint };
+    const agentId = taskCheck.agentId;
     if (agentId === 0n) {
       return {
         error: true,
@@ -507,7 +507,7 @@ async function handleClaimTask(args: Record<string, unknown>) {
     functionName: "getTask",
     args: [BigInt(taskId)],
   });
-  const reward = (task as unknown as unknown[])[4] as bigint;
+  const reward = (task as { reward: bigint }).reward;
   const stake = (reward * 500n) / 10000n;
 
   const allowance = await publicClient.readContract({
