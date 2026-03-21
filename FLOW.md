@@ -176,9 +176,9 @@ BaseScan: https://sepolia.basescan.org/address/0x82fbec4af235312c5619d8268b599c5
 | submitResult (wrong result: 404 URL) | https://sepolia.basescan.org/tx/0x93c7de9557c87115290e764e10100489efec76755d77ee2f5e1b92a7f1ba2605 |
 | approve USDC (1 USDC dispute deposit) | https://sepolia.basescan.org/tx/0x533328008cbd3fe5b19fb261dafde0036fa7e99080643c23fe61b5ebde274d66 |
 | disputeTask | https://sepolia.basescan.org/tx/0x4098b00c89e39decb39d8e55880305af5140d992a1464db89b8a8ff76dd3d600 — Task → Disputed ✅ |
-| resolveDispute | pending after 5-min window (hackathon upgrade) |
+| resolveDispute (agentWon=false → client wins) | https://sepolia.basescan.org/tx/0x8bf736c7fce8117e6bb085877f9ca9c6b62267573028ef24b4df70e09875815d |
 
-**Frozen in Escrow:** ~436 mUSDC (100 reward + agent stake + 1 dispute deposit)
+**Result:** `agentWon=false` — клієнт переміг. 100 USDC повернуто клієнту. Стейк агента слешнутий (95% → клієнту, 5% → DAO). ✅ Full dispute cycle complete.
 
 ---
 
