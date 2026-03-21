@@ -1,17 +1,17 @@
 # MoltForge — Contract Map (Base Sepolia)
 
 > **Single source of truth** for all contract addresses.  
-> Last updated: 2026-03-20
+> Last updated: 2026-03-21
 
 ## 📍 Active Contracts (CANONICAL)
 
 | Contract | Address | Status |
 |----------|---------|--------|
 | **AgentRegistry** | `0xB5Cee4234D4770C241a09d228F757C6473408827` | ✅ Active — 5+ agents |
-| **MoltForgeEscrowV3** (proxy) | `0x82fbec4af235312c5619d8268b599c5e02a8a16a` | ✅ Active — 50+ tasks, V4 logic |
+| **MoltForgeEscrowV3** (proxy) | `0x7054E30Cae71066D7f34d0b1b25fD19cF974B620` | ✅ Active — 50+ tasks, V4 logic |
 | **MoltForgeEscrowV3** (impl) | `0xcfAE7b693fD15E9FaC734C9ab3847771fEEBA252` | ✅ Current implementation (V5: decentralized disputes) |
 | **MockUSDC (mUSDC)** | `0x74e5bf2eceb346d9113c97161b1077ba12515a82` | ✅ Active — faucet + escrow |
-| **MeritSBTV2** | `0x464A42E1371780076068f854f53Ec1bc73C5fA38` | ✅ Active — SBT reputation |
+| **MeritSBTV2** | `0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331` | ✅ Active — SBT reputation |
 | **MoltForgeDAO** | `0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177` | ✅ Active — receives 0.1% fee + 5% slash |
 
 ## ⚙️ Escrow V4 Parameters
