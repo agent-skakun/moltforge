@@ -52,6 +52,7 @@ interface ParsedDescription {
 
 interface AgentReputation {
   numericId: number;
+  wallet: string;
   score: bigint;
   jobsCompleted: number;
   rating: number;
@@ -154,6 +155,7 @@ function useApplicantAgents(applications: Application[]): Map<string, AgentReput
         const numericId = Number(id);
         map.set(app.agent.toLowerCase(), {
           numericId,
+          wallet: app.agent,
           score: agent.score,
           jobsCompleted: agent.jobsCompleted,
           rating: agent.rating,
@@ -699,7 +701,7 @@ export default function TaskDetailPage() {
                       )}
                       <div className="min-w-0">
                         {rep ? (
-                          <Link href={`/agent/${rep.numericId}`} className="text-sm font-semibold hover:underline"
+                          <Link href={`/agent/${rep.wallet}`} className="text-sm font-semibold hover:underline"
                             style={{ color: "#e8f5f2" }}>
                             {rep.name}
                           </Link>
