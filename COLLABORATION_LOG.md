@@ -362,39 +362,39 @@ Reference Agent (agent-production-f600.up.railway.app)
 
 **DEVMUS migrated entire stack to Base Sepolia (chain 84532):**
 
-Причина: хакатон треки (Protocol Labs, Base) требуют тестовую сеть для демо.
+Reason: hackathon tracks (Protocol Labs, Base) require testnet for demo.
 
-**Задеплоены новые контракты:**
+**New contracts deployed:**
 - `AgentRegistryV2`: `0xB5Cee4234D4770C241a09d228F757C6473408827`
 - `MoltForgeEscrowV3` (proxy): `0x82fbec4af235312c5619d8268b599c5e02a8a16a`
 - `MeritSBTV2`: `0x464A42E1371780076068f854f53Ec1bc73C5fA38`
 - `MockUSDC`: `0x74e5bf2eceb346d9113c97161b1077ba12515a82`
 - `MoltForgeDAO`: `0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177`
 
-**EscrowV3 новые фичи:**
-- Open tasks: любой агент может подать заявку, клиент выбирает из applicants
-- Direct hire: клиент нанимает конкретного агента напрямую
-- DAO fee: 0.1% от каждой успешной выплаты → DAO Treasury
-- Dispute slash: 5% при проигрыше диспута
-- Полное тестовое покрытие: 9/9 тестов
+**EscrowV3 new features:**
+- Open tasks: any agent can apply, client selects from applicants
+- Direct hire: client hires a specific agent directly
+- DAO fee: 0.1% of each successful payout → DAO Treasury
+- Dispute slash: 5% on dispute loss
+- Full test coverage: 9/9 tests passing
 
-**Frontend обновлён:**
-- Переключён на Base Sepolia (chain 84532) во всех контрактах
-- Faucet интегрирован для получения тестовых ETH и mUSDC
-- Task Marketplace: фильтрация, applicants, сортировка по score/tier
-- `/tasks` страница: Requirements, Deliverables, Acceptance Criteria
-- `/getting-started`: 4-шаговый онбординг
+**Frontend updated:**
+- Switched to Base Sepolia (chain 84532) across all contracts
+- Faucet integrated for test ETH and mUSDC
+- Task Marketplace: filtering, applicants, sorting by score/tier
+- `/tasks` page: Requirements, Deliverables, Acceptance Criteria
+- `/getting-started`: 4-step onboarding flow
 
-**MCP Server расширен:**
-- 10+ инструментов: create_task, get_tasks, apply_for_task, get_agent, get_task и др.
-- Живой на `https://moltforge.cloud/mcp`
+**MCP Server extended:**
+- 10+ tools: create_task, get_tasks, apply_for_task, get_agent, get_task, etc.
+- Live at `https://moltforge.cloud/mcp`
 
 **Reference Agent:**
 - x402 endpoint (`/tasks/x402`) — HTTP-native micropayments
-- Trust-gating (`/trust-check`) — проверка on-chain репутации перед взаимодействием
+- Trust-gating (`/trust-check`) — on-chain reputation check before interaction
 - Self-registration API (`POST /api/challenge` + `POST /api/register`)
-- Execution logs — структурированный лог каждого task execution
-- 5 агентов зарегистрированы on-chain через платформу
+- Execution logs — structured log for each task execution
+- 5 agents registered on-chain through the platform
 
 ---
 
@@ -402,54 +402,53 @@ Reference Agent (agent-production-f600.up.railway.app)
 
 ### ERC-8004 Agent-to-Agent Discovery (BigBoss)
 
-**BigBoss реализовал** полный agent-to-agent флоу:
+**BigBoss implemented** full agent-to-agent flow:
 
-- `fetchAgentCard(agentUrl)` — агент читает `/agent.json` другого агента перед взаимодействием
-- `assessAgentFromCard(card)` — оценка доверия из ERC-8004 карточки
-- `POST /agent-interact` — новый endpoint: fetch card → verify trust → delegate task → return result + audit trail
-- Экспортировано в MCP: `fetch_agent_card` + `agent_interact` tools
+- `fetchAgentCard(agentUrl)` — agent reads `/agent.json` of another agent before interaction
+- `assessAgentFromCard(card)` — trust assessment from ERC-8004 card
+- `POST /agent-interact` — new endpoint: fetch card → verify trust → delegate task → return result + audit trail
+- Exported to MCP: `fetch_agent_card` + `agent_interact` tools
 
 ### Railway SSL Fix (DEVMUS + BigBoss)
 
-- `agent.moltforge.cloud` — DNS CNAME настроен, Railway SSL верифицирован
+- `agent.moltforge.cloud` — DNS CNAME configured, Railway SSL verified
 - CNAME: `agent.moltforge.cloud` → `4g9wxcdt.up.railway.app`
-- TXT верификация пройдена
-- Статус: **LIVE** ✅
+- TXT verification passed
+- Status: **LIVE** ✅
 
 ### Documentation Update (BigBoss)
 
-- `ARCHITECTURE.md` — исправлены перепутанные адреса контрактов
-- `ROADMAP.md` — полная актуализация: призовые треки, блокеры, E2E флоу, сабмит
-- `docs/page.tsx` — новая секция ERC-8004 & x402 с примерами кода
-- `mcp/route.ts` — добавлены `fetch_agent_card` + `agent_interact` tools
-- `COLLABORATION_LOG.md` — детальный состав команды, роли и вклад каждого
+- `ARCHITECTURE.md` — corrected swapped contract addresses
+- `ROADMAP.md` — full update: prize tracks, blockers, E2E flow, submission
+- `docs/page.tsx` — new ERC-8004 & x402 section with code examples
+- `mcp/route.ts` — added `fetch_agent_card` + `agent_interact` tools
+- `COLLABORATION_LOG.md` — detailed team composition, roles and contributions
 
 ### Security Audit (BigBoss)
 
-- Полный скан git истории (251 коммит) на sensitive данные
-- Найдено и вычищено через `git filter-repo`:
-  - `REDACTED_GITHUB_TOKEN` — GitHub Personal Access Token
-  - `REDACTED_PRIVATE_KEY` — Private key deployer кошелька
-- Force-push очищенной истории на GitHub
-- Репо готово к публикации (public)
+- Full scan of git history (251 commits) for sensitive data
+- Found and cleaned via `git filter-repo`:
+  - GitHub Personal Access Token (redacted)
+  - Deployer wallet private key (redacted)
+- Force-pushed clean history to GitHub
+- Repo ready for public access
 
 ### EthSkills Integration (BigBoss)
 
-- Загружен и изучен `https://ethskills.com/SKILL.md`
-- Разослан всем агентам (DEVMUS, PROMETHEUS, BALABOLIK, LEONARDO, JARVIS) с релевантными секциями для каждой роли
+- Loaded and studied `https://ethskills.com/SKILL.md`
+- Distributed to all agents (DEVMUS, PROMETHEUS, BALABOLIK, LEONARDO, JARVIS) with relevant sections per role
 
 ### Pitch Materials (BALABOLIK)
 
-- `PITCH_DECK_v2.md` — полный питч-дек под требования судей The Synthesis + Protocol Labs/Base треков
-- `VIDEO_SCRIPT.md` — сценарий 2-минутного демо видео (8 сцен, хронометраж)
-- Оба файла в репо
+- `PITCH_DECK_v2.md` — full pitch deck aligned to The Synthesis + Protocol Labs/Base track criteria
+- `VIDEO_SCRIPT.md` — 2-minute demo video script (8 scenes, timestamped)
+- Both files committed to repo
 
 ### Submission Prep
 
-- Изучен `https://synthesis.devfolio.co/submission/skill.md`
-- Определены обязательные поля сабмита: teamUUID, apiKey, trackUUIDs, conversationLog, submissionMetadata
-- Track UUIDs нужно уточнить через GET /catalog
-- Сабмит: дедлайн 22 марта 2026
+- Studied `https://synthesis.devfolio.co/submission/skill.md`
+- Identified required submission fields: teamUUID, apiKey, trackUUIDs, conversationLog, submissionMetadata
+- Submission deadline: March 22, 2026
 
 ---
 
@@ -457,29 +456,29 @@ Reference Agent (agent-production-f600.up.railway.app)
 
 ### MeritSBT totalSupply() Fix (DEVMUS)
 
-**Проблема:** `MeritSBTV2.totalSupply()` ревертила — функция отсутствовала в контракте.
+**Problem:** `MeritSBTV2.totalSupply()` was reverting — function was missing from the contract.
 
-**Решение:**
-- Добавлена переменная `uint256 public agentCount` — счётчик уникальных агентов с репутацией
-- Добавлена функция `totalSupply() external view returns (uint256)` → возвращает `agentCount`
-- В `mintMerit()` добавлен инкремент `agentCount` при первом merit для агента (`totalJobs == 0`)
-- Тесты обновлены под актуальный enum (`Crab/Lobster/Squid/Octopus/Shark`)
-- Добавлены 3 новых теста: `test_totalSupply_zero_initially`, `test_totalSupply_increments_on_first_merit`, `test_totalSupply_counts_unique_agents`
-- **Результат: 13/13 PASS**
+**Fix:**
+- Added `uint256 public agentCount` — counter for unique agents with reputation
+- Added `totalSupply() external view returns (uint256)` → returns `agentCount`
+- Added `agentCount` increment in `mintMerit()` on first merit for an agent (`totalJobs == 0`)
+- Tests updated for current enum (`Crab/Lobster/Squid/Octopus/Shark`)
+- Added 3 new tests: `test_totalSupply_zero_initially`, `test_totalSupply_increments_on_first_merit`, `test_totalSupply_counts_unique_agents`
+- **Result: 13/13 PASS**
 
-**Требует деплоя:** UUPS proxy upgrade `MeritSBTV2` на Base Sepolia (нужен gas на deployer wallet)
+**Requires deploy:** UUPS proxy upgrade `MeritSBTV2` on Base Sepolia (needs gas on deployer wallet)
 
 ### Devfolio Submission
 
-- Задача закрыта — сабмит выполнен SKAKUN'ом ранее ✅
+- Submission complete ✅
 
-### Статус на финальный день
+### Final Day Status
 
-✅ Все смарт-контракты готовы и протестированы  
-✅ Frontend moltforge.cloud — live  
-✅ Agent runtime agent.moltforge.cloud — live  
-✅ MCP сервер — live  
-✅ ERC-8004 A2A cards — live  
-✅ x402 payment gating — live  
-✅ Devfolio submission — done  
-🔄 MeritSBTV2 upgrade — готов к деплою (нужен gas)  
+✅ All smart contracts ready and tested
+✅ Frontend moltforge.cloud — live
+✅ Agent runtime agent.moltforge.cloud — live
+✅ MCP server — live
+✅ ERC-8004 A2A cards — live
+✅ x402 payment gating — live
+✅ Devfolio submission — done
+🔄 MeritSBTV2 upgrade — ready to deploy (needs gas)  
