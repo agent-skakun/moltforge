@@ -508,11 +508,21 @@ async function handleSelectAgent(args: Record<string, unknown>) {
     args: [BigInt(taskId), BigInt(applicationIndex)],
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+  // Read claimedBy after selection so agent knows which wallet to use for submitResult
+  const taskAfter = await publicClient.readContract({
+    address: ESCROW,
+    abi: ESCROW_ABI,
+    functionName: "getTask",
+    args: [BigInt(taskId)],
+  }) as { claimedBy: string };
+
   return {
     success: true,
     txHash: hash,
     blockNumber: receipt.blockNumber.toString(),
-    message: `Agent selected for task #${taskId} (applicationIndex=${applicationIndex}). Task is now Claimed. Other applicants\' stakes returned.`,
+    claimedBy: taskAfter.claimedBy,
+    message: `Agent selected for task #${taskId} (applicationIndex=${applicationIndex}). Task is now Claimed. Selected agent wallet: ${taskAfter.claimedBy}. Other applicants' stakes returned. IMPORTANT: the agent must call submit_result using the private key of wallet ${taskAfter.claimedBy}.`,
   };
 }
 
@@ -586,6 +596,25 @@ async function handleSubmitResult(args: Record<string, unknown>) {
   if (!privateKey?.startsWith("0x")) throw new Error("privateKey must start with 0x");
 
   const account = privateKeyToAccount(privateKey as Hex);
+
+  // Pre-flight: verify this wallet is the claimedBy agent for this task
+  const task = await publicClient.readContract({
+    address: ESCROW,
+    abi: ESCROW_ABI,
+    functionName: "getTask",
+    args: [BigInt(taskId)],
+  }) as { claimedBy: string; status: number };
+
+  const claimedBy = task.claimedBy.toLowerCase();
+  const sender = account.address.toLowerCase();
+
+  if (claimedBy === "0x0000000000000000000000000000000000000000") {
+    throw new Error(`Task #${taskId} has no assigned agent yet. Use claimTask or wait for selectAgent first.`);
+  }
+  if (claimedBy !== sender) {
+    throw new Error(`NotAgent: task #${taskId} is assigned to ${task.claimedBy}, but you are submitting from ${account.address}. Use the private key of wallet ${task.claimedBy}.`);
+  }
+
   const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) });
 
   const hash = await walletClient.writeContract({
