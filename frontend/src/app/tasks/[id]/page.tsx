@@ -252,6 +252,16 @@ function useAssignedAgent(claimedBy: string | undefined): AssignedAgentInfo | nu
     query: { enabled: resolvedLegacyId > 0n && resolvedNewId === 0n },
   });
 
+  // MeritSBTV2 — single source of truth for tier
+  const effectiveNumId = resolvedNewId > 0n ? resolvedNewId : resolvedLegacyId;
+  const { data: meritRep } = useReadContract({
+    address: ADDRESSES.MeritSBTV2 as `0x${string}`,
+    abi: MERIT_SBT_V2_ABI,
+    functionName: "getReputation",
+    args: [effectiveNumId],
+    query: { enabled: effectiveNumId > 0n },
+  });
+
   // Fetch metadata name from HTTPS URI
   const [fetchedName, setFetchedName] = useState<string | null>(null);
   const agent = (newAgent ?? legacyAgent) as { wallet: string; metadataURI: string; tier: number } | undefined;
@@ -286,11 +296,15 @@ function useAssignedAgent(claimedBy: string | undefined): AssignedAgentInfo | nu
   const name = fetchedName || parseAgentName(metadataURI, numId) || `${wallet.slice(0, 6)}…${wallet.slice(-4)}`;
   const linkHref = `/agent/${wallet}`;
 
+  // Tier: MeritSBTV2 is source of truth, fall back to AgentRegistry
+  const meritRepData = meritRep as [bigint, bigint, bigint, number] | undefined;
+  const tier = meritRepData !== undefined ? Number(meritRepData[3]) : Number(agent.tier ?? 0);
+
   return {
     name,
     wallet,
     linkHref,
-    tier: Number(agent.tier ?? 0),
+    tier,
     metadataURI,
     avatarWallet: wallet,
   };
