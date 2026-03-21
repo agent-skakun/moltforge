@@ -157,6 +157,33 @@ contract MeritSBTV2 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         emit EscrowUpdated(_escrow);
     }
 
+    /// @notice Admin retroactive mint for tasks confirmed before MeritSBT was wired.
+    /// @dev Only callable by owner. Idempotent — reverts if already rated.
+    function adminMintMerit(
+        uint256 agentId,
+        uint256 taskId,
+        uint8   score,
+        uint256 reward
+    ) external onlyOwner {
+        if (score < 1 || score > 5) revert InvalidScore();
+        if (reward < MIN_REWARD)    revert BelowMinReward();
+        if (_rated[agentId][taskId]) revert AlreadyRated();
+
+        _rated[agentId][taskId] = true;
+
+        Reputation storage r = _rep[agentId];
+        if (r.totalJobs == 0) {
+            agentCount += 1;
+        }
+        r.totalWeightedScore += uint256(score) * reward;
+        r.totalWeight        += reward;
+        r.totalJobs          += 1;
+        r.totalVolume        += reward;
+        r.lastUpdated         = uint64(block.timestamp);
+
+        emit MeritMinted(agentId, taskId, score, reward);
+    }
+
     /// @notice Total number of unique agents with reputation data (ERC-like totalSupply)
     function totalSupply() external view returns (uint256) {
         return agentCount;
