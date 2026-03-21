@@ -68,7 +68,7 @@ const TIER_LABELS = ["🦀 Crab", "🦞 Lobster", "🦑 Squid", "🐙 Octopus", 
 const TIER_COLORS = ["#5a807a", "#cd7f32", "#1db8a8", "#a855f7", "#e63030"] as const;
 
 function formatScore(score: bigint): string {
-  const n = Number(score) / 1e17;
+  const n = Number(score) / 1e18;
   if (n === 0) return "0";
   if (n < 0.1) return n.toFixed(3);
   if (n < 1) return n.toFixed(2);
