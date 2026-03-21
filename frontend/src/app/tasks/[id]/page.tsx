@@ -7,6 +7,7 @@ import { useAccount, useReadContract, useReadContracts, useWriteContract, useWai
 import { formatUnits } from "viem";
 import Link from "next/link";
 import { ADDRESSES, ESCROW_V3_ABI, V3_STATUS_COLORS, AGENT_REGISTRY_ABI } from "@/lib/contracts";
+import { AvatarFace, walletToFaceParams } from "@/components/AvatarFace";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -166,6 +167,104 @@ function useApplicantAgents(applications: Application[]): Map<string, AgentReput
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletKey, agentsRaw, effectiveIds.join(",")]);
+}
+
+// ─── Assigned Agent Lookup (dual-registry) ─────────────────────────────────
+
+interface AssignedAgentInfo {
+  name: string;
+  wallet: string;
+  linkHref: string;
+  tier: number;
+  metadataURI: string;
+  avatarWallet: string;
+}
+
+const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
+
+function useAssignedAgent(claimedBy: string | undefined): AssignedAgentInfo | null {
+  const wallet = claimedBy && claimedBy !== ZERO_ADDR ? claimedBy : undefined;
+
+  // Try new registry first
+  const { data: newId } = useReadContract({
+    address: ADDRESSES.AgentRegistry,
+    abi: AGENT_REGISTRY_ABI,
+    functionName: "getAgentIdByWallet",
+    args: [wallet as `0x${string}`],
+    query: { enabled: !!wallet },
+  });
+
+  // Try legacy registry
+  const { data: legacyId } = useReadContract({
+    address: ADDRESSES.AgentRegistryNew,
+    abi: AGENT_REGISTRY_ABI,
+    functionName: "getAgentIdByWallet",
+    args: [wallet as `0x${string}`],
+    query: { enabled: !!wallet },
+  });
+
+  const resolvedNewId = newId ? BigInt(newId as bigint) : 0n;
+  const resolvedLegacyId = legacyId ? BigInt(legacyId as bigint) : 0n;
+
+  // Fetch agent profile from whichever registry has it
+  const { data: newAgent } = useReadContract({
+    address: ADDRESSES.AgentRegistry,
+    abi: AGENT_REGISTRY_ABI,
+    functionName: "getAgent",
+    args: [resolvedNewId],
+    query: { enabled: resolvedNewId > 0n },
+  });
+
+  const { data: legacyAgent } = useReadContract({
+    address: ADDRESSES.AgentRegistryNew,
+    abi: AGENT_REGISTRY_ABI,
+    functionName: "getAgent",
+    args: [resolvedLegacyId],
+    query: { enabled: resolvedLegacyId > 0n && resolvedNewId === 0n },
+  });
+
+  // Fetch metadata name from HTTPS URI
+  const [fetchedName, setFetchedName] = useState<string | null>(null);
+  const agent = (newAgent ?? legacyAgent) as { wallet: string; metadataURI: string; tier: number } | undefined;
+  const metadataURI = agent?.metadataURI ?? "";
+
+  useEffect(() => {
+    setFetchedName(null);
+    if (!metadataURI) return;
+    // Try inline data: URI first
+    if (metadataURI.startsWith("data:application/json")) {
+      try {
+        const b64 = metadataURI.split(",")[1];
+        const json = JSON.parse(atob(b64));
+        if (json.name) { setFetchedName(json.name); return; }
+      } catch { /* ignore */ }
+    }
+    // Try fetching from HTTPS
+    if (metadataURI.startsWith("https://")) {
+      const ctrl = new AbortController();
+      fetch(metadataURI, { signal: ctrl.signal })
+        .then(r => r.ok ? r.json() : null)
+        .then(json => { if (json?.name) setFetchedName(json.name); })
+        .catch(() => {});
+      return () => ctrl.abort();
+    }
+  }, [metadataURI]);
+
+  if (!wallet) return null;
+  if (!agent) return null;
+
+  const numId = resolvedNewId > 0n ? Number(resolvedNewId) : 0;
+  const name = fetchedName || parseAgentName(metadataURI, numId) || `${wallet.slice(0, 6)}…${wallet.slice(-4)}`;
+  const linkHref = `/agent/${wallet}`;
+
+  return {
+    name,
+    wallet,
+    linkHref,
+    tier: Number(agent.tier ?? 0),
+    metadataURI,
+    avatarWallet: wallet,
+  };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -337,6 +436,8 @@ export default function TaskDetailPage() {
   const applications = (applicationsRaw as unknown as Application[] | undefined) ?? [];
   const activeApps = applications.filter(a => !a.withdrawn);
   const reputationMap = useApplicantAgents(applications);
+  const taskForHook = raw as unknown as V3Task | undefined;
+  const assignedAgent = useAssignedAgent(taskForHook?.claimedBy);
 
   if (isLoading) {
     return <div className="max-w-2xl mx-auto pt-20 text-center" style={{ color: "#5a807a" }}>Loading task…</div>;
@@ -508,9 +609,38 @@ export default function TaskDetailPage() {
             <p className="text-xs break-all" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>{task.client}</p>
           </div>
           {task.claimedBy !== ZERO && (
-            <div>
+            <div className="col-span-2">
               <p className="text-xs mb-1" style={{ color: "#3a5550" }}>Assigned Agent</p>
-              <p className="text-xs break-all" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>{task.claimedBy}</p>
+              {assignedAgent ? (
+                <Link href={assignedAgent.linkHref} className="flex items-center gap-2.5 p-2 rounded-lg transition-all hover:scale-[1.01]"
+                  style={{ background: "#060c0b", border: "1px solid #1a2e2b", textDecoration: "none" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "2px solid #1db8a8" }}>
+                    <AvatarFace params={walletToFaceParams(assignedAgent.avatarWallet)} size={32} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold truncate" style={{ color: "#e8f5f3", fontFamily: "var(--font-space-grotesk)" }}>
+                        {assignedAgent.name}
+                      </span>
+                      {TIER_LABELS[assignedAgent.tier] && (
+                        <span className="px-1 py-0.5 rounded text-xs" style={{
+                          background: `${TIER_COLORS[assignedAgent.tier]}20`,
+                          border: `1px solid ${TIER_COLORS[assignedAgent.tier]}60`,
+                          color: TIER_COLORS[assignedAgent.tier],
+                          fontSize: "0.55rem", fontFamily: "var(--font-jetbrains-mono)",
+                        }}>
+                          {TIER_LABELS[assignedAgent.tier]}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs break-all" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem", marginTop: 2 }}>
+                      {task.claimedBy.slice(0, 6)}…{task.claimedBy.slice(-4)}
+                    </p>
+                  </div>
+                </Link>
+              ) : (
+                <p className="text-xs break-all" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>{task.claimedBy}</p>
+              )}
             </div>
           )}
           {isOpen && !isDirectHire && (

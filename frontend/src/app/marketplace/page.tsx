@@ -189,7 +189,7 @@ function AgentCard({ agent }: { agent: AgentData }) {
           </div>
           <div className="flex items-center gap-1.5">
             <span style={{ fontSize: "0.7rem", fontFamily: "var(--font-jetbrains-mono)", color: "#3a5550" }}>
-              #{agent.numericId}
+              {agent.numericId > 0 ? `#${agent.numericId}` : `#L${-agent.numericId}`}
             </span>
             <span style={{ fontSize: "0.75rem" }}>{SPEC_ICONS[spec] ?? "📄"}</span>
             <span style={{ fontSize: "0.7rem", color: "#5a807a", textTransform: "capitalize" }}>{spec}</span>
@@ -336,6 +336,7 @@ export default function MarketplacePage() {
   const [specFilter, setSpecFilter] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
+  // ── New (primary) registry ──────────────────────────────────────────────────
   const { data: agentCount } = useReadContract({
     address: ADDRESSES.AgentRegistry, abi: AGENT_REGISTRY_ABI,
     functionName: "agentCount",
@@ -343,7 +344,6 @@ export default function MarketplacePage() {
 
   const count = Number(agentCount ?? 0);
 
-  // Build array of contract calls for all agents
   const agentCalls = useMemo(() =>
     Array.from({ length: count }, (_, i) => ({
       address: ADDRESSES.AgentRegistry as `0x${string}`,
@@ -356,7 +356,6 @@ export default function MarketplacePage() {
 
   const { data: agentsRaw } = useReadContracts({ contracts: agentCalls });
 
-  // Fallback for V1 agents (getAgentExtended returns nothing for V1)
   const { data: agentsV1Raw } = useReadContracts({
     contracts: useMemo(() => Array.from({ length: count }, (_, i) => ({
       address: ADDRESSES.AgentRegistry as `0x${string}`,
@@ -366,7 +365,24 @@ export default function MarketplacePage() {
     })), [count]),
   });
 
-  // Merit score calls (per wallet)
+  // ── Old (legacy) registry ───────────────────────────────────────────────────
+  const { data: legacyAgentCount } = useReadContract({
+    address: ADDRESSES.AgentRegistryNew, abi: AGENT_REGISTRY_ABI,
+    functionName: "agentCount",
+  });
+
+  const legacyCount = Number(legacyAgentCount ?? 0);
+
+  const { data: legacyAgentsRaw } = useReadContracts({
+    contracts: useMemo(() => Array.from({ length: legacyCount }, (_, i) => ({
+      address: ADDRESSES.AgentRegistryNew as `0x${string}`,
+      abi: AGENT_REGISTRY_ABI,
+      functionName: "getAgent" as const,
+      args: [BigInt(i + 1)] as const,
+    })), [legacyCount]),
+  });
+
+  // ── Merit score calls (per wallet, from new registry) ──────────────────────
   const walletList = useMemo(() => {
     if (!count) return [];
     return Array.from({ length: count }, (_, i) => {
@@ -394,14 +410,16 @@ export default function MarketplacePage() {
 
   const { data: meritScoresRaw } = useReadContracts({ contracts: meritCalls });
 
-  // Merge: V2 data preferred, fallback to V1
+  // ── Merge both registries: new preferred, legacy fills gaps ─────────────────
   const mergedAgents: AgentData[] = useMemo(() => {
-    if (!count) return [];
+    // 1. Build agents from new (primary) registry
+    const newAgents: AgentData[] = [];
+    const seenWallets = new Set<string>();
 
-    return Array.from({ length: count }, (_, i) => {
+    for (let i = 0; i < count; i++) {
       const numericId = i + 1;
 
-      // Try V2 first
+      // Try V2 (getAgentExtended)
       const v2 = agentsRaw?.[i];
       if (v2?.status === "success" && v2.result) {
         try {
@@ -410,31 +428,70 @@ export default function MarketplacePage() {
             string, readonly string[], readonly string[], string
           ];
           if (agent.status > 0 && isValidAgent({ metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl, agentUrl: agentUrl ?? "" })) {
-            return { numericId, wallet: agent.wallet, agentId: agent.agentId, metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl, registeredAt: agent.registeredAt, status: agent.status, score: agent.score, jobsCompleted: agent.jobsCompleted, rating: agent.rating, tier: agent.tier, avatarHash: avatarHash ?? "", skills: skills ?? [], tools: tools ?? [], agentUrl: agentUrl ?? "" } as AgentData;
+            seenWallets.add(agent.wallet.toLowerCase());
+            newAgents.push({ numericId, wallet: agent.wallet, agentId: agent.agentId, metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl, registeredAt: agent.registeredAt, status: agent.status, score: agent.score, jobsCompleted: agent.jobsCompleted, rating: agent.rating, tier: agent.tier, avatarHash: avatarHash ?? "", skills: skills ?? [], tools: tools ?? [], agentUrl: agentUrl ?? "" });
+            continue;
           }
         } catch { /* fallthrough */ }
       }
 
-      // Fallback V1
+      // Fallback V1 (getAgent on new registry)
       const v1 = agentsV1Raw?.[i];
       if (v1?.status === "success" && v1.result) {
         try {
           const agent = v1.result as { wallet: string; agentId: string; metadataURI: string; webhookUrl: string; registeredAt: bigint; status: number; score: bigint; jobsCompleted: number; rating: number; tier: number };
           if (agent.status > 0 && isValidAgent({ metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl })) {
-            return { numericId, wallet: agent.wallet, agentId: agent.agentId, metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl, registeredAt: agent.registeredAt, status: agent.status, score: agent.score, jobsCompleted: agent.jobsCompleted, rating: agent.rating, tier: agent.tier, avatarHash: "", skills: [], tools: [], agentUrl: agent.webhookUrl ?? "" } as AgentData;
+            seenWallets.add(agent.wallet.toLowerCase());
+            newAgents.push({ numericId, wallet: agent.wallet, agentId: agent.agentId, metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl, registeredAt: agent.registeredAt, status: agent.status, score: agent.score, jobsCompleted: agent.jobsCompleted, rating: agent.rating, tier: agent.tier, avatarHash: "", skills: [], tools: [], agentUrl: agent.webhookUrl ?? "" });
+            continue;
           }
         } catch { /* ignore */ }
       }
+    }
 
-      return null;
-    }).filter((a): a is AgentData => a !== null).map((a, idx) => {
+    // Attach merit scores to new-registry agents
+    newAgents.forEach((a, idx) => {
       const merit = meritScoresRaw?.[idx];
       if (merit?.status === "success" && merit.result !== undefined) {
         a.meritScore = merit.result as bigint;
       }
-      return a;
     });
-  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw]);
+
+    // 2. Add agents from legacy registry (only if wallet not already seen)
+    const legacyAgents: AgentData[] = [];
+    for (let i = 0; i < legacyCount; i++) {
+      const r = legacyAgentsRaw?.[i];
+      if (r?.status !== "success" || !r.result) continue;
+      try {
+        const agent = r.result as { wallet: string; agentId: string; metadataURI: string; webhookUrl: string; registeredAt: bigint; status: number; score: bigint; jobsCompleted: number; rating: number; tier: number };
+        if (agent.status <= 0) continue;
+        if (!isValidAgent({ metadataURI: agent.metadataURI, webhookUrl: agent.webhookUrl })) continue;
+        if (seenWallets.has(agent.wallet.toLowerCase())) continue;
+        seenWallets.add(agent.wallet.toLowerCase());
+        // Use negative numericId so legacy agents get unique, stable IDs
+        // The AgentCard link uses wallet address anyway (/agent/<wallet>)
+        legacyAgents.push({
+          numericId: -(i + 1),
+          wallet: agent.wallet,
+          agentId: agent.agentId,
+          metadataURI: agent.metadataURI,
+          webhookUrl: agent.webhookUrl,
+          registeredAt: agent.registeredAt,
+          status: agent.status,
+          score: agent.score,
+          jobsCompleted: agent.jobsCompleted,
+          rating: agent.rating,
+          tier: agent.tier,
+          avatarHash: "",
+          skills: [],
+          tools: [],
+          agentUrl: agent.webhookUrl ?? "",
+        });
+      } catch { /* ignore */ }
+    }
+
+    return [...newAgents, ...legacyAgents];
+  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw, legacyCount, legacyAgentsRaw]);
 
   const filtered = useMemo(() => {
     let list = mergedAgents;
@@ -459,7 +516,7 @@ export default function MarketplacePage() {
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs mb-4"
             style={{ background: "#1db8a810", border: "1px solid #1db8a830", color: "#1db8a8",
               fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "0.1em" }}>
-            ⛓ BASE SEPOLIA · {count} AGENTS
+            ⛓ BASE SEPOLIA · {mergedAgents.length} AGENTS
           </div>
           <h1 className="text-4xl font-bold mb-3" style={{ fontFamily: "var(--font-space-grotesk)", color: "#e8f5f3", letterSpacing: "-0.05em" }}>
             Agent Marketplace
@@ -524,7 +581,7 @@ export default function MarketplacePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map(agent => (
-              <AgentCard key={agent.numericId} agent={agent} />
+              <AgentCard key={agent.numericId < 0 ? `legacy-${-agent.numericId}` : agent.numericId} agent={agent} />
             ))}
           </div>
         )}
