@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useAccount, useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits } from "viem";
 import Link from "next/link";
-import { ADDRESSES, ESCROW_V3_ABI, V3_STATUS_COLORS, AGENT_REGISTRY_ABI } from "@/lib/contracts";
+import { ADDRESSES, ESCROW_V3_ABI, V3_STATUS_COLORS, AGENT_REGISTRY_ABI, MERIT_SBT_V2_ABI } from "@/lib/contracts";
 import { AvatarFace, walletToFaceParams } from "@/components/AvatarFace";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -138,6 +138,19 @@ function useApplicantAgents(applications: Application[]): Map<string, AgentReput
   );
   const { data: agentsRaw } = useReadContracts({ contracts: agentCalls });
 
+  // MeritSBTV2 reputation calls (source of truth)
+  const meritCalls = useMemo(() =>
+    effectiveIds.map(id => id > 0n ? ({
+      address: ADDRESSES.MeritSBTV2 as `0x${string}`,
+      abi: MERIT_SBT_V2_ABI,
+      functionName: "getReputation" as const,
+      args: [id] as const,
+    }) : null).filter((c): c is NonNullable<typeof c> => c !== null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [effectiveIds.join(",")]
+  );
+  const { data: meritRaw } = useReadContracts({ contracts: meritCalls });
+
   return useMemo(() => {
     const map = new Map<string, AgentReputation>();
     const active = applications.filter(a => !a.withdrawn);
@@ -145,7 +158,9 @@ function useApplicantAgents(applications: Application[]): Map<string, AgentReput
     active.forEach((app, i) => {
       const id = effectiveIds[i];
       if (!id || id === 0n) return;
-      const r = agentsRaw?.[agentIdx++];
+      const r = agentsRaw?.[agentIdx];
+      const m = meritRaw?.[agentIdx];
+      agentIdx++;
       if (r?.status === "success" && r.result) {
         const agent = r.result as {
           wallet: string; agentId: string; metadataURI: string; webhookUrl: string;
@@ -153,13 +168,25 @@ function useApplicantAgents(applications: Application[]): Map<string, AgentReput
           jobsCompleted: number; rating: number; tier: number;
         };
         const numericId = Number(id);
+        // Use MeritSBTV2 for score/jobs/tier (source of truth)
+        let score = agent.score;
+        let jobsCompleted = agent.jobsCompleted;
+        let tier = agent.tier;
+        if (m?.status === "success" && m.result) {
+          const [ws, tj, , t] = m.result as [bigint, bigint, bigint, number];
+          if (tj > 0n) {
+            score = ws * BigInt(1e15);
+            jobsCompleted = Number(tj);
+            tier = Number(t);
+          }
+        }
         map.set(app.agent.toLowerCase(), {
           numericId,
           wallet: app.agent,
-          score: agent.score,
-          jobsCompleted: agent.jobsCompleted,
+          score,
+          jobsCompleted,
           rating: agent.rating,
-          tier: agent.tier,
+          tier,
           status: agent.status,
           metadataURI: agent.metadataURI,
           name: parseAgentName(agent.metadataURI, numericId),
@@ -168,7 +195,7 @@ function useApplicantAgents(applications: Application[]): Map<string, AgentReput
     });
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walletKey, agentsRaw, effectiveIds.join(",")]);
+  }, [walletKey, agentsRaw, meritRaw, effectiveIds.join(",")]);
 }
 
 // ─── Assigned Agent Lookup (dual-registry) ─────────────────────────────────
