@@ -52,6 +52,34 @@ const ESCROW_V3_ABI = [
     ],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "applyForTask",
+    inputs: [{ name: "taskId", type: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "getOpenTasks",
+    inputs: [
+      { name: "offset", type: "uint256" },
+      { name: "limit",  type: "uint256" },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "tuple[]",
+        components: [
+          { name: "id",         type: "uint256" },
+          { name: "agentId",    type: "uint256" },
+          { name: "reward",     type: "uint256" },
+          { name: "deadlineAt", type: "uint64"  },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
 ] as const;
 
 // ERC-20 minimal ABI for stake approval
@@ -307,7 +335,51 @@ export function createBlockchainClient(config: Config) {
     return txHash;
   }
 
-  return { client, getAgentId, getAgentExtended, submitResult, getTask, claimTask };
+  async function applyForTask(taskId: bigint): Promise<`0x${string}`> {
+    const privateKey = process.env.AGENT_PRIVATE_KEY as `0x${string}` | undefined;
+    if (!privateKey || privateKey.length < 10) throw new Error("AGENT_PRIVATE_KEY not set");
+    const account = privateKeyToAccount(privateKey);
+    const walletClient = createWalletClient({ account, chain, transport: http(config.rpcUrl) });
+
+    // applyForTask requires agent stake deposit (same as claimTask)
+    const task = await getTask(taskId);
+    const AGENT_STAKE_BPS = 500n;
+    const stake = (task.reward * AGENT_STAKE_BPS) / 10000n;
+    if (stake > 0n) {
+      await walletClient.writeContract({
+        address: task.token,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [config.escrowAddress, stake],
+      });
+      await new Promise(r => setTimeout(r, 3000));
+    }
+
+    const txHash = await walletClient.writeContract({
+      address: config.escrowAddress,
+      abi: ESCROW_V3_ABI,
+      functionName: "applyForTask",
+      args: [taskId],
+    });
+    console.log(`[on-chain] applyForTask(taskId=${taskId}) → ${txHash}`);
+    return txHash;
+  }
+
+  async function getOpenTasks(offset = 0n, limit = 20n): Promise<Array<{ id: bigint; agentId: bigint; reward: bigint; deadlineAt: bigint }>> {
+    try {
+      const result = await client.readContract({
+        address: config.escrowAddress,
+        abi: ESCROW_V3_ABI,
+        functionName: "getOpenTasks",
+        args: [offset, limit],
+      }) as Array<{ id: bigint; agentId: bigint; reward: bigint; deadlineAt: bigint }>;
+      return result;
+    } catch {
+      return [];
+    }
+  }
+
+  return { client, getAgentId, getAgentExtended, submitResult, getTask, claimTask, applyForTask, getOpenTasks };
 }
 
 // ─── ERC-8004 Trust Check ──────────────────────────────────────────────────────

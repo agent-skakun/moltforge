@@ -4,6 +4,7 @@ import fs from "fs";
 import { loadConfig } from "./config";
 import { createBlockchainClient, checkClientTrust, canHandleTask } from "./blockchain";
 import { executeResearch, buildMetadataURI, fetchAgentCard, assessAgentFromCard } from "./agent";
+import { startPoller } from "./poller";
 import { startTelegramBot } from "./telegram";
 import { checkAgentTrust } from "./trust";
 import { logExecution, createInputHash, createResultHash } from "./execution-log";
@@ -17,7 +18,7 @@ import {
 import type { RegisterRequest } from "./self-register";
 
 const config = loadConfig();
-const { getAgentId, getAgentExtended, submitResult, getTask, claimTask } = createBlockchainClient(config);
+const { getAgentId, getAgentExtended, submitResult, getTask, claimTask, applyForTask, getOpenTasks } = createBlockchainClient(config);
 const app = express();
 
 // ─── Result store — maps resultId → JSON payload ─────────────────────────────
@@ -754,6 +755,44 @@ app.listen(config.port, () => {
   console.log(`  A2A Card: http://localhost:${config.port}/.well-known/agent-card.json`);
   if (loadedSkillFiles.length > 0) {
     console.log(`  Skills:   ${loadedSkillFiles.length} loaded from ${SKILLS_DIR}`);
+  }
+
+  // Start autonomous polling loop (scan open tasks + watch applications)
+  if (process.env.AGENT_PRIVATE_KEY && process.env.AGENT_PRIVATE_KEY.length > 10) {
+    startPoller({
+      config,
+      getAgentId,
+      getTask,
+      getOpenTasks,
+      claimTask,
+      applyForTask,
+      submitResult,
+      executeTask: async (task) => {
+        // Parse description — JSON or raw string
+        let query = task.description;
+        try { const p = JSON.parse(task.description); query = p.description ?? p.title ?? query; } catch { /* raw */ }
+
+        // Build combined skills context
+        let combinedSkills = skillsContext;
+        const report = await executeResearch(query, {
+          systemPrompt: config.systemPrompt,
+          skillsContext: combinedSkills || undefined,
+          llmConfig: {
+            openaiApiKey: config.openaiApiKey,
+            anthropicApiKey: config.anthropicApiKey,
+            groqApiKey: config.groqApiKey,
+            model: config.llmModel,
+            temperature: config.temperature,
+            maxTokens: config.maxTokens,
+          },
+        });
+        const resultId = storeResult(report);
+        const agentBaseUrl = process.env.AGENT_URL || "https://agent.moltforge.cloud";
+        return { resultUrl: `${agentBaseUrl}/results/${resultId}` };
+      },
+    });
+  } else {
+    console.warn("[poller] AGENT_PRIVATE_KEY not set — polling disabled");
   }
 
   // Start Telegram bot if token is configured
