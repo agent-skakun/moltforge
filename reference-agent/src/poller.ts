@@ -58,8 +58,19 @@ export function startPoller(deps: PollerDeps): void {
           // Open task → apply and wait for client to select us
           else if (task.agentId === 0n) {
             console.log(`[poller] Task #${t.id} — open (reward=${Number(task.reward)/1e6} USDC), applying...`);
-            appliedTasks.add(t.id);
-            await deps.applyForTask(t.id);
+            appliedTasks.add(t.id);  // Mark before applying to prevent double-apply
+            try {
+              await deps.applyForTask(t.id);
+            } catch (applyErr) {
+              const msg = (applyErr as Error).message ?? "";
+              if (msg.includes("AlreadyApplied") || msg.includes("0x00a81806")) {
+                console.log(`[poller] Task #${t.id} — already applied, watching for selection`);
+                // Keep in appliedTasks — already applied, just wait
+              } else {
+                console.warn(`[poller] Task #${t.id} applyForTask failed: ${msg.slice(0, 80)}`);
+                appliedTasks.delete(t.id);  // Retry next scan
+              }
+            }
           }
         } catch (e) {
           console.warn(`[poller] Task #${t.id} error: ${(e as Error).message?.slice(0, 100)}`);
