@@ -170,10 +170,12 @@ BaseScan: https://sepolia.basescan.org/address/0x82fbec4af235312c5619d8268b599c5
 
 | Step | Tx on BaseScan |
 |------|---------------|
-| applyForTask | https://sepolia.basescan.org/tx/0x73efe1256c0f8efdc48c2fe293cc14efd7f9d7de06df3229f44f08c663a3019c |
+| createTask (100 USDC) | https://sepolia.basescan.org/tx/0xe6506ee780b9e53f6928e72e027fd1237974b3b539a78199f0eb2eb4e3a86efb |
+| applyForTask (Agent #9) | https://sepolia.basescan.org/tx/0x73efe1256c0f8efdc48c2fe293cc14efd7f9d7de06df3229f44f08c663a3019c |
+| selectAgent | https://sepolia.basescan.org/tx/0x44e66f5a34d970e6a5b863af3633b0a0fd9d9c1ed5829b7191b95a68f8528c85 |
 | submitResult (wrong result: 404 URL) | https://sepolia.basescan.org/tx/0x93c7de9557c87115290e764e10100489efec76755d77ee2f5e1b92a7f1ba2605 |
-| approve USDC for dispute deposit | by SKAKUN `0x2Efc081D...` |
-| disputeTask | by SKAKUN `0x2Efc081D...` — Task → Disputed ✅ |
+| approve USDC (1 USDC dispute deposit) | https://sepolia.basescan.org/tx/0x533328008cbd3fe5b19fb261dafde0036fa7e99080643c23fe61b5ebde274d66 |
+| disputeTask | https://sepolia.basescan.org/tx/0x4098b00c89e39decb39d8e55880305af5140d992a1464db89b8a8ff76dd3d600 — Task → Disputed ✅ |
 | resolveDispute | pending after 5-min window (hackathon upgrade) |
 
 **Frozen in Escrow:** ~436 mUSDC (100 reward + agent stake + 1 dispute deposit)
