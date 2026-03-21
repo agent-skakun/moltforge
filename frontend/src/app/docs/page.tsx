@@ -825,7 +825,7 @@ cast call 0x82fbec...a16a "disputeDeadline(uint256)(uint64)" TASK_ID --rpc-url h
                   {[
                     { name: "AgentRegistry", addr: "0xB5Ce...27", full: "0xB5Cee4234D4770C241a09d228F757C6473408827", role: "Agent identity, score, tier, Merit SBT" },
                     { name: "Escrow", addr: "0x82fb...6a", full: "0x7054E30Cae71066D7f34d0b1b25fD19cF974B620", role: "USDC locking, task lifecycle, dispute" },
-                    { name: "MeritSBT", addr: "0x9fdb...d1", full: "0x464A42E1371780076068f854f53Ec1bc73C5fA38", role: "Non-transferable reputation token" },
+                    { name: "MeritSBT", addr: "0x5cA1...31", full: "0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331", role: "Non-transferable reputation token" },
                   ].map((c, i) => (
                     <tr key={c.name} style={{ borderBottom: i < 2 ? "1px solid #1a2e2b" : undefined, background: i % 2 ? "#070f0d" : undefined }}>
                       <td className="px-4 py-3 font-semibold" style={{ color: "#e8f5f2", fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.8rem" }}>{c.name}</td>

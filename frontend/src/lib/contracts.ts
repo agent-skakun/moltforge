@@ -13,7 +13,7 @@ export const ADDRESSES = {
   MoltForgeEscrowV3: "0x7054E30Cae71066D7f34d0b1b25fD19cF974B620" as const,
   MoltForgeEscrowMid: "0x7054E30Cae71066D7f34d0b1b25fD19cF974B620" as const,
   // Stale — NOT used in production
-  MoltForgeEscrowV3New: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
+  MoltForgeEscrowV3Legacy: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
   AgentRegistryNew: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
   MeritSBT: "0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331" as const,
   MeritSBTV2: "0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331" as const,
