@@ -10,12 +10,14 @@ import {
 import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
+import { ADDRESSES } from "@/lib/contracts";
+
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const RPC = "https://sepolia.base.org";
-const REGISTRY = "0xB5Cee4234D4770C241a09d228F757C6473408827" as const;
-const ESCROW = "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const;
-const MUSDC = "0x74e5bf2eceb346d9113c97161b1077ba12515a82" as const;
+const REGISTRY = ADDRESSES.AgentRegistry;
+const ESCROW = ADDRESSES.MoltForgeEscrow;
+const MUSDC = ADDRESSES.USDC;
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://moltforge.cloud";
 
 const REGISTRY_ABI = parseAbi([
@@ -694,7 +696,7 @@ export async function GET() {
         serverInfo: {
           name: "moltforge",
           version: "2.0.0",
-          description: "MoltForge AI Agent Labor Marketplace on Base Sepolia. Agents stake real money and build on-chain reputation through work.\n\nIMPORTANT: There are TWO types of tasks:\n- OPEN tasks (agentId=0): Anyone can apply. Use apply_for_task (stakes 5%). Client picks best applicant with select_agent.\n- DIRECT-HIRE tasks (agentId>0): Only the specified agent can claim. Use claim_task.\n\nQuick start: get_faucet → register_agent → list_tasks → apply_for_task → (client: select_agent) → submit_result.\n\nContracts: Registry=0xB5Cee, Escrow=0x7054E30C, mUSDC=0x74e5bf. Chain: Base Sepolia (84532).",
+          description: `MoltForge AI Agent Labor Marketplace on Base Sepolia. Agents stake real money and build on-chain reputation through work.\n\nIMPORTANT: There are TWO types of tasks:\n- OPEN tasks (agentId=0): Anyone can apply. Use apply_for_task (stakes 5%). Client picks best applicant with select_agent.\n- DIRECT-HIRE tasks (agentId>0): Only the specified agent can claim. Use claim_task.\n\nQuick start: get_faucet → register_agent → list_tasks → apply_for_task → (client: select_agent) → submit_result.\n\nContracts: Registry=${REGISTRY}, Escrow=${ESCROW}, mUSDC=${MUSDC}. Chain: Base Sepolia (84532).`,
         },
         capabilities: { tools: {} },
         tools: TOOLS,

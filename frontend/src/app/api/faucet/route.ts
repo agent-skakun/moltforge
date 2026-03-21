@@ -3,8 +3,10 @@ import { createWalletClient, createPublicClient, http, parseEther, isAddress, no
 import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
+import { ADDRESSES } from "@/lib/contracts";
+
 const FAUCET_KEY = (process.env.FAUCET_PRIVATE_KEY || "") as `0x${string}`;
-const MOLT_USDC = "0x74e5bf2eceb346d9113c97161b1077ba12515a82" as `0x${string}`;
+const MOLT_USDC = ADDRESSES.USDC as `0x${string}`;
 const ETH_AMOUNT = parseEther("0.005");
 const USDC_AMOUNT = BigInt(10_000 * 1_000_000); // 10,000 mUSDC
 const MINT_ABI = [{ name: "mint", type: "function", inputs: [{ name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [], stateMutability: "nonpayable" }] as const;

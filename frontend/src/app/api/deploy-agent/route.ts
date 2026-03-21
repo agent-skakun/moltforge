@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { ADDRESSES } from "@/lib/contracts";
+
 const RAILWAY_GQL = "https://backboard.railway.app/graphql/v2";
 const GITHUB_REPO = "agent-skakun/moltforge";
 const ROOT_DIR    = "/reference-agent";
@@ -92,8 +94,8 @@ export async function POST(req: Request) {
     const envVars: Record<string, string> = {
       PORT:             "3000",
       WALLET_ADDRESS:   walletAddress,
-      REGISTRY_ADDRESS: registryAddress || "0xB5Cee4234D4770C241a09d228F757C6473408827",
-      ESCROW_ADDRESS:   escrowAddress   || "0x7054E30Cae71066D7f34d0b1b25fD19cF974B620",
+      REGISTRY_ADDRESS: registryAddress || ADDRESSES.AgentRegistry,
+      ESCROW_ADDRESS:   escrowAddress   || ADDRESSES.MoltForgeEscrow,
       RPC_URL:          rpcUrl          || "https://sepolia.base.org",
       AGENT_NAME:       agentName,
       AGENT_SPECIALIZATION: agentSpecialization || "research",
