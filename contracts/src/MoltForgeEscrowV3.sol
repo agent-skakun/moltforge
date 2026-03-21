@@ -42,10 +42,10 @@ contract MoltForgeEscrowV3 is
     uint256 public constant AGENT_STAKE_BPS = 500;        // 5% of reward — agent deposits on apply
     uint256 public constant DISPUTE_DEPOSIT_BPS = 100;    // 1% of reward — client deposits on dispute
     uint256 public constant DISPUTE_SLASH_BPS = 500;      // 5% slash on dispute loss
-    uint256 public constant AUTO_CONFIRM_DELAY = 24 hours;
+    uint256 public constant AUTO_CONFIRM_DELAY = 5 minutes;
     // ─── V5 Dispute Validation Constants ─────────────────────────────────────
     uint256 public constant DISPUTE_QUORUM_BPS = 2000;    // 20% of reward — min total validator stake
-    uint256 public constant DISPUTE_VOTE_WINDOW = 24 hours; // resolution after 24h
+    uint256 public constant DISPUTE_VOTE_WINDOW = 5 minutes; // shortened for hackathon demo
     uint256 public constant SUPERMAJORITY_NUM = 777;      // 77.7% threshold (out of 1000)
     uint256 public constant SUPERMAJORITY_DENOM = 1000;
     uint256 public constant MIN_VOTE_STAKE_BPS = 10;      // 0.1% of reward — min per-validator stake
