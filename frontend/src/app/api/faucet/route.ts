@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createWalletClient, createPublicClient, http, parseEther, isAddress } from "viem";
+import { createWalletClient, createPublicClient, http, parseEther, isAddress, nonceManager } from "viem";
 import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -25,16 +25,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid address" }, { status: 400 });
     }
 
-    const account = privateKeyToAccount(FAUCET_KEY);
-    const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http("https://sepolia.base.org") });
+    // nonceManager ensures sequential nonces even when ETH + mUSDC are sent in same request
+    const account = { ...privateKeyToAccount(FAUCET_KEY), nonceManager };
     const publicClient = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") });
+    const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http("https://sepolia.base.org") });
     const now = Date.now();
     const result: Record<string, unknown> = { address, network: "base-sepolia", chainId: 84532 };
 
     const wantEth = !token || token === "ETH";
     const wantUsdc = !token || token === "mUSDC";
 
-    // ETH
+    // ETH — sent first so it uses lower nonce
     if (wantEth) {
       const last = claimedEth.get(address.toLowerCase());
       if (last && now - last < 24 * 3600 * 1000) {
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // mUSDC — independent of ETH
+    // mUSDC — nonceManager auto-increments nonce after ETH tx
     if (wantUsdc) {
       const last = claimedUsdc.get(address.toLowerCase());
       if (last && now - last < 24 * 3600 * 1000) {

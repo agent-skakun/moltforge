@@ -20,6 +20,22 @@ const config = loadConfig();
 const { getAgentId, getAgentExtended, submitResult } = createBlockchainClient(config);
 const app = express();
 
+// ─── Result store — maps resultId → JSON payload ─────────────────────────────
+// Allows /results/:id to serve a real HTTP URL instead of data: URI
+const resultStore = new Map<string, unknown>();
+let resultCounter = 0;
+
+function storeResult(data: unknown): string {
+  const id = `${Date.now()}-${++resultCounter}`;
+  resultStore.set(id, data);
+  // Keep last 500 results in memory
+  if (resultStore.size > 500) {
+    const oldest = resultStore.keys().next().value;
+    if (oldest) resultStore.delete(oldest);
+  }
+  return id;
+}
+
 app.use(express.json());
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
@@ -280,6 +296,12 @@ app.post("/tasks", async (req, res) => {
         maxTokens: config.maxTokens,
       },
     });
+
+    // Store result and build HTTP resultUrl (instead of data: URI)
+    const resultId = storeResult(report);
+    const agentUrl = process.env.AGENT_URL || "https://agent.moltforge.cloud";
+    const resultUrl = `${agentUrl}/results/${resultId}`;
+    // Keep data: URI as fallback for on-chain storage (contracts have size limits)
     const metadataURI = buildMetadataURI(report);
 
     // Auto-submit on-chain if taskId was provided
@@ -287,7 +309,7 @@ app.post("/tasks", async (req, res) => {
     if (taskId !== undefined && taskId !== null) {
       try {
         const id = BigInt(taskId);
-        onChainTxHash = await submitResult(id, metadataURI);
+        onChainTxHash = await submitResult(id, resultUrl);
       } catch (onChainErr) {
         console.error(`[on-chain] submitResult failed for taskId=${taskId}:`, (onChainErr as Error).message);
         // Non-fatal: return result anyway, log the error
@@ -295,7 +317,7 @@ app.post("/tasks", async (req, res) => {
     }
 
     logExecution({ taskId: taskId ?? null, decision: "executed", toolsUsed: ["executeResearch", "buildMetadataURI"], inputHash: createInputHash(query), resultHash: createResultHash(JSON.stringify(report)), durationMs: 0 });
-    res.json({ report, metadataURI, onChainTxHash });
+    res.json({ report, resultUrl, metadataURI, onChainTxHash });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -384,20 +406,25 @@ app.post("/tasks/x402", async (req, res) => {
         maxTokens: config.maxTokens,
       },
     });
+
+    // Store result and build HTTP resultUrl
+    const resultId2 = storeResult(report);
+    const agentUrl2 = process.env.AGENT_URL || "https://agent.moltforge.cloud";
+    const resultUrl2 = `${agentUrl2}/results/${resultId2}`;
     const metadataURI = buildMetadataURI(report);
 
     let onChainTxHash: string | null = null;
     if (taskId !== undefined && taskId !== null) {
       try {
         const id = BigInt(taskId);
-        onChainTxHash = await submitResult(id, metadataURI);
+        onChainTxHash = await submitResult(id, resultUrl2);
       } catch (onChainErr) {
         console.error(`[on-chain] submitResult failed for taskId=${taskId}:`, (onChainErr as Error).message);
       }
     }
 
     logExecution({ taskId: taskId ?? null, decision: "executed-x402", toolsUsed: ["executeResearch", "buildMetadataURI"], inputHash: createInputHash(query), resultHash: createResultHash(JSON.stringify(report)), durationMs: 0 });
-    res.json({ report, metadataURI, onChainTxHash, payment: { accepted: true, protocol: "x402" } });
+    res.json({ report, resultUrl: resultUrl2, metadataURI, onChainTxHash, payment: { accepted: true, protocol: "x402" } });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -651,6 +678,16 @@ app.post("/config", (req, res) => {
 // GET /agent-config — return current config
 app.get("/agent-config", (_req, res) => {
   res.json(agentConfig);
+});
+
+// GET /results/:id — serve stored task execution results as real HTTP URLs
+// Allows on-chain resultUrl to be a resolvable HTTPS endpoint (not data: URI)
+app.get("/results/:id", (req, res) => {
+  const data = resultStore.get(req.params.id);
+  if (!data) {
+    return res.status(404).json({ error: "Result not found or expired" });
+  }
+  res.json(data);
 });
 
 app.listen(config.port, () => {
