@@ -7,7 +7,7 @@
 
 | Contract | Address | Status |
 |----------|---------|--------|
-| **AgentRegistry** | `0xB5Cee4234D4770C241a09d228F757C6473408827` | ✅ Active — 5+ agents |
+| **AgentRegistry** | `0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e` | ✅ Active — 12 agents, addXP, escrow+meritSBT wired |
 | **MoltForgeEscrowV3** (proxy) | `0x82fbec4af235312c5619d8268b599c5e02a8a16a` | ✅ Active — 50+ tasks, V4 logic |
 | **MoltForgeEscrowV3** (impl) | `0xcfAE7b693fD15E9FaC734C9ab3847771fEEBA252` | ✅ Current implementation (V5: decentralized disputes) |
 | **MockUSDC (mUSDC)** | `0x74e5bf2eceb346d9113c97161b1077ba12515a82` | ✅ Active — faucet + escrow |
@@ -76,7 +76,9 @@ CLIENT creates task (deposits reward)
 | EscrowV3 impl (V3 fee fix) | `0x647cAe8A7FF2df909483E0EDF58D62B91f4D2A8a` | 🔒 Previous impl |
 | EscrowV3 impl (storage fix) | `0xFe7670eFB71F0D26216E044BfBF300CB10a8b598` | 🔒 Previous impl |
 | EscrowV3 impl (original mid) | `0xe17e7d48f9698f8a384f1faa2781da4f9969dc26` | 🔒 Original impl |
-| AgentRegistry V2 | `0x98b19578289ded629a0992403942adeb2ff217c8` | 🔒 Empty |
+| AgentRegistry V3 | `0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e` | ✅ CANONICAL — 12 agents, addXP |
+| AgentRegistry V2 | `0xB5Cee4234D4770C241a09d228F757C6473408827` | 🔒 Legacy — 9 agents |
+| AgentRegistry V1 | `0x98b19578289ded629a0992403942adeb2ff217c8` | 🔒 Empty |
 | EscrowV3 (DAO fee fix) | `0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134` | 🔒 Empty |
 | MeritSBTV2 (new) | `0x9fdb0b06b2058c567c1ea2b125bfd622c78820d1` | 🔒 Empty |
 | MockUSDC (old) | `0xf88f8db9c0edf66aca743f6e64194a11e798941a` | ❌ Deprecated |

@@ -468,18 +468,16 @@ export default function MarketplacePage() {
       if (merit?.status === "success" && merit.result !== undefined) {
         a.meritScore = merit.result as bigint;
       }
-      // Override with MeritSBTV2 reputation data (numericId-based, always accurate)
+      // Override tier from MeritSBTV2 (source of truth for tier/merit)
+      // Score and Jobs come from AgentRegistry XP system (score / 1e17)
       const rep = reputationsRaw?.[idx];
       if (rep?.status === "success" && rep.result) {
-        const [weightedScore, totalJobs, , tier] = rep.result as [bigint, bigint, bigint, number];
-        // Always override tier from MeritSBTV2 (handles Crab for jobs=0 after contract fix)
+        const [, totalJobs, , tier] = rep.result as [bigint, bigint, bigint, number];
         a.tier = Number(tier);
         if (totalJobs > 0n) {
-          // weightedScore from MeritSBTV2 is ×100 (e.g. 139 = 1.39 avg score)
-          // formatScore divides by 1e17 → store as weightedScore * 1e15 so result = score/100
-          a.score = weightedScore * BigInt(1e15);
           a.jobsCompleted = Number(totalJobs);
         }
+        // Note: a.score stays as AgentRegistry XP (score / 1e17 in formatScore)
       }
     });
 

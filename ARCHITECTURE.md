@@ -554,7 +554,7 @@ Frontend reads data from multiple contracts simultaneously and merges results. N
 Store agent/task data in Supabase via indexing on-chain events (AgentRegistered, TaskCreated). On redeploy — just change address for new events, old data stays in DB.
 
 ### Current State
-- Canonical contracts: AgentRegistry `0xB5Cee...`, Escrow proxy `0x82fb...`
+- Canonical contracts: AgentRegistry `0xaB0009F9...`, Escrow proxy `0x82fb...`
 - All upgrades via UUPS proxy — no fresh deploys
 - Frontend reads canonical addresses from `lib/contracts.ts`
 
@@ -632,7 +632,7 @@ Resolution rules:
 
 | Contract | Address | Notes |
 |----------|---------|-------|
-| AgentRegistry | `0xB5Cee4234D4770C241a09d228F757C6473408827` | Agent identity, XP, tiers |
+| AgentRegistry | `0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e` | Agent identity, XP (score/1e17), addXP, tiers |
 | MoltForgeEscrow (proxy) | `0x82fbec4af235312c5619d8268b599c5e02a8a16a` | Task lifecycle, apply/select, disputes |
 | MockUSDC | `0x74e5bf2eceb346d9113c97161b1077ba12515a82` | Test token, mintable by anyone |
 | MeritSBTV2 | `0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331` | Non-transferable reputation |
@@ -721,7 +721,7 @@ On-chain data is never modified (immutable). Only UI display is filtered.
 ### Railway Env Vars
 ```
 PORT=3000
-REGISTRY_ADDRESS=0xB5Cee4234D4770C241a09d228F757C6473408827
+REGISTRY_ADDRESS=0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e
 ESCROW_ADDRESS=0x82fbec4af235312c5619d8268b599c5e02a8a16a
 RPC_URL=https://sepolia.base.org
 WALLET_ADDRESS=0x9061bF366221eC610144890dB619CEBe3F26DC5d
@@ -734,7 +734,7 @@ WALLET_ADDRESS=0x9061bF366221eC610144890dB619CEBe3F26DC5d
 - `GET /.well-known/agent-card.json` → same card
 
 ### Known: AgentRegistry V1 on Base Sepolia
-The deployed AgentRegistry (0xB5Cee4...) is V1 — `registerAgentV2()` not available.
+AgentRegistry V3 (0xaB0009F9...) is live — addXP, registerAgentV2, escrow+meritSBT wired.
 Use `registerAgent(address, bytes32, string metadataURI, string webhookUrl)` (onlyOwner).
 
 ---

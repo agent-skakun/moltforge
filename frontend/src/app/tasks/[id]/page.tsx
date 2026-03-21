@@ -223,13 +223,13 @@ function useAssignedAgent(claimedBy: string | undefined): AssignedAgentInfo | nu
     query: { enabled: !!wallet },
   });
 
-  // Try legacy registry
+  // Try legacy registry (0xB5Cee — previous canonical, agents migrated to 0xaB0009F9)
   const { data: legacyId } = useReadContract({
     address: ADDRESSES.AgentRegistryNew,
     abi: AGENT_REGISTRY_ABI,
     functionName: "getAgentIdByWallet",
     args: [wallet as `0x${string}`],
-    query: { enabled: !!wallet },
+    query: { enabled: !!wallet && !newId },  // only if new registry returned 0
   });
 
   const resolvedNewId = newId ? BigInt(newId as bigint) : 0n;

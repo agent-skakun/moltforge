@@ -314,12 +314,10 @@ export default function AgentProfilePage() {
       {/* ── Stats ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {(() => {
-          // MeritSBTV2 is the single source of truth
-          const meritJobs = repTotalJobs !== undefined ? repTotalJobs : (agentOk && agent ? agent.jobsCompleted : 0);
-          // Score: weightedScore / 100 (e.g. 140 → "1.40")
-          const scoreDisplay = repWeightedScore !== undefined && repWeightedScore > 0n
-            ? (Number(repWeightedScore) / 100).toFixed(2)
-            : (agentOk && agent ? formatScore(agent.score) : "0");
+          // Score = XP from AgentRegistry (score / 1e17) — primary per BigBoss
+          const scoreDisplay = agentOk && agent ? formatScore(agent.score) : "0";
+          // Jobs from AgentRegistry (jobsCompleted)
+          const meritJobs = agentOk && agent ? agent.jobsCompleted : (repTotalJobs ?? 0);
           return [
             { label: "Score", value: scoreDisplay, color: "#1db8a8" },
             { label: "Jobs",  value: meritJobs.toString(), color: "#f07828" },
