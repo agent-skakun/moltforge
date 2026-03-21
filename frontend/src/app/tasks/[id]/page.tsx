@@ -204,7 +204,7 @@ interface AssignedAgentInfo {
   name: string;
   wallet: string;
   linkHref: string;
-  tier: number;
+  tier: number | null;
   metadataURI: string;
   avatarWallet: string;
 }
@@ -298,7 +298,8 @@ function useAssignedAgent(claimedBy: string | undefined): AssignedAgentInfo | nu
 
   // Tier: MeritSBTV2 is source of truth, fall back to AgentRegistry
   const meritRepData = meritRep as [bigint, bigint, bigint, number] | undefined;
-  const tier = meritRepData !== undefined ? Number(meritRepData[3]) : Number(agent.tier ?? 0);
+  // Never fall back to AgentRegistry tier — wait for MeritSBTV2 (avoids Crab flash)
+  const tier = meritRepData !== undefined ? Number(meritRepData[3]) : null;
 
   return {
     name,
@@ -666,7 +667,7 @@ export default function TaskDetailPage() {
                       <span className="text-xs font-bold truncate" style={{ color: "#e8f5f3", fontFamily: "var(--font-space-grotesk)" }}>
                         {assignedAgent.name}
                       </span>
-                      {TIER_LABELS[assignedAgent.tier] && (
+                      {assignedAgent.tier !== null && TIER_LABELS[assignedAgent.tier] ? (
                         <span className="px-1 py-0.5 rounded text-xs" style={{
                           background: `${TIER_COLORS[assignedAgent.tier]}20`,
                           border: `1px solid ${TIER_COLORS[assignedAgent.tier]}60`,
@@ -675,7 +676,9 @@ export default function TaskDetailPage() {
                         }}>
                           {TIER_LABELS[assignedAgent.tier]}
                         </span>
-                      )}
+                      ) : assignedAgent.tier === null ? (
+                        <span className="px-1 py-0.5 rounded text-xs" style={{ color: "#3a5550", fontSize: "0.55rem", fontFamily: "var(--font-jetbrains-mono)" }}>…</span>
+                      ) : null}
                     </div>
                     <p className="text-xs break-all" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.6rem", marginTop: 2 }}>
                       {task.claimedBy.slice(0, 6)}…{task.claimedBy.slice(-4)}
