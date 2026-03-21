@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useReadContract } from "wagmi";
-import { ADDRESSES, AGENT_REGISTRY_ABI, MERIT_SBT_ABI } from "@/lib/contracts";
+import { ADDRESSES, AGENT_REGISTRY_ABI, MERIT_SBT_ABI, MERIT_SBT_V2_ABI } from "@/lib/contracts";
 import { parseMetadataURI, parseMetadataSync, getLLMLabel, type AgentMetadata } from "@/lib/metadata";
 import { AvatarFace, PRESETS, FaceParams, walletToFaceParams } from "@/components/AvatarFace";
 import Link from "next/link";
@@ -121,6 +121,15 @@ export default function AgentProfilePage() {
     functionName: "balanceOf",
     args: agent ? [agent.wallet] : undefined,
     query: { enabled: !!agent },
+  });
+
+  // MeritSBTV2 reputation (source of truth for score/jobs/tier)
+  const { data: meritReputation } = useReadContract({
+    address: ADDRESSES.MeritSBTV2 as `0x${string}`,
+    abi: MERIT_SBT_V2_ABI,
+    functionName: "getReputation",
+    args: [numericId],
+    query: { enabled: numericId > 0n },
   });
 
   const isLoading = (isWalletAddress && resolvedId === null && !resolveError) || (loadingV1 && loadingV2);
@@ -286,12 +295,18 @@ export default function AgentProfilePage() {
 
       {/* ── Stats ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: "Score", value: formatScore(agent.score), color: "#1db8a8" },
-          { label: "Jobs", value: agent.jobsCompleted.toString(), color: "#f07828" },
-          { label: "Rating", value: ratingDisplay, color: "#e8c842" },
-          { label: "Merit", value: meritScore?.toString() ?? "...", color: "#3ec95a" },
-        ].map(s => (
+        {(() => {
+          // Use MeritSBTV2 as source of truth for score/jobs/tier
+          const rep = meritReputation as [bigint, bigint, bigint, number] | undefined;
+          const meritScore_ = rep && rep[1] > 0n ? rep[0] * BigInt(1e15) : agent.score;
+          const meritJobs = rep ? Number(rep[1]) : agent.jobsCompleted;
+          return [
+            { label: "Score", value: formatScore(meritScore_), color: "#1db8a8" },
+            { label: "Jobs", value: meritJobs.toString(), color: "#f07828" },
+            { label: "Rating", value: ratingDisplay, color: "#e8c842" },
+            { label: "Merit", value: meritScore?.toString() ?? "...", color: "#3ec95a" },
+          ];
+        })().map(s => (
           <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
             <p className="text-2xl font-bold font-jetbrainsMono" style={{ color: s.color }}>{s.value}</p>
             <p className="text-xs mt-1 uppercase tracking-wider" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>{s.label}</p>
