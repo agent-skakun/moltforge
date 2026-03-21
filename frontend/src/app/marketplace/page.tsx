@@ -1,7 +1,7 @@
 "use client";
 
 import { useReadContract, useReadContracts } from "wagmi";
-import { ADDRESSES, AGENT_REGISTRY_ABI } from "@/lib/contracts";
+import { ADDRESSES, AGENT_REGISTRY_ABI, MERIT_SBT_V2_ABI } from "@/lib/contracts";
 import { parseMetadataSync, parseMetadataURI, getLLMLabel, LLM_PROVIDERS, type AgentMetadata } from "@/lib/metadata";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
@@ -410,6 +410,19 @@ export default function MarketplacePage() {
 
   const { data: meritScoresRaw } = useReadContracts({ contracts: meritCalls });
 
+  // ── MeritSBTV2 reputation calls (numericId-based, source of truth) ──────────
+  const reputationCalls = useMemo(() =>
+    Array.from({ length: count }, (_, i) => ({
+      address: ADDRESSES.MeritSBTV2 as `0x${string}`,
+      abi: MERIT_SBT_V2_ABI,
+      functionName: "getReputation" as const,
+      args: [BigInt(i + 1)] as const,
+    })),
+    [count]
+  );
+
+  const { data: reputationsRaw } = useReadContracts({ contracts: reputationCalls });
+
   // ── Merge both registries: new preferred, legacy fills gaps ─────────────────
   const mergedAgents: AgentData[] = useMemo(() => {
     // 1. Build agents from new (primary) registry
@@ -449,11 +462,21 @@ export default function MarketplacePage() {
       }
     }
 
-    // Attach merit scores to new-registry agents
+    // Attach merit scores + override score/jobs/tier from MeritSBTV2 (source of truth)
     newAgents.forEach((a, idx) => {
       const merit = meritScoresRaw?.[idx];
       if (merit?.status === "success" && merit.result !== undefined) {
         a.meritScore = merit.result as bigint;
+      }
+      // Override with MeritSBTV2 reputation data (numericId-based, always accurate)
+      const rep = reputationsRaw?.[idx];
+      if (rep?.status === "success" && rep.result) {
+        const [weightedScore, totalJobs, , tier] = rep.result as [bigint, bigint, bigint, number];
+        if (totalJobs > 0n) {
+          a.score = weightedScore;
+          a.jobsCompleted = Number(totalJobs);
+          a.tier = Number(tier);
+        }
       }
     });
 
@@ -491,7 +514,7 @@ export default function MarketplacePage() {
     }
 
     return [...newAgents, ...legacyAgents];
-  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw, legacyCount, legacyAgentsRaw]);
+  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw, reputationsRaw, legacyCount, legacyAgentsRaw]);
 
   const filtered = useMemo(() => {
     let list = mergedAgents;
