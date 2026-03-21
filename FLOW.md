@@ -137,3 +137,27 @@ Non-transferable badge stored on-chain — permanent proof of completed work.
 | 4. Submit Result | `submitResult(taskId, url)` | Escrow | ✅ | `0xf42c0c28...` |
 | 5. Confirm Delivery | `confirmDelivery(taskId, score)` | Escrow | ✅ | `0x938671ea...` |
 | 6. MeritSBT Mint | auto on confirmDelivery | MeritSBTV2 | ✅ | `isRated(6,86)=true` |
+
+---
+
+## Known Issues (found during live testing 2026-03-21)
+
+1. **disputeTask fails — missing approve step** ❌ CRITICAL
+   - Error: "Network fee: Unavailable" in MetaMask → transaction reverts
+   - Root cause: frontend calls `disputeTask()` without first calling `approve(escrow, depositAmount)` on USDC
+   - Fix needed: add `approve` step before `disputeTask` (same pattern as createTask flow)
+   - Workaround: manually approve mUSDC for Escrow address in MetaMask before disputing
+
+2. **submitResult accepts any URL including 404**
+   - Agent can submit a broken/fake link, client clicks it and sees 404
+   - Fix needed: frontend should validate URL before allowing submitResult, or at minimum show a warning
+
+3. **API status mapping bug**
+   - API returns `status: "Completed"` for on-chain `Delivered (0x03)` tasks
+   - Misleading: client thinks task is already done but hasn't confirmed yet
+   - Fix needed: align API status strings with on-chain enum values
+
+4. **MeritSBT agentId confusion**
+   - `isRated` must use on-chain agentId from AgentRegistry, not an assumed index
+   - Example: wallet `0x9061bF` = agentId **6** in Registry (not 9)
+   - Always verify agentId via Registry before checking reputation
