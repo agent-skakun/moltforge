@@ -27,7 +27,7 @@ const ESCROW_ABI = parseAbi([
   "function withdrawApplication(uint256 taskId)",
   "function submitResult(uint256 taskId, string resultUrl)",
   "function taskCount() view returns (uint256)",
-  "function getTask(uint256 taskId) view returns (uint256 id, address client, uint256 agentId, address token, uint256 reward, uint256 fee, string description, string fileUrl, string resultUrl, uint8 status, address claimedBy, uint8 score, uint64 createdAt, uint64 deadlineAt, uint256 agentStake, uint256 disputeDeposit, uint64 deliveredAt)",
+  "function getTask(uint256 taskId) view returns ((uint256 id, address client, uint256 agentId, address token, uint256 reward, uint256 fee, string description, string fileUrl, string resultUrl, uint8 status, address claimedBy, uint8 score, uint64 createdAt, uint64 deadlineAt, uint256 agentStake, uint256 disputeDeposit, uint64 deliveredAt) task)",
   "function getApplications(uint256 taskId) view returns ((address applicant, uint256 agentId, uint256 stake, uint64 appliedAt)[])",
   "function getApplicationCount(uint256 taskId) view returns (uint256)",
 ]);
@@ -390,11 +390,9 @@ async function handleApplyForTask(args: Record<string, unknown>) {
       abi: ESCROW_ABI,
       functionName: "getTask",
       args: [BigInt(taskId)],
-    });
-    // task is a tuple: [id, client, agentId, token, reward, ...]
-    const taskArr = task as unknown as unknown[];
-    reward = taskArr[4] as bigint;
-    const agentId = taskArr[2] as bigint;
+    }) as { reward: bigint; agentId: bigint };
+    reward = task.reward;
+    const agentId = task.agentId;
     if (agentId !== 0n) {
       return {
         error: true,
@@ -566,10 +564,9 @@ async function handleGetTask(args: Record<string, unknown>) {
       abi: ESCROW_ABI,
       functionName: "getTask",
       args: [BigInt(taskId)],
-    });
-    const t = task as unknown as unknown[];
+    }) as { id: bigint; client: string; agentId: bigint; token: string; reward: bigint; fee: bigint; description: string; fileUrl: string; resultUrl: string; status: number; claimedBy: string; score: number; createdAt: bigint; deadlineAt: bigint; agentStake: bigint; disputeDeposit: bigint; deliveredAt: bigint };
     const statusNames = ["Open", "Claimed", "InProgress", "Delivered", "Confirmed", "Cancelled", "Disputed"];
-    const agentId = Number(t[2]);
+    const agentId = Number(task.agentId);
     const appCount = await publicClient.readContract({
       address: ESCROW,
       abi: ESCROW_ABI,
@@ -577,26 +574,26 @@ async function handleGetTask(args: Record<string, unknown>) {
       args: [BigInt(taskId)],
     });
     return {
-      id: Number(t[0]),
-      client: t[1],
+      id: Number(task.id),
+      client: task.client,
       agentId,
       taskType: agentId === 0 ? "OPEN (use apply_for_task)" : `DIRECT-HIRE for agent #${agentId} (use claim_task)`,
-      token: t[3],
-      reward: (t[4] as bigint).toString(),
-      fee: (t[5] as bigint).toString(),
-      description: t[6],
-      fileUrl: t[7],
-      resultUrl: t[8],
-      status: statusNames[Number(t[9])] || `Unknown(${t[9]})`,
-      claimedBy: t[10],
-      score: Number(t[11]),
-      createdAt: Number(t[12]),
-      deadlineAt: Number(t[13]),
-      agentStake: (t[14] as bigint).toString(),
-      disputeDeposit: (t[15] as bigint).toString(),
-      deliveredAt: Number(t[16]),
+      token: task.token,
+      reward: task.reward.toString(),
+      fee: task.fee.toString(),
+      description: task.description,
+      fileUrl: task.fileUrl,
+      resultUrl: task.resultUrl,
+      status: statusNames[Number(task.status)] || `Unknown(${task.status})`,
+      claimedBy: task.claimedBy,
+      score: Number(task.score),
+      createdAt: Number(task.createdAt),
+      deadlineAt: Number(task.deadlineAt),
+      agentStake: task.agentStake.toString(),
+      disputeDeposit: task.disputeDeposit.toString(),
+      deliveredAt: Number(task.deliveredAt),
       applicationCount: Number(appCount),
-      stakeRequired: ((t[4] as bigint) * 500n / 10000n).toString() + " (5% of reward)",
+      stakeRequired: (task.reward * 500n / 10000n).toString() + " (5% of reward)",
     };
   } catch (e) {
     throw new Error(`Task #${taskId} not found: ${e instanceof Error ? e.message : String(e)}`);
