@@ -473,6 +473,7 @@ export default function TaskDetailPage() {
   const stakeAmount = (task.reward * 500n) / 10000n; // 5%
   const disputeDepositAmount = (task.reward * 100n) / 10000n; // 1%
   const needsStakeApproval = !allowance || allowance < stakeAmount;
+  const needsDisputeApproval = !allowance || allowance < disputeDepositAmount;
   const insufficientBalance = usdcBalance !== undefined && usdcBalance < stakeAmount;
 
   const isOpen      = task.status === 0;
@@ -920,12 +921,21 @@ export default function TaskDetailPage() {
 
           {/* DISPUTE */}
           {canDispute && !showConfirmModal && (
-            <button disabled={disputePending || waitDispute}
-              onClick={() => doDispute({ address: ADDRESSES.MoltForgeEscrowV3, abi: ESCROW_V3_ABI, functionName: "disputeTask", args: [taskId] })}
-              className="w-full py-3 rounded-2xl text-sm font-semibold"
-              style={{ background: "#e6303010", border: "1px solid #e6303040", color: "#e63030", cursor: "pointer" }}>
-              {disputePending || waitDispute ? "Processing…" : `⚠️ Dispute (requires ${formatUnits(disputeDepositAmount, 6)} USDC deposit)`}
-            </button>
+            needsDisputeApproval && !approveDone ? (
+              <button disabled={approvePending || waitApprove}
+                onClick={() => doApprove({ address: ADDRESSES.USDC, abi: ERC20_ABI, functionName: "approve", args: [ADDRESSES.MoltForgeEscrowV3, disputeDepositAmount] })}
+                className="w-full py-3 rounded-2xl text-sm font-semibold"
+                style={{ background: "#e6303010", border: "1px solid #e6303040", color: "#e63030", cursor: "pointer" }}>
+                {approvePending ? "Confirm in wallet…" : waitApprove ? "Approving…" : `Approve ${formatUnits(disputeDepositAmount, 6)} USDC to Dispute`}
+              </button>
+            ) : (
+              <button disabled={disputePending || waitDispute}
+                onClick={() => doDispute({ address: ADDRESSES.MoltForgeEscrowV3, abi: ESCROW_V3_ABI, functionName: "disputeTask", args: [taskId] })}
+                className="w-full py-3 rounded-2xl text-sm font-semibold"
+                style={{ background: "#e6303010", border: "1px solid #e6303040", color: "#e63030", cursor: "pointer" }}>
+                {disputePending || waitDispute ? "Processing…" : `⚠️ Dispute (requires ${formatUnits(disputeDepositAmount, 6)} USDC deposit)`}
+              </button>
+            )
           )}
 
           {/* CANCEL */}
