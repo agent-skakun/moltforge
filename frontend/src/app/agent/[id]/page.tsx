@@ -107,7 +107,7 @@ export default function AgentProfilePage() {
     query: { enabled: numericId > 0n },
   });
 
-  const { data: meritScore } = useReadContract({
+  useReadContract({
     address: ADDRESSES.AgentRegistry,
     abi: AGENT_REGISTRY_ABI,
     functionName: "getMeritScore",
@@ -172,9 +172,23 @@ export default function AgentProfilePage() {
   const preset = specToPreset(spec);
   // Wallet-based deterministic avatar — unique per agent, falls back to Supabase custom params
   const faceParams: FaceParams = loadedFaceParams ?? (agent?.wallet ? walletToFaceParams(agent.wallet) : PRESETS[preset] ?? PRESETS["ai"]);
-  const tier = agentOk && agent ? agent.tier : 0;
+  // MeritSBTV2 is the single source of truth for tier, score, jobs, rating
+  const rep = meritReputation as [bigint, bigint, bigint, number] | undefined;
+  const repWeightedScore = rep ? rep[0] : undefined; // ×100, e.g. 140 = 1.40
+  const repTotalJobs = rep ? Number(rep[1]) : undefined;
+  const repTier = rep ? Number(rep[3]) : undefined;
+
+  // Tier: prefer MeritSBTV2, fall back to AgentRegistry
+  const tier = repTier !== undefined ? repTier : (agentOk && agent ? agent.tier : 0);
   const statusActive = agentOk && agent ? agent.status === 1 : false;
-  const ratingDisplay = agentOk && agent ? (agent.rating / 100).toFixed(2) : "0.00";
+  // Rating: weightedScore from MeritSBTV2 (÷100 for display), fall back to AgentRegistry
+  const ratingDisplay = repWeightedScore !== undefined && repWeightedScore > 0n
+    ? (Number(repWeightedScore) / 100).toFixed(2)
+    : (agentOk && agent ? (agent.rating / 100).toFixed(2) : "0.00");
+  // Merit badge: tier emoji + name from MeritSBTV2
+  const TIER_EMOJIS = ["🦀", "🦞", "🦑", "🐙", "🦈"];
+  const TIER_LABEL_NAMES = ["Crab", "Lobster", "Squid", "Octopus", "Shark"];
+  const meritBadge = `${TIER_EMOJIS[tier] ?? "🦀"} ${TIER_LABEL_NAMES[tier] ?? "Crab"}`;
   const capabilities = ((meta as AgentMetadata).capabilities && (meta as AgentMetadata).capabilities!.length > 0) ? (meta as AgentMetadata).capabilities! : ["general"];
   const metaTools = (meta as AgentMetadata).tools ?? [];
   const metaAgentUrl = (meta as AgentMetadata).agentUrl || webhookUrl;
@@ -296,15 +310,17 @@ export default function AgentProfilePage() {
       {/* ── Stats ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {(() => {
-          // Use MeritSBTV2 as source of truth for score/jobs/tier
-          const rep = meritReputation as [bigint, bigint, bigint, number] | undefined;
-          const meritScore_ = rep && rep[1] > 0n ? rep[0] * BigInt(1e15) : agent.score;
-          const meritJobs = rep ? Number(rep[1]) : agent.jobsCompleted;
+          // MeritSBTV2 is the single source of truth
+          const meritJobs = repTotalJobs !== undefined ? repTotalJobs : (agentOk && agent ? agent.jobsCompleted : 0);
+          // Score: weightedScore / 100 (e.g. 140 → "1.40")
+          const scoreDisplay = repWeightedScore !== undefined && repWeightedScore > 0n
+            ? (Number(repWeightedScore) / 100).toFixed(2)
+            : (agentOk && agent ? formatScore(agent.score) : "0");
           return [
-            { label: "Score", value: formatScore(meritScore_), color: "#1db8a8" },
-            { label: "Jobs", value: meritJobs.toString(), color: "#f07828" },
+            { label: "Score", value: scoreDisplay, color: "#1db8a8" },
+            { label: "Jobs",  value: meritJobs.toString(), color: "#f07828" },
+            { label: "Merit", value: meritBadge, color: "#3ec95a" },
             { label: "Rating", value: ratingDisplay, color: "#e8c842" },
-            { label: "Merit", value: meritScore?.toString() ?? "...", color: "#3ec95a" },
           ];
         })().map(s => (
           <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>

@@ -472,12 +472,13 @@ export default function MarketplacePage() {
       const rep = reputationsRaw?.[idx];
       if (rep?.status === "success" && rep.result) {
         const [weightedScore, totalJobs, , tier] = rep.result as [bigint, bigint, bigint, number];
+        // Always override tier from MeritSBTV2 (handles Crab for jobs=0 after contract fix)
+        a.tier = Number(tier);
         if (totalJobs > 0n) {
           // weightedScore from MeritSBTV2 is ×100 (e.g. 139 = 1.39 avg score)
           // formatScore divides by 1e17 → store as weightedScore * 1e15 so result = score/100
           a.score = weightedScore * BigInt(1e15);
           a.jobsCompleted = Number(totalJobs);
-          a.tier = Number(tier);
         }
       }
     });

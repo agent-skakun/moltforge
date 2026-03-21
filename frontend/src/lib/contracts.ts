@@ -194,15 +194,16 @@ export const ESCROW_V2_ABI = [
 
 export const TIER_NAMES = ["Crab", "Lobster", "Squid", "Octopus", "Shark"] as const;
 
-// V3 task status names
-export const V3_STATUS_NAMES = ["Open", "Claimed", "InProgress", "Delivered", "Confirmed", "Cancelled", "Disputed"] as const;
+// V3 task status names — mirrors on-chain enum exactly:
+// 0=Open, 1=Claimed, 2=Delivered, 3=Confirmed, 4=Disputed, 5=Resolved, 6=Cancelled
+export const V3_STATUS_NAMES = ["Open", "Claimed", "Delivered", "Confirmed", "Disputed", "Resolved", "Cancelled"] as const;
 export const V3_STATUS_COLORS = {
   0: { label: "Open",       color: "#1db8a8", bg: "#1db8a815" },
   1: { label: "Claimed",    color: "#f07828", bg: "#f0782815" },
-  2: { label: "In Progress",color: "#f07828", bg: "#f0782815" },
-  3: { label: "Delivered",  color: "#e8c842", bg: "#e8c84215" },
-  4: { label: "Confirmed",  color: "#3ec95a", bg: "#3ec95a15" },
-  5: { label: "Cancelled",  color: "#6b7280", bg: "#6b728015" },
-  6: { label: "Disputed",   color: "#e63030", bg: "#e6303015" },
+  2: { label: "Delivered",  color: "#e8c842", bg: "#e8c84215" },
+  3: { label: "Confirmed",  color: "#3ec95a", bg: "#3ec95a15" },
+  4: { label: "Disputed",   color: "#e63030", bg: "#e6303015" },
+  5: { label: "Resolved",   color: "#a855f7", bg: "#a855f715" },
+  6: { label: "Cancelled",  color: "#6b7280", bg: "#6b728015" },
 } as const;
 // cache bust 1773876746

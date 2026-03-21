@@ -192,6 +192,9 @@ contract MeritSBTV2 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // ─── Internal ─────────────────────────────────────────────────────────────
 
     function _computeTier(uint256 jobs, uint256 score100, uint256 volume) internal pure returns (Tier) {
+        if (jobs == 0) {
+            return Tier.Crab;
+        }
         if (jobs >= PLATINUM_JOBS && score100 >= PLATINUM_SCORE * 10 && volume >= PLATINUM_VOL) {
             return Tier.Shark;
         }

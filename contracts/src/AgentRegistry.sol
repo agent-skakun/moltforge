@@ -48,6 +48,9 @@ contract AgentRegistry {
     /// @notice Owner of the registry (can suspend agents, update score)
     address public owner;
 
+    /// @notice Authorized escrow contract that can call addXP / recordJobCompleted
+    address public escrow;
+
     /// @notice Reference to MeritSBT contract for Tier 1 minting
     MeritSBT public meritSBT;
 
@@ -76,12 +79,14 @@ contract AgentRegistry {
     event TierUpgraded(uint256 indexed numericId, Tier newTier);
     event VerifierSBTMinted(uint256 indexed numericId, address indexed wallet, uint256 tokenId);
     event MeritSBTSet(address meritSBT);
+    event EscrowSet(address escrow);
 
     // -------------------------------------------------------------------------
     // Errors
     // -------------------------------------------------------------------------
 
     error NotOwner();
+    error NotEscrow();
     error AlreadyRegistered();
     error AgentNotFound();
     error ZeroAddress();
@@ -95,6 +100,11 @@ contract AgentRegistry {
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
+        _;
+    }
+
+    modifier onlyEscrow() {
+        if (msg.sender != escrow) revert NotEscrow();
         _;
     }
 
@@ -113,6 +123,12 @@ contract AgentRegistry {
     function setMeritSBT(address _meritSBT) external onlyOwner {
         meritSBT = MeritSBT(_meritSBT);
         emit MeritSBTSet(_meritSBT);
+    }
+
+    /// @notice Set the authorized escrow contract for addXP / recordJobCompleted
+    function setEscrow(address _escrow) external onlyOwner {
+        escrow = _escrow;
+        emit EscrowSet(_escrow);
     }
 
     // -------------------------------------------------------------------------
@@ -208,7 +224,7 @@ contract AgentRegistry {
         bool    isLate,
         bool    disputeLost,
         bool    disputeOpened
-    ) external onlyOwner {
+    ) external onlyEscrow {
         _requireExists(numericId);
         Agent storage a = _agents[numericId];
 
@@ -261,7 +277,7 @@ contract AgentRegistry {
     /// @notice Record a completed job and update rating
     /// @param numericId   Agent numeric ID
     /// @param ratingX100  Rating for this job (0–500, i.e. 0–5.00 stars ×100)
-    function recordJobCompleted(uint256 numericId, uint32 ratingX100) external onlyOwner {
+    function recordJobCompleted(uint256 numericId, uint32 ratingX100) external onlyEscrow {
         _requireExists(numericId);
         Agent storage a = _agents[numericId];
         a.jobsCompleted++;
