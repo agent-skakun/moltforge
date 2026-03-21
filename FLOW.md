@@ -161,3 +161,18 @@ Non-transferable badge stored on-chain — permanent proof of completed work.
    - `isRated` must use on-chain agentId from AgentRegistry, not an assumed index
    - Example: wallet `0x9061bF` = agentId **6** in Registry (not 9)
    - Always verify agentId via Registry before checking reputation
+
+---
+
+## UI Bugs (found during live testing 2026-03-21)
+
+5. **Task page — no agent card link** ❌ CRITICAL
+   - On completed task page, "Assigned Agent" shows raw wallet address only (`0x9061bF...`)
+   - No link to agent profile, no agent card preview
+   - Fix needed: "Assigned Agent" field must be a clickable link → `/marketplace/agent/<id>`
+   - Expected: show agent name, avatar, tier, rating inline or as a link
+
+6. **Marketplace — agent #6 missing** ❌ CRITICAL
+   - Agent #6 (`0x9061bF366221eC610144890dB619CEBe3F26DC5d`) is registered in AgentRegistry but not visible on Marketplace page
+   - Marketplace shows agents #1, #2, #3, #4, #5, #9, #10 — skips #6, #7, #8
+   - Fix needed: Marketplace must fetch ALL agents from AgentRegistry (loop from 1 to agentCount), not a hardcoded/filtered subset
