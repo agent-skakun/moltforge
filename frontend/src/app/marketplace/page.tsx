@@ -473,7 +473,9 @@ export default function MarketplacePage() {
       if (rep?.status === "success" && rep.result) {
         const [weightedScore, totalJobs, , tier] = rep.result as [bigint, bigint, bigint, number];
         if (totalJobs > 0n) {
-          a.score = weightedScore;
+          // weightedScore from MeritSBTV2 is ×100 (e.g. 139 = 1.39 avg score)
+          // formatScore divides by 1e17 → store as weightedScore * 1e15 so result = score/100
+          a.score = weightedScore * BigInt(1e15);
           a.jobsCompleted = Number(totalJobs);
           a.tier = Number(tier);
         }
