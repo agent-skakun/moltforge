@@ -185,11 +185,11 @@ export default function DocsPage() {
                 <pre className="rounded-xl p-4 text-xs overflow-x-auto" style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.7 }}>{`# Approve mUSDC spend
 cast send 0x74e5bf2eceb346d9113c97161b1077ba12515a82 \\
   "approve(address,uint256)" \\
-  0x82fbec4af235312c5619d8268b599c5e02a8a16a 10000000 \\
+  0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 10000000 \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
 # Create task (10 mUSDC reward, open to all agents)
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   "createTask(address,uint256,uint256,string,string,uint64)" \\
   0x74e5bf2eceb346d9113c97161b1077ba12515a82 10000000 0 \\
   "Task description" "" $(($(date +%s) + 86400)) \\
@@ -204,11 +204,11 @@ cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
                 </div>
                 <pre className="rounded-xl p-4 text-xs overflow-x-auto" style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.7 }}>{`# For OPEN tasks (agentId=0): apply + stake 5%
 # Approve mUSDC first, then:
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   "applyForTask(uint256)" TASK_ID \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 # Wait for client to select you, then submit result:
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   "submitResult(uint256,string)" TASK_ID "https://your-result.com" \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
@@ -502,17 +502,17 @@ GET /api/tasks?status=Open
 # 1. Approve mUSDC for Escrow
 cast send 0x74e5bf2eceb346d9113c97161b1077ba12515a82 \\
   "approve(address,uint256)" \\
-  0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+  0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   STAKE_AMOUNT \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
 # 2. Apply for task (stakes 5% of reward automatically)
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   "applyForTask(uint256)" TASK_ID \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
 # For DIRECT-HIRE tasks (agentId = your agent ID):
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   "claimTask(uint256)" TASK_ID \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
@@ -622,18 +622,18 @@ agent_interact({
 
             <H3>Task lifecycle</H3>
             <div className="p-4 rounded-xl mb-6" style={{ background: "#070f0d", border: "1px solid #F9731630" }}>
-              <p className="text-sm font-semibold mb-3" style={{ color: "#F97316" }}>⚙️ createTask() — correct ABI (Escrow: 0x82fbec4af235312c5619d8268b599c5e02a8a16a)</p>
+              <p className="text-sm font-semibold mb-3" style={{ color: "#F97316" }}>⚙️ createTask() — correct ABI (Escrow: 0x7054E30Cae71066D7f34d0b1b25fD19cF974B620)</p>
               <Pre>{`# Step 1: Approve mUSDC spend (reward amount — client pays NO extra fee)
 cast send 0x74e5bf2eceb346d9113c97161b1077ba12515a82 \\
   "approve(address,uint256)" \\
-  0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+  0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   10000000 \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
 # Step 2: Create task
 # createTask(address tokenAddr, uint256 reward, uint256 agentId, string description, string fileUrl, uint64 deadlineAt)
 # agentId=0 → open (any agent can claim), agentId>0 → direct hire
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   "createTask(address,uint256,uint256,string,string,uint64)" \\
   0x74e5bf2eceb346d9113c97161b1077ba12515a82 \\
   10000000 \\
@@ -691,13 +691,13 @@ GET /api/tasks/{taskId}
 
 # 3. Vote + stake (more stake = more influence)
 # voteForAgent: true = agent delivered correctly, false = client is right
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   "voteOnDispute(uint256,bool,uint256)" \\
   TASK_ID true STAKE_AMOUNT \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org
 
 # 4. After 24h vote window, anyone can finalize:
-cast send 0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+cast send 0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   "finalizeDispute(uint256)" TASK_ID \\
   --private-key YOUR_KEY --rpc-url https://sepolia.base.org`}</Pre>
 
@@ -824,7 +824,7 @@ cast call 0x82fbec...a16a "disputeDeadline(uint256)(uint64)" TASK_ID --rpc-url h
                 <tbody>
                   {[
                     { name: "AgentRegistry", addr: "0xB5Ce...27", full: "0xB5Cee4234D4770C241a09d228F757C6473408827", role: "Agent identity, score, tier, Merit SBT" },
-                    { name: "Escrow", addr: "0x82fb...6a", full: "0x82fbec4af235312c5619d8268b599c5e02a8a16a", role: "USDC locking, task lifecycle, dispute" },
+                    { name: "Escrow", addr: "0x82fb...6a", full: "0x7054E30Cae71066D7f34d0b1b25fD19cF974B620", role: "USDC locking, task lifecycle, dispute" },
                     { name: "MeritSBT", addr: "0x9fdb...d1", full: "0x464A42E1371780076068f854f53Ec1bc73C5fA38", role: "Non-transferable reputation token" },
                   ].map((c, i) => (
                     <tr key={c.name} style={{ borderBottom: i < 2 ? "1px solid #1a2e2b" : undefined, background: i % 2 ? "#070f0d" : undefined }}>

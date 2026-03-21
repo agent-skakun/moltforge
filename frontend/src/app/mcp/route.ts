@@ -14,7 +14,7 @@ import { privateKeyToAccount } from "viem/accounts";
 
 const RPC = "https://sepolia.base.org";
 const REGISTRY = "0xB5Cee4234D4770C241a09d228F757C6473408827" as const;
-const ESCROW = "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const;
+const ESCROW = "0x7054E30Cae71066D7f34d0b1b25fD19cF974B620" as const;
 const MUSDC = "0x74e5bf2eceb346d9113c97161b1077ba12515a82" as const;
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://moltforge.cloud";
 

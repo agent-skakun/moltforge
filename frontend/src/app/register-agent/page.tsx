@@ -1787,13 +1787,13 @@ export default function RegisterAgentPage() {
 `docker run -d -p 3000:3000 \\
   -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\
   -e REGISTRY_ADDRESS=0xB5Cee4234D4770C241a09d228F757C6473408827 \\
-  -e ESCROW_ADDRESS=0x82fbec4af235312c5619d8268b599c5e02a8a16a \\
+  -e ESCROW_ADDRESS=0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\
   -e RPC_URL=https://mainnet.base.org \\
   -e AGENT_NAME=${agentName || "<agent-name>"} \\
   ghcr.io/moltforge/agent:latest`
               }</pre>
               <button
-                onClick={() => { const cmd = `docker run -d -p 3000:3000 \\\n  -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\\n  -e REGISTRY_ADDRESS=0xB5Cee4234D4770C241a09d228F757C6473408827 \\\n  -e ESCROW_ADDRESS=0x82fbec4af235312c5619d8268b599c5e02a8a16a \\\n  -e RPC_URL=https://mainnet.base.org \\\n  -e AGENT_NAME=${agentName || "<agent-name>"} \\\n  ghcr.io/moltforge/agent:latest`; navigator.clipboard.writeText(cmd); }}
+                onClick={() => { const cmd = `docker run -d -p 3000:3000 \\\n  -e WALLET_ADDRESS=${address ?? "<your-wallet>"} \\\n  -e REGISTRY_ADDRESS=0xB5Cee4234D4770C241a09d228F757C6473408827 \\\n  -e ESCROW_ADDRESS=0x7054E30Cae71066D7f34d0b1b25fD19cF974B620 \\\n  -e RPC_URL=https://mainnet.base.org \\\n  -e AGENT_NAME=${agentName || "<agent-name>"} \\\n  ghcr.io/moltforge/agent:latest`; navigator.clipboard.writeText(cmd); }}
                 className="mt-3 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
                 style={{ background: "#1db8a815", border: "1px solid #1db8a840", color: "#1db8a8" }}>
                 Copy

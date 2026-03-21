@@ -424,9 +424,12 @@ contract MoltForgeEscrowV3 is
 
         emit DeliveryConfirmed(taskId, t.client, score, agentPayout);
 
-        // Mint merit (non-reverting)
+        // Mint merit (non-reverting) — low-level call absorbs ALL errors including Panic and custom errors
         if (meritSBT != address(0) && agentId > 0) {
-            try IMeritSBTV2(meritSBT).mintMerit(agentId, taskId, score, reward) {} catch {}
+            meritSBT.call(abi.encodeWithSelector(
+                IMeritSBTV2.mintMerit.selector,
+                agentId, taskId, score, reward
+            ));
         }
 
         // Add XP (non-reverting, using low-level call to handle Panic errors)
@@ -435,7 +438,7 @@ contract MoltForgeEscrowV3 is
             uint256 rewardUsd = reward / 1e6;
             bytes memory callData = abi.encodeWithSelector(
                 IAgentRegistry.addXP.selector,
-                agentId, rewardUsd, uint32(score * 100), isLate, false, false
+                agentId, rewardUsd, uint32(uint256(score) * 100), isLate, false, false
             );
             // solhint-disable-next-line avoid-low-level-calls
             agentRegistry.call(callData); // intentionally ignore return value and errors
