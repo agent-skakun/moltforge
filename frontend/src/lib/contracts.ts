@@ -8,10 +8,10 @@ export const ADDRESSES = {
   // AgentRegistry V2: 9 agents registered (JARVIS + real participants)
   AgentRegistry: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
   AgentRegistryV2: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
-  // MoltForgeEscrowV3 (proxy) — fixed uint8 overflow in confirmDelivery (uint32(uint256(score)*100))
-  MoltForgeEscrow: "0x7054E30Cae71066D7f34d0b1b25fD19cF974B620" as const,
-  MoltForgeEscrowV3: "0x7054E30Cae71066D7f34d0b1b25fD19cF974B620" as const,
-  MoltForgeEscrowMid: "0x7054E30Cae71066D7f34d0b1b25fD19cF974B620" as const,
+  // MoltForgeEscrowV3 (proxy) — canonical (80 tasks), upgraded impl with uint32 overflow fix
+  MoltForgeEscrow: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
+  MoltForgeEscrowV3: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
+  MoltForgeEscrowMid: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
   // Stale — NOT used in production
   MoltForgeEscrowV3Legacy: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
   AgentRegistryNew: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
