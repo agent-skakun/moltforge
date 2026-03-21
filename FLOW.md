@@ -205,6 +205,7 @@ BaseScan: https://sepolia.basescan.org/address/0x82fbec4af235312c5619d8268b599c5
 | Escrow | — | — | 0 (fully drained) |
 
 > ⚠️ Note: On-chain status = `Cancelled (6)`. API incorrectly returns "Resolved" — known Bug #7 (status mapping).
+> ⚠️ This is NOT a normal client cancellation. Regular clients cannot cancel a Claimed task unless the deadline has passed. This cancel was triggered by the **platform owner** via emergency `cancel(uint256)` admin function during an unplanned test by DEVMUS. In production this function exists for dispute resolution edge cases only.
 
 ---
 
