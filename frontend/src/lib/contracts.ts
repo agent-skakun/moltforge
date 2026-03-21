@@ -5,15 +5,16 @@ export const IS_TESTNET = true;
 
 export const ADDRESSES = {
   // Base Sepolia (testnet) — CANONICAL addresses (single source of truth)
-  AgentRegistry: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
-  AgentRegistryV2: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
-  MoltForgeEscrow: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  MoltForgeEscrowV3: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  // Mid-deploy Escrow (same as canonical — alias kept for compatibility)
-  MoltForgeEscrowMid: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  // Legacy test deploys — NOT used in production (0 tasks, kept for reference only)
+  // AgentRegistry: 9 agents registered, used by Escrow V3 Fresh
+  AgentRegistry: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
+  AgentRegistryV2: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
+  // MoltForgeEscrowV3 Fresh — clean deploy 2026-03-21, E2E verified on-chain
+  MoltForgeEscrow: "0x1a192E435Ac28fDcFae0C973d8984d9A28767da7" as const,
+  MoltForgeEscrowV3: "0x1a192E435Ac28fDcFae0C973d8984d9A28767da7" as const,
+  MoltForgeEscrowMid: "0x1a192E435Ac28fDcFae0C973d8984d9A28767da7" as const,
+  // Legacy — NOT used in production
   MoltForgeEscrowV3New: "0xAe800137a6Eb0cfda74B66075C1b2CD25C9eF134" as const,
-  AgentRegistryNew: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
+  AgentRegistryNew: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
   MeritSBT: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
   MeritSBTV2: "0x464A42E1371780076068f854f53Ec1bc73C5fA38" as const,
   MoltForgeDAO: "0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177" as const,
