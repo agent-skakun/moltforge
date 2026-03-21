@@ -8,11 +8,11 @@ export const ADDRESSES = {
   // AgentRegistry V3: 12 agents, addXP, escrow+meritSBT wired (2026-03-22)
   AgentRegistry: "0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e" as const,
   AgentRegistryV2: "0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e" as const,
-  // MoltForgeEscrowV3 (proxy) — canonical (80 tasks), upgraded impl with uint32 overflow fix
-  MoltForgeEscrow: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  MoltForgeEscrowV3: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  MoltForgeEscrowMid: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  // Stale — NOT used in production
+  // MoltForgeEscrow V4 (new proxy) — agentRegistry=V3, XP system live (2026-03-22)
+  MoltForgeEscrow: "0xCE082276200A0bf1ca34b0595592fea3c72F3aa2" as const,
+  MoltForgeEscrowV3: "0xCE082276200A0bf1ca34b0595592fea3c72F3aa2" as const,
+  MoltForgeEscrowMid: "0xCE082276200A0bf1ca34b0595592fea3c72F3aa2" as const,
+  // Legacy — old escrow with 80+ tasks (read-only reference)
   MoltForgeEscrowV3Legacy: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
   AgentRegistryNew: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
   AgentRegistryLegacy: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
