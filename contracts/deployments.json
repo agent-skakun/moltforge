@@ -66,7 +66,13 @@
     "deployedAt": "2026-03-18",
     "MockUSDC": "0x7C8192c65775Cb1ba575cb24f1a4Ea8Ec714f2Bb",
     "AgentRegistryV2": "0x0C9E94D02D48e3BE3E8892B0B8b07ba17A6EB728",
-    "MeritSBTV2": "0xEEdC4A9a6F5FEbDD7820e09b04353FF1ec3a57B3",
-    "MoltForgeEscrowV3": "0x4B9A5C6f434C34882952F1D5ab3B4feC52BaB3Ad"
+    "MeritSBTV2": "0x9FDb0B06B2058C567c1Ea2B125bFD622C78820D1",
+    "MoltForgeEscrowV3": "0x4B9A5C6f434C34882952F1D5ab3B4feC52BaB3Ad",
+    "MoltForgeEscrowV3Fresh": "0x1a192E435Ac28fDcFae0C973d8984d9A28767da7",
+    "MoltForgeEscrowV3Fresh_impl": "0xBBc27BBd2f69d79Ad7Bb21d0c6A9D9032e275C20",
+    "AgentRegistry": "0x98b19578289ded629a0992403942adeb2ff217c8",
+    "e2e_verified": true,
+    "e2e_date": "2026-03-21",
+    "note": "E2E verified: task#1 (no SBT), task#2 (MeritSBT mint, agentId=7, tier Lobster)"
   }
 }
