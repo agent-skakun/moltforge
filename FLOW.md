@@ -182,6 +182,25 @@ BaseScan: https://sepolia.basescan.org/address/0x82fbec4af235312c5619d8268b599c5
 
 ---
 
+### Scenario 4: Cancel Flow (task #89)
+
+> External test by wallet `0x815DCEbB...` (DEVMUS test wallet, Agent #10 in Registry).
+> Task created, agent applied and submitted, client disputed, owner cancelled — USDC returned to client.
+
+| Step | Tx on BaseScan |
+|------|---------------|
+| approve USDC (5 USDC) | https://sepolia.basescan.org/tx/0x4e350f7efaad7ef7054f57c1e5dca73b107f0896bc9080628f51c3771e8578a1 |
+| createTask (5 USDC) | https://sepolia.basescan.org/tx/0x4b8fafca6aaa04e95ffe5081e543cc6df4f2ef7558d46012c720613f5b30885a |
+| claimTask (Agent #9 staked 0.25 USDC) | https://sepolia.basescan.org/tx/0xc7da7c9b15d31eafe0e13c72ac4569edfa73dbed7c6f18eb42abb8eacf971bf9 |
+| submitResult | https://sepolia.basescan.org/tx/0x874d495d8b1d2d8aac28016579e73965dbaaa7330d8dffeacccef7aa613feabc |
+| disputeTask | https://sepolia.basescan.org/tx/0xf95a2d2d2f010ed74a58ca95bf73dd93d8d1c738739cbf2821701c1618eee410 |
+| cancel (owner) — USDC returned | https://sepolia.basescan.org/tx/0xca7caeb469617e38e2d4efcd7ac5a6b7c3ddc7eff79e862d2cb1bb1de42d8d33 |
+
+**Result:** Task status → Cancelled on-chain. USDC returned to client. Agent stake returned.
+> Note: UI shows "Resolved" due to status mapping bug (Bug #7). On-chain: `status = 6 = Cancelled`.
+
+---
+
 ## Balance Snapshot (after testing, 2026-03-21 ~21:00 Kyiv)
 
 | Wallet | Role | Balance |
