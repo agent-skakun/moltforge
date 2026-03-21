@@ -156,8 +156,11 @@ BaseScan: https://sepolia.basescan.org/address/0x82fbec4af235312c5619d8268b599c5
 
 | Step | Tx on BaseScan |
 |------|---------------|
+| createTask (100 USDC) | https://sepolia.basescan.org/tx/0x6aecc20e257797d1c54aaa7083fff514de79cfd87ed70651563f85e6d8cef346 |
+| applyForTask | https://sepolia.basescan.org/tx/0xece6e56651e1c76b2b1dcddc45a5cbe9b87bff1bcfb58e47aebf58a3c990fbe8 |
+| selectAgent | https://sepolia.basescan.org/tx/0x932886206d6525e35248a994c473c5e82d68283d285dfff776f63d7dca51d845 |
 | submitResult | https://sepolia.basescan.org/tx/0x94506f12576d8122933d4884ea430d5b96629611185f748c09a31b15f3370ecb |
-| confirmDelivery (score=1) | confirmed by SKAKUN `0x2Efc081D...` |
+| confirmDelivery (score=1) | https://sepolia.basescan.org/tx/0xb956a7d97fb0f9eb09d4c7f5c0c4cf80bcebe06212cfaa3f9897ff2fe8c6b408 |
 
 **Result:** Agent received ~100 USDC despite score=1. Low score hurt reputation: weightedScore 400 → 139.
 
