@@ -145,21 +145,22 @@ export function canHandleTask(task: TaskInfo, agentId: bigint): {
     return { canHandle: false, reason: "empty or too-short description" };
   }
 
-  // HARD CHECK: deliverables and acceptanceCriteria required
-  // Tasks without these fields are ambiguous — agent cannot objectively win a dispute
-  if (parsedDesc) {
-    const resolution = parsedDesc.resolution as Record<string, unknown> | undefined;
-    if (!resolution) {
-      return { canHandle: false, reason: "missing resolution (no deliverables/acceptanceCriteria)" };
-    }
-    const deliverables = (resolution.deliverables as string | undefined)?.trim();
-    const criteria = (resolution.acceptanceCriteria as string | undefined)?.trim();
-    if (!deliverables || deliverables.length < 3) {
-      return { canHandle: false, reason: "missing deliverables — cannot objectively complete" };
-    }
-    if (!criteria || criteria.length < 3) {
-      return { canHandle: false, reason: "missing acceptanceCriteria — cannot objectively complete" };
-    }
+  // HARD CHECK: task must be valid JSON with resolution.deliverables + resolution.acceptanceCriteria
+  // Raw string descriptions (no JSON) are rejected — no way to objectively verify completion
+  if (!parsedDesc) {
+    return { canHandle: false, reason: "description is not JSON — missing resolution fields" };
+  }
+  const resolution = parsedDesc.resolution as Record<string, unknown> | undefined;
+  if (!resolution) {
+    return { canHandle: false, reason: "missing resolution (no deliverables/acceptanceCriteria)" };
+  }
+  const deliverables = (resolution.deliverables as string | undefined)?.trim();
+  const criteria = (resolution.acceptanceCriteria as string | undefined)?.trim();
+  if (!deliverables || deliverables.length < 3) {
+    return { canHandle: false, reason: "missing deliverables — cannot objectively complete" };
+  }
+  if (!criteria || criteria.length < 3) {
+    return { canHandle: false, reason: "missing acceptanceCriteria — cannot objectively complete" };
   }
 
   return { canHandle: true, reason: "ok" };
