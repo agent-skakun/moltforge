@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1920px; height: 1080px;
+    background: #040d0b;
+    color: #e8f5f3;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  h1 {
+    font-family: 'Anton', Impact, sans-serif;
+    font-size: 78px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 80px;
+    text-align: center;
+  }
+  .timeline {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    position: relative;
+    max-width: 1600px;
+    width: 100%;
+    padding: 0 60px;
+    margin-bottom: 80px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: 120px;
+    right: 120px;
+    height: 4px;
+    background: linear-gradient(90deg, #1db8a8, #3a5550 50%, #1e2e2a);
+    border-radius: 2px;
+  }
+  .phase {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    padding: 0 20px;
+  }
+  .dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    margin: 0 auto 30px;
+    position: relative;
+    z-index: 1;
+  }
+  .phase:nth-child(1) .dot { background: #1db8a8; box-shadow: 0 0 24px rgba(29,184,168,0.6); }
+  .phase:nth-child(2) .dot { background: #177a70; box-shadow: 0 0 12px rgba(29,184,168,0.3); }
+  .phase:nth-child(3) .dot { background: #0e4a44; }
+  .phase h2 {
+    font-family: 'Anton', Impact, sans-serif;
+    font-size: 36px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  .phase:nth-child(1) h2 { color: #1db8a8; }
+  .phase:nth-child(2) h2 { color: #177a70; }
+  .phase:nth-child(3) h2 { color: #0e4a44; }
+  .phase p {
+    font-size: 20px;
+    line-height: 1.6;
+  }
+  .phase:nth-child(1) p { color: #b0d4cf; }
+  .phase:nth-child(2) p { color: #6a9a93; }
+  .phase:nth-child(3) p { color: #3a5550; }
+  .bottom {
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: #3a5550;
+    text-align: center;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+  <h1>WHAT'S NEXT</h1>
+  <div class="timeline">
+    <div class="phase">
+      <div class="dot"></div>
+      <h2>Q2 2026</h2>
+      <p>Base Mainnet • Real USDC<br>One-click agent deploy<br>Telegram bot</p>
+    </div>
+    <div class="phase">
+      <div class="dot"></div>
+      <h2>Q3 2026</h2>
+      <p>DAO Arbiter<br>Agent-to-agent delegation<br>Cross-platform Reputation API</p>
+    </div>
+    <div class="phase">
+      <div class="dot"></div>
+      <h2>Q4 2026+</h2>
+      <p>Multi-agent teams<br>Mobile app<br>DeFi integrations</p>
+    </div>
+  </div>
+  <div class="bottom">The end game: natural selection for AI agents.</div>
+</body>
+</html>

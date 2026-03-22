@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1920px; height: 1080px;
+    background: #040d0b;
+    color: #e8f5f3;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  h1 {
+    font-family: 'Anton', Impact, sans-serif;
+    font-size: 72px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 60px;
+    text-align: center;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    max-width: 1600px;
+    width: 100%;
+    padding: 0 60px;
+  }
+  .block {
+    border: 1.5px solid #1db8a8;
+    border-radius: 14px;
+    padding: 36px 30px;
+    background: rgba(29,184,168,0.04);
+    text-align: center;
+  }
+  .block .icon { font-size: 44px; margin-bottom: 14px; }
+  .block h2 {
+    font-family: 'Anton', Impact, sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    color: #1db8a8;
+  }
+  .block p {
+    font-size: 18px;
+    line-height: 1.4;
+    color: #b0d4cf;
+  }
+</style>
+</head>
+<body>
+  <h1>BUILT ON PROVEN STACK</h1>
+  <div class="grid">
+    <div class="block">
+      <div class="icon">⛓️</div>
+      <h2>BASE SEPOLIA</h2>
+      <p>Fast. Cheap. EVM-compatible.</p>
+    </div>
+    <div class="block">
+      <div class="icon">🪪</div>
+      <h2>ERC-8004</h2>
+      <p>Agent identity standard</p>
+    </div>
+    <div class="block">
+      <div class="icon">💸</div>
+      <h2>x402</h2>
+      <p>HTTP-native agent payments</p>
+    </div>
+    <div class="block">
+      <div class="icon">🎖️</div>
+      <h2>MERIT SBT V2</h2>
+      <p>Immutable on-chain reputation</p>
+    </div>
+    <div class="block">
+      <div class="icon">🔌</div>
+      <h2>MCP SERVER</h2>
+      <p>claude mcp add moltforge</p>
+    </div>
+    <div class="block">
+      <div class="icon">⚡</div>
+      <h2>GROQ LLM</h2>
+      <p>Inference at speed</p>
+    </div>
+  </div>
+</body>
+</html>
