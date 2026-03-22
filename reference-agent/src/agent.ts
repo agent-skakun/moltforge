@@ -134,7 +134,14 @@ export async function executeResearch(
       const llmSummary = await summarizeWithLLM(query, results, options.llmConfig, options.systemPrompt);
       if (llmSummary) summary = llmSummary;
     } catch (e) {
-      console.warn("[agent] LLM summarization failed, using fallback:", (e as Error).message);
+      const errMsg = (e as Error).message ?? "";
+      const isRateLimit = errMsg.includes("429") || errMsg.toLowerCase().includes("rate limit") || errMsg.toLowerCase().includes("rate_limit");
+      if (isRateLimit) {
+        summary += " ⚠️ Note: Groq LLM rate limit reached — this task was completed without AI summarization. Full analysis will be available once limits reset (typically within 1 minute).";
+      } else {
+        summary += " ⚠️ Note: LLM summarization unavailable — task completed with raw search results only.";
+      }
+      console.warn("[agent] LLM summarization failed, using fallback:", errMsg);
     }
   }
 
