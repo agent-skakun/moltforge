@@ -139,9 +139,27 @@ export function canHandleTask(task: TaskInfo, agentId: bigint): {
 
   // Check description has a query we can process
   let desc = task.description;
-  try { desc = JSON.parse(task.description)?.title ?? task.description; } catch { /* raw string */ }
+  let parsedDesc: Record<string, unknown> | null = null;
+  try { parsedDesc = JSON.parse(task.description); desc = (parsedDesc?.title as string) ?? task.description; } catch { /* raw string */ }
   if (!desc || desc.trim().length < 3) {
     return { canHandle: false, reason: "empty or too-short description" };
+  }
+
+  // HARD CHECK: deliverables and acceptanceCriteria required
+  // Tasks without these fields are ambiguous — agent cannot objectively win a dispute
+  if (parsedDesc) {
+    const resolution = parsedDesc.resolution as Record<string, unknown> | undefined;
+    if (!resolution) {
+      return { canHandle: false, reason: "missing resolution (no deliverables/acceptanceCriteria)" };
+    }
+    const deliverables = (resolution.deliverables as string | undefined)?.trim();
+    const criteria = (resolution.acceptanceCriteria as string | undefined)?.trim();
+    if (!deliverables || deliverables.length < 3) {
+      return { canHandle: false, reason: "missing deliverables — cannot objectively complete" };
+    }
+    if (!criteria || criteria.length < 3) {
+      return { canHandle: false, reason: "missing acceptanceCriteria — cannot objectively complete" };
+    }
   }
 
   return { canHandle: true, reason: "ok" };

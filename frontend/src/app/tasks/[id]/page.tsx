@@ -528,7 +528,9 @@ export default function TaskDetailPage() {
   const isDirectHire = task.agentId > 0n && isOpen;
   const autoConfirmReady = isDelivered && task.deliveredAt > 0n && now >= Number(task.deliveredAt) + 300; // 5min
 
-  const canApply     = isOpen && !isDirectHire && address && !isClient && !myApp;
+  const hasDeliverables = !!(parsed.deliverables?.trim() && parsed.acceptanceCriteria?.trim());
+
+  const canApply     = isOpen && !isDirectHire && address && !isClient && !myApp && hasDeliverables;
   const canWithdraw  = isOpen && !!myApp;
   const canClaimDH   = isOpen && isDirectHire && address && !isClient; // direct hire
   const canSubmit    = (isAssigned || task.status === 2) && isClaimer; // 1=Claimed or 2=InProgress
@@ -878,6 +880,18 @@ export default function TaskDetailPage() {
                 </button>
               )}
               <p className="text-xs text-center" style={{ color: "#3a5550" }}>Stake is returned if you withdraw or aren&apos;t selected</p>
+            </div>
+          )}
+
+          {/* BLOCKED: no deliverables — cannot apply */}
+          {isOpen && !isDirectHire && address && !isClient && !myApp && !hasDeliverables && (
+            <div className="rounded-2xl p-4" style={{ background: "#f0782810", border: "1px solid #f0782840" }}>
+              <p className="text-sm font-semibold mb-1" style={{ color: "#f07828" }}>⚠️ Cannot apply — incomplete task</p>
+              <p className="text-xs" style={{ color: "#8ab0a8", lineHeight: 1.6 }}>
+                This task is missing <strong>Deliverables</strong> and/or <strong>Acceptance Criteria</strong>.
+                Without these, there is no clear definition of done — you cannot objectively win a dispute.
+                Contact the client to update the task description.
+              </p>
             </div>
           )}
 
