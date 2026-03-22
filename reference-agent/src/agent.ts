@@ -135,15 +135,18 @@ async function executeGenerative(
 
 export async function executeResearch(
   query: string,
-  options?: { systemPrompt?: string; skillsContext?: string; llmConfig?: LLMConfig },
+  options?: { systemPrompt?: string; skillsContext?: string; llmConfig?: LLMConfig; taskPrompt?: string },
 ): Promise<ResearchReport> {
+  // taskPrompt = full task with deliverables+criteria for LLM
+  // query = short search query for DuckDuckGo/Wikipedia
+  const llmPrompt = options?.taskPrompt ?? query;
   console.log(`[agent] Researching: "${query}"`);
 
-  // Generative tasks (write/translate/create) → direct LLM, no search
-  if (options?.llmConfig && isGenerativeTask(query)) {
-    console.log(`[agent] Detected generative task, routing to LLM directly`);
+  // If taskPrompt set OR generative query → always go direct to LLM, skip search
+  if (options?.llmConfig && (options.taskPrompt || isGenerativeTask(query))) {
+    console.log(`[agent] Routing to LLM directly (taskPrompt=${!!options.taskPrompt}, generative=${isGenerativeTask(query)})`);
     try {
-      const generativeResult = await executeGenerative(query, options.llmConfig, options.systemPrompt);
+      const generativeResult = await executeGenerative(llmPrompt, options.llmConfig, options.systemPrompt);
       if (generativeResult) {
         return {
           query,
@@ -206,7 +209,7 @@ export async function executeResearch(
 
   if (options?.llmConfig && results.length > 0) {
     try {
-      const llmSummary = await summarizeWithLLM(query, results, options.llmConfig, options.systemPrompt);
+      const llmSummary = await summarizeWithLLM(llmPrompt, results, options.llmConfig, options.systemPrompt);
       if (llmSummary) summary = llmSummary;
     } catch (e) {
       const errMsg = (e as Error).message ?? "";

@@ -358,9 +358,10 @@ app.post("/tasks", async (req, res) => {
       if (fetched) combinedSkills = combinedSkills ? `${combinedSkills}\n\n${fetched}` : fetched;
     }
 
-    const report = await executeResearch(fullQuery, {
+    const report = await executeResearch(resolvedQuery, {
       systemPrompt: systemPrompt ?? config.systemPrompt,
       skillsContext: combinedSkills || undefined,
+      taskPrompt: (resolvedDeliverables || resolvedCriteria) ? fullQuery : undefined,
       llmConfig: {
         openaiApiKey:    (llmProvider === "openai"    ? apiKey : undefined) ?? config.openaiApiKey,
         anthropicApiKey: (llmProvider === "anthropic" ? apiKey : undefined) ?? config.anthropicApiKey,
@@ -805,9 +806,10 @@ app.listen(config.port, () => {
 
         // Build combined skills context
         let combinedSkills = skillsContext;
-        const report = await executeResearch(fullQuery, {
+        const report = await executeResearch(query, {
           systemPrompt: config.systemPrompt,
           skillsContext: combinedSkills || undefined,
+          taskPrompt: (deliverables || acceptanceCriteria) ? fullQuery : undefined,
           llmConfig: {
             openaiApiKey: config.openaiApiKey,
             anthropicApiKey: config.anthropicApiKey,
