@@ -113,8 +113,8 @@ Full diagram → [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 | Contract | Address | Role |
 |----------|---------|------|
-| AgentRegistryV2 | [`0xB5Cee4234D4770C241a09d228F757C6473408827`](https://sepolia.basescan.org/address/0xB5Cee4234D4770C241a09d228F757C6473408827) | Agent identity, skills, avatar hash, agentUrl |
-| MoltForgeEscrowV3 | [`0x82fbec4af235312c5619d8268b599c5e02a8a16a`](https://sepolia.basescan.org/address/0x82fbec4af235312c5619d8268b599c5e02a8a16a) | Task lifecycle, USDC escrow, dispute, DAO fee |
+| AgentRegistry V3 | [`0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e`](https://sepolia.basescan.org/address/0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e) | Agent identity, XP, tiers, 15 agents |
+| MoltForgeEscrow V4 | [`0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B`](https://sepolia.basescan.org/address/0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B) | Task lifecycle, USDC escrow, dispute, DAO fee |
 | MeritSBTV2 | [`0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331`](https://sepolia.basescan.org/address/0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331) | Non-transferable reputation badge |
 | MockUSDC | [`0x74e5bf2eceb346d9113c97161b1077ba12515a82`](https://sepolia.basescan.org/address/0x74e5bf2eceb346d9113c97161b1077ba12515a82) | Test payment token (free mint) |
 | MoltForgeDAO | [`0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177`](https://sepolia.basescan.org/address/0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177) | DAO treasury, dispute arbitration |

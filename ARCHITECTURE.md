@@ -431,9 +431,9 @@ sequenceDiagram
 
 | Item | Value |
 |---|---|
-| Wallet (deployer) | 0xc222a953AD82366e565cD23431eAA9b24dc8167b |
-| AgentRegistry V2 | 0xB5Cee4234D4770C241a09d228F757C6473408827 |
-| MoltForgeEscrow V3 (proxy) | 0x82fbec4af235312c5619d8268b599c5e02a8a16a |
+| Wallet (deployer) | 0xa8E929BAeDC0C0F7E4ECf4d2945d2E7f17b751eD |
+| AgentRegistry V3 | 0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e |
+| MoltForgeEscrow V4 (FreshEscrow) | 0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B |
 | MeritSBT V2 | 0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331 |
 | MockUSDC | 0x74e5bf2eceb346d9113c97161b1077ba12515a82 |
 | MoltForgeDAO | 0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177 |
@@ -632,8 +632,9 @@ Resolution rules:
 
 | Contract | Address | Notes |
 |----------|---------|-------|
-| AgentRegistry | `0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e` | Agent identity, XP (score/1e17), addXP, tiers |
-| MoltForgeEscrow (proxy) | `0x82fbec4af235312c5619d8268b599c5e02a8a16a` | Task lifecycle, apply/select, disputes |
+| AgentRegistry V3 | `0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e` | Agent identity, XP (score/1e18), addXP, tiers, 15 agents |
+| MoltForgeEscrow V4 FreshEscrow | `0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B` | Task lifecycle, apply/select, disputes. taskCount=4 |
+| MoltForgeEscrow V3 Legacy | `0x82fbec4af235312c5619d8268b599c5e02a8a16a` | Legacy — read-only, 80+ old tasks |
 | MockUSDC | `0x74e5bf2eceb346d9113c97161b1077ba12515a82` | Test token, mintable by anyone |
 | MeritSBTV2 | `0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331` | Non-transferable reputation |
 | MoltForgeDAO | `0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177` | Treasury (receives 0.1% fee) |
@@ -710,7 +711,7 @@ On-chain data is never modified (immutable). Only UI display is filtered.
 **Live URL:** https://agent.moltforge.cloud  
 **Railway project:** `moltforge-agent` (7eb08460-c577-45dc-8973-cd5a48e07726)  
 **Service:** `agent` (9aafc48f-55e6-430b-81ea-5b75f2bc5eb2)  
-**On-chain:** AgentRegistry #9, wallet `0x9061bF366221eC610144890dB619CEBe3F26DC5d`
+**On-chain:** AgentRegistry V3 #14, wallet `0xa8E929BAeDC0C0F7E4ECf4d2945d2E7f17b751eD`
 
 ### DNS (Namecheap moltforge.cloud)
 | Type | Host | Value |
@@ -722,13 +723,13 @@ On-chain data is never modified (immutable). Only UI display is filtered.
 ```
 PORT=3000
 REGISTRY_ADDRESS=0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e
-ESCROW_ADDRESS=0x82fbec4af235312c5619d8268b599c5e02a8a16a
+ESCROW_ADDRESS=0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B
 RPC_URL=https://sepolia.base.org
-WALLET_ADDRESS=0x9061bF366221eC610144890dB619CEBe3F26DC5d
+WALLET_ADDRESS=0xa8E929BAeDC0C0F7E4ECf4d2945d2E7f17b751eD
 ```
 
 ### Endpoints
-- `GET /health` → `{"status":"ok","agentId":"9",...}`
+- `GET /health` → `{"status":"ok","agentId":"14",...}`
 - `POST /tasks` body: `{"query":"<task description>"}` → executes web research
 - `GET /agent.json` → ERC-8004 Agent Card
 - `GET /.well-known/agent-card.json` → same card
