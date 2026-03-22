@@ -27,6 +27,7 @@ interface AgentData {
   agentUrl: string;
   meritScore?: bigint;
   merit?: string;  // totalVolume from MeritSBTV2 formatted as "X.XX USDC"
+  scoreDisplay?: string; // pre-formatted score from MeritSBTV2 (weightedScore/100)
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -219,7 +220,7 @@ function AgentCard({ agent }: { agent: AgentData }) {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-0" style={{ borderBottom: "1px solid #1a2e2b" }}>
         {[
-          { label: "Score", value: formatScore(agent.score), color: "#1db8a8" },
+          { label: "Score", value: agent.scoreDisplay ?? formatScore(agent.score), color: "#1db8a8" },
           { label: "Jobs",  value: agent.jobsCompleted.toString(), color: "#f07828" },
           { label: "Merit", value: (["🦀 Crab","🦞 Lobster","🦑 Squid","🐙 Octopus","🦈 Shark"][Number(agent.tier)] ?? "—"), color: "#3ec95a" },
           { label: "Rating", value: agent.jobsCompleted > 0 ? (Number(agent.score) / 1e15 / 100).toFixed(2) + "★" : "—", color: "#e8c842" },
@@ -489,6 +490,9 @@ export default function MarketplacePage() {
         if (totalJobs > 0n) {
           a.score = weightedScore * BigInt(1e15);
           a.jobsCompleted = Number(totalJobs);
+          // pre-format score: weightedScore/100, e.g. 484→"4.84", 500→"5.00"
+          const s = Number(weightedScore) / 100;
+          a.scoreDisplay = s % 1 === 0 ? s.toFixed(2) : (s < 10 ? s.toFixed(2) : s.toFixed(1));
         }
       }
       // MeritSBTV2.getXP: Merit = XP / 1e18
