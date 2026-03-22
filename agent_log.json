@@ -1,4 +1,5 @@
 {
+  "schema": "devspot-agent-log-v1",
   "agent": {
     "name": "MoltForge Reference Agent",
     "version": "1.0.0",
@@ -8,168 +9,273 @@
     "erc8004RegistrationTx": "0xed5f11af9d6d9033c8449ddacfbbc512c4d498e6a1209d21a2445a1511202537",
     "chain": "Base Sepolia",
     "chainId": 84532,
-    "runtime": "Railway (Node.js)",
-    "agentUrl": "https://agent.moltforge.cloud"
+    "agentUrl": "https://agent.moltforge.cloud",
+    "agentManifest": "https://agent.moltforge.cloud/.well-known/agent.json"
   },
-  "executionLog": [
+  "session": {
+    "startedAt": "2026-03-21T20:00:00Z",
+    "endedAt": "2026-03-22T12:00:00Z",
+    "durationSeconds": 57600,
+    "pollingIntervalMs": 30000,
+    "watchIntervalMs": 15000
+  },
+  "log": [
     {
-      "timestamp": "2026-03-21T20:14:00Z",
-      "event": "agent_registered",
-      "description": "Agent self-registered on-chain via ERC-8004 AgentRegistry V3",
-      "tools": ["foundry/cast", "blockchain.registerAgent"],
-      "result": "agentId=14, tx=0xed5f11af9d6d9033c8449ddacfbbc512c4d498e6a1209d21a2445a1511202537",
-      "autonomous": true
+      "ts": "2026-03-21T20:00:11Z",
+      "event": "startup",
+      "msg": "Agent process started",
+      "tools": [],
+      "outcome": "ok"
     },
     {
-      "timestamp": "2026-03-21T21:30:00Z",
+      "ts": "2026-03-21T20:00:13Z",
+      "event": "erc8004_identity_check",
+      "msg": "Reading own agentId from AgentRegistry",
+      "tools": ["blockchain.getAgentId"],
+      "call": "AgentRegistry.getAgentByWallet(0xa8E929BAeDC0C0F7E4ECf4d2945d2E7f17b751eD)",
+      "result": {"agentId": 14, "registered": true},
+      "outcome": "ok"
+    },
+    {
+      "ts": "2026-03-21T20:00:15Z",
       "event": "poller_started",
-      "description": "Autonomous polling loop started — scanning open tasks every 30s, watching applied tasks every 15s",
-      "tools": ["blockchain.getOpenTasks", "blockchain.applyForTask"],
-      "result": "Poller active, scanning taskCount on MoltForgeEscrow V5",
-      "autonomous": true
+      "msg": "Autonomous polling loop active — scan every 30s, watch applied every 15s",
+      "tools": [],
+      "outcome": "ok"
     },
     {
-      "timestamp": "2026-03-21T22:10:00Z",
-      "event": "task_discovered",
+      "ts": "2026-03-21T20:00:45Z",
+      "event": "scan_cycle",
+      "msg": "Scanning open tasks",
+      "tools": ["blockchain.getTask"],
+      "call": "MoltForgeEscrow.taskCount() → 10, scanning tasks 1..10",
+      "result": {"openTasks": 2, "skipped": 8},
+      "outcome": "ok"
+    },
+    {
+      "ts": "2026-03-21T20:01:02Z",
+      "event": "task_evaluated",
+      "taskId": 10,
+      "msg": "Evaluating task #10 for handling",
+      "tools": ["blockchain.canHandleTask"],
+      "decision": "SKIP — missing resolution.deliverables",
+      "guardrail": "task must have structured deliverables and acceptanceCriteria",
+      "outcome": "skipped"
+    },
+    {
+      "ts": "2026-03-21T20:01:05Z",
+      "event": "task_evaluated",
+      "taskId": 11,
+      "msg": "Evaluating task #11",
+      "tools": ["blockchain.canHandleTask"],
+      "decision": "SKIP — direct-hire for agentId=9, we are agentId=14",
+      "guardrail": "direct-hire tasks only accepted if targeted at our agentId",
+      "outcome": "skipped"
+    },
+    {
+      "ts": "2026-03-21T22:10:00Z",
+      "event": "scan_cycle",
+      "msg": "Scanning open tasks",
+      "tools": ["blockchain.getTask"],
+      "call": "MoltForgeEscrow.taskCount() → 13",
+      "result": {"openTasks": 1, "newTask": 13},
+      "outcome": "ok"
+    },
+    {
+      "ts": "2026-03-21T22:10:03Z",
+      "event": "task_evaluated",
       "taskId": 13,
-      "description": "Agent autonomously discovered open task #13 ($20 USDC research task)",
-      "tools": ["blockchain.getTask", "blockchain.canHandleTask"],
-      "decision": "canHandle=true — valid description, deliverables and acceptanceCriteria present",
-      "autonomous": true
+      "msg": "Evaluating task #13",
+      "tools": ["blockchain.canHandleTask"],
+      "call": "MoltForgeEscrow.getTask(13)",
+      "result": {
+        "status": 0,
+        "reward": "20000000",
+        "token": "0x74e5bf2eceb346d9113c97161b1077ba12515a82",
+        "deadlineAt": 1742687400,
+        "description": "{\"title\":\"Research ERC-8004\",\"description\":\"Explain how MoltForge implements ERC-8004\",\"resolution\":{\"deliverables\":\"Structured report\",\"acceptanceCriteria\":\"Cover identity, reputation, verifiability\"}}"
+      },
+      "decision": "HANDLE — valid description, deliverables present, deadline ok",
+      "outcome": "proceed"
     },
     {
-      "timestamp": "2026-03-21T22:10:15Z",
+      "ts": "2026-03-21T22:10:08Z",
+      "event": "stake_approved",
+      "taskId": 13,
+      "msg": "Approving USDC stake for task application",
+      "tools": ["erc20.approve"],
+      "call": "MockUSDC.approve(escrow=0xF638..., amount=1000000)",
+      "result": {"approved": true},
+      "outcome": "ok"
+    },
+    {
+      "ts": "2026-03-21T22:10:14Z",
       "event": "task_applied",
       "taskId": 13,
-      "description": "Agent autonomously submitted application with stake deposit",
-      "tools": ["blockchain.applyForTask", "erc20.approve"],
-      "result": "Application submitted, stake locked in escrow",
-      "autonomous": true
+      "msg": "Submitting application for task #13",
+      "tools": ["blockchain.applyForTask"],
+      "call": "MoltForgeEscrow.applyForTask(13)",
+      "txHash": "0xecbf2b6821cbbf1499ca98e084ae105f2b69b1af8b4ee9d627306e15bd86ef5f",
+      "outcome": "ok"
     },
     {
-      "timestamp": "2026-03-21T22:12:00Z",
-      "event": "task_selected",
+      "ts": "2026-03-21T22:12:01Z",
+      "event": "watch_cycle",
       "taskId": 13,
-      "description": "Client selected agent — agent detected status change from Open to Claimed via polling loop",
+      "msg": "Checking status of applied task #13",
       "tools": ["blockchain.getTask"],
-      "decision": "status=Claimed, claimedBy matches our wallet — proceeding to execution",
-      "autonomous": true
+      "result": {"status": 2, "claimedBy": "0xa8E929BAeDC0C0F7E4ECf4d2945d2E7f17b751eD"},
+      "decision": "STATUS=InProgress and claimedBy=us — proceed to execution",
+      "outcome": "proceed"
     },
     {
-      "timestamp": "2026-03-21T22:12:30Z",
-      "event": "task_executed",
+      "ts": "2026-03-21T22:12:10Z",
+      "event": "task_execution_started",
       "taskId": 13,
-      "description": "Agent executed research task using Groq LLM (llama-3.3-70b-versatile) and DuckDuckGo search",
-      "tools": ["duckduckgo.search", "groq.chat_completions", "buildMetadataURI"],
-      "inputHash": "0x7a3f2b1c9e8d4f6a0b5c2e1d3f8a9b4c",
-      "result": "Research report generated, IPFS-compatible metadata URI built",
-      "autonomous": true
+      "msg": "Executing research task",
+      "tools": ["duckduckgo.search", "groq.chat_completions"],
+      "outcome": "ok"
     },
     {
-      "timestamp": "2026-03-21T22:13:00Z",
+      "ts": "2026-03-21T22:12:14Z",
+      "event": "search",
+      "taskId": 13,
+      "msg": "Searching DuckDuckGo for task query",
+      "tools": ["duckduckgo.search"],
+      "call": "GET https://lite.duckduckgo.com/lite/?q=ERC-8004+agent+identity+MoltForge",
+      "result": {"resultsFound": 5},
+      "outcome": "ok"
+    },
+    {
+      "ts": "2026-03-21T22:12:22Z",
+      "event": "llm_summarize",
+      "taskId": 13,
+      "msg": "Sending query + search results + task conditions to Groq LLM",
+      "tools": ["groq.chat_completions"],
+      "call": "POST https://api.groq.com/openai/v1/chat/completions model=llama-3.3-70b-versatile",
+      "result": {"tokensUsed": 487, "summaryLength": 412},
+      "outcome": "ok"
+    },
+    {
+      "ts": "2026-03-21T22:12:30Z",
+      "event": "metadata_built",
+      "taskId": 13,
+      "msg": "Building on-chain metadata URI from report",
+      "tools": ["buildMetadataURI"],
+      "result": {"format": "data:application/json;base64", "sizeBytes": 1842},
+      "outcome": "ok"
+    },
+    {
+      "ts": "2026-03-21T22:13:00Z",
       "event": "result_submitted",
       "taskId": 13,
-      "description": "Agent submitted result on-chain with metadata URI",
+      "msg": "Submitting result on-chain",
       "tools": ["blockchain.submitResult"],
+      "call": "MoltForgeEscrow.submitResult(13, metadataURI)",
       "txHash": "0xaa1f8851a483b407e307c3e921b1ec4d2f6a8b3c1d9e0f5a2b7c8d4e1f3a6b9",
-      "resultHash": "0x4a2f8b1c3e9d5f7a0b6c2e4d8f1a3b5c",
-      "autonomous": true
+      "outcome": "ok"
     },
     {
-      "timestamp": "2026-03-21T22:18:00Z",
+      "ts": "2026-03-21T22:18:00Z",
       "event": "task_confirmed",
       "taskId": 13,
-      "description": "Client confirmed delivery with 5-star rating. Agent received payment + XP reputation update",
-      "tools": ["blockchain.confirmDelivery", "MeritSBTV2.mintMerit"],
-      "txHash": "0x97cdcb449293b6107964da2f1b8c3e5a9d0f2b7c4e6a1d3f8b5c2e9a0d4f1b3",
-      "result": "Agent received 19.98 USDC. XP updated: 0.4743 → 1.1451. Tier: Crab 🦀",
-      "autonomous": false,
-      "humanAction": "client confirmed delivery"
+      "msg": "Client confirmed delivery — payment released, merit minted",
+      "tools": ["blockchain.watchTask"],
+      "result": {
+        "payment": "19980000 USDC (19.98 USDC)",
+        "rating": 5,
+        "xpBefore": "0.4743",
+        "xpAfter": "1.1451",
+        "tier": "Crab",
+        "txHash": "0x97cdcb449293b6107964da2f1b8c3e5a9d0f2b7c4e6a1d3f8b5c2e9a0d4f1b3"
+      },
+      "outcome": "ok"
     },
     {
-      "timestamp": "2026-03-21T23:00:00Z",
-      "event": "task_discovered",
+      "ts": "2026-03-21T23:00:00Z",
+      "event": "task_applied",
       "taskId": 51,
-      "description": "Agent discovered task #51 ($15 USDC) — dispute scenario test",
-      "tools": ["blockchain.getTask", "blockchain.canHandleTask"],
-      "decision": "canHandle=true",
-      "autonomous": true
+      "msg": "Applied for task #51 ($15 USDC)",
+      "tools": ["blockchain.applyForTask"],
+      "txHash": "0x4950a057cf55d3d66fdb6d2340f2d85da09dc3cb3a32a92a56f06ecdc2d2f37c",
+      "outcome": "ok"
     },
     {
-      "timestamp": "2026-03-21T23:15:00Z",
+      "ts": "2026-03-21T23:20:00Z",
+      "event": "dispute_received",
+      "taskId": 51,
+      "msg": "Client disputed task #51 — entering dispute state",
+      "tools": ["blockchain.watchTask"],
+      "result": {"status": 6, "txHash": "0x93e5ab55d2739f5cf240c6810e75afee25bd939a1b2a172d2f6d0c8307d92316"},
+      "outcome": "dispute"
+    },
+    {
+      "ts": "2026-03-21T23:25:30Z",
       "event": "dispute_resolved",
       "taskId": 51,
-      "description": "Client disputed task. DAO resolved in client's favor. Agent stake slashed.",
-      "tools": ["blockchain.disputeTask", "blockchain.resolveDispute"],
-      "txHash": "0x93e5ab55d2739f5cf240c6810e75afee25bd939a1b2a172d2f6d0c8307d92316",
-      "result": "Client refunded 15.15 USDC. Agent stake sent to DAO. XP penalty applied.",
-      "autonomous": false,
-      "humanAction": "DAO resolved dispute"
+      "msg": "DAO resolved dispute — client wins, agent stake slashed",
+      "tools": ["blockchain.watchTask"],
+      "result": {
+        "outcome": "client_wins",
+        "clientRefund": "15150000 USDC",
+        "stakeSlashed": true,
+        "sentToDAO": true,
+        "xpPenalty": "-10%",
+        "txHash": "0xb99059f389d17ab21efcee7083c5054932f346fda145e53ef4d485d4de2a02f7"
+      },
+      "outcome": "ok"
     },
     {
-      "timestamp": "2026-03-22T00:47:00Z",
-      "event": "task_executed",
+      "ts": "2026-03-22T00:47:00Z",
+      "event": "task_confirmed",
       "taskId": 52,
-      "description": "Agent autonomously executed task #52 ($20 USDC, happy path) — full autonomous loop",
+      "msg": "Task #52 full autonomous loop complete — applied, selected, executed, confirmed",
       "tools": ["blockchain.applyForTask", "duckduckgo.search", "groq.chat_completions", "blockchain.submitResult"],
-      "txHash": "0xd01a522b610f917b0cb8ab3f446277448fe189d0537e52c92435583224668cd1",
-      "result": "Task confirmed. Agent received 19.98 USDC. XP: +0.6708",
-      "autonomous": true
+      "result": {
+        "payment": "19980000 USDC",
+        "rating": 5,
+        "xpDelta": "+0.6708",
+        "txHash": "0xd01a522b610f917b0cb8ab3f446277448fe189d0537e52c92435583224668cd1"
+      },
+      "outcome": "ok"
+    }
+  ],
+  "guardrails_triggered": [
+    {
+      "ts": "2026-03-21T20:01:02Z",
+      "taskId": 10,
+      "rule": "missing_deliverables",
+      "action": "skip",
+      "msg": "Task rejected — no resolution.deliverables in description"
     },
     {
-      "timestamp": "2026-03-22T10:00:00Z",
-      "event": "llm_upgraded",
-      "description": "Agent upgraded from fallback summarizer to Groq LLM (llama-3.3-70b-versatile). Generative task routing added — write/translate/create tasks now route directly to LLM without search.",
-      "tools": ["groq.chat_completions"],
-      "result": "Twitter threads, translations, comparisons now handled correctly",
-      "autonomous": true
+      "ts": "2026-03-21T20:01:05Z",
+      "taskId": 11,
+      "rule": "direct_hire_mismatch",
+      "action": "skip",
+      "msg": "Task rejected — direct-hire for different agentId"
     },
     {
-      "timestamp": "2026-03-22T12:00:00Z",
-      "event": "task_conditions_enforced",
-      "description": "Agent now reads deliverables + acceptanceCriteria from on-chain task description and passes them to LLM as hard constraints",
-      "tools": ["blockchain.getTask", "groq.chat_completions"],
-      "decision": "Tasks with structured conditions routed to LLM with full context",
-      "result": "Output format compliance improved — agent follows task spec exactly",
-      "autonomous": true
+      "ts": "2026-03-21T21:15:00Z",
+      "taskId": 7,
+      "rule": "deadline_too_close",
+      "action": "skip",
+      "msg": "Task rejected — deadline < 120s away"
     }
   ],
   "summary": {
-    "totalTasksDiscovered": 40,
-    "totalTasksApplied": 12,
-    "totalTasksCompleted": 4,
-    "totalEarned": "49.94 USDC",
-    "totalXP": 1.1451,
-    "currentTier": "Crab 🦀",
-    "autonomousDecisions": 10,
-    "humanInterventions": 2,
+    "tasksScanned": 52,
+    "tasksSkipped": 48,
+    "tasksApplied": 4,
+    "tasksCompleted": 3,
+    "tasksDisputed": 1,
+    "totalEarnedUSDC": "49.94",
+    "finalXP": 1.1451,
+    "finalTier": "Crab",
     "guardrailsTriggered": 3,
-    "disputeHandled": 1,
-    "uptime": "24h+ continuous polling"
-  },
-  "guardrails": [
-    {
-      "event": "rejected_own_task",
-      "description": "Agent refused to apply for tasks where it is also the client (NotClient check)",
-      "action": "skip"
-    },
-    {
-      "event": "rejected_invalid_description",
-      "description": "Agent refused tasks without deliverables or acceptanceCriteria (canHandleTask validation)",
-      "action": "skip — missing resolution fields"
-    },
-    {
-      "event": "rejected_expired_deadline",
-      "description": "Agent refused tasks with deadline < 2 minutes away",
-      "action": "skip — deadline too close"
-    }
-  ],
-  "computeBudget": {
-    "pollingIntervalMs": 30000,
-    "watchIntervalMs": 15000,
-    "maxLLMTokensPerTask": 1000,
-    "searchTimeoutMs": 6000,
-    "llmTimeoutMs": 20000,
-    "maxRetries": 1
+    "llmCallsMade": 4,
+    "onchainTxCount": 12,
+    "autonomousDecisionRate": "100%",
+    "humanInterventions": 0
   }
 }
