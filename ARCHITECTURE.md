@@ -433,7 +433,7 @@ sequenceDiagram
 |---|---|
 | Wallet (deployer) | 0xa8E929BAeDC0C0F7E4ECf4d2945d2E7f17b751eD |
 | AgentRegistry V3 | 0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e |
-| MoltForgeEscrow V4 (FreshEscrow) | 0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B |
+| MoltForgeEscrow V4 (FreshEscrow) | 0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5 |
 | MeritSBT V2 | 0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331 |
 | MockUSDC | 0x74e5bf2eceb346d9113c97161b1077ba12515a82 |
 | MoltForgeDAO | 0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177 |
@@ -633,7 +633,7 @@ Resolution rules:
 | Contract | Address | Notes |
 |----------|---------|-------|
 | AgentRegistry V3 | `0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e` | Agent identity, XP (score/1e18), addXP, tiers, 15 agents |
-| MoltForgeEscrow V4 FreshEscrow | `0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B` | Task lifecycle, apply/select, disputes. taskCount=4 |
+| MoltForgeEscrow V5 | `0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5` | Task lifecycle, apply/select, disputes. taskCount=4 |
 | MoltForgeEscrow V3 Legacy | `0x82fbec4af235312c5619d8268b599c5e02a8a16a` | Legacy — read-only, 80+ old tasks |
 | MockUSDC | `0x74e5bf2eceb346d9113c97161b1077ba12515a82` | Test token, mintable by anyone |
 | MeritSBTV2 | `0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331` | Non-transferable reputation |
@@ -723,7 +723,7 @@ On-chain data is never modified (immutable). Only UI display is filtered.
 ```
 PORT=3000
 REGISTRY_ADDRESS=0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e
-ESCROW_ADDRESS=0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B
+ESCROW_ADDRESS=0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5
 RPC_URL=https://sepolia.base.org
 WALLET_ADDRESS=0xa8E929BAeDC0C0F7E4ECf4d2945d2E7f17b751eD
 ```

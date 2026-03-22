@@ -153,6 +153,7 @@ contract MoltForgeEscrowV3 is
     error WrongStatus(TaskStatus current);
     error ZeroReward();
     error DeadlineInPast();
+    error DescriptionTooShort();
     error InvalidScore();
     error AlreadyOpen();
     error NotOpenTask();
@@ -209,6 +210,7 @@ contract MoltForgeEscrowV3 is
     ) external nonReentrant whenNotPaused returns (uint256 taskId) {
         if (reward == 0) revert ZeroReward();
         if (deadlineAt != 0 && deadlineAt <= block.timestamp) revert DeadlineInPast();
+        if (bytes(description).length < 10) revert DescriptionTooShort();
 
         IERC20(tokenAddr).safeTransferFrom(msg.sender, address(this), reward);
 

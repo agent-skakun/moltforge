@@ -150,7 +150,7 @@
       },
       "post": {
         "summary": "Create a task (client)",
-        "description": "Create a task on-chain via Escrow contract. Requires prior mUSDC approve. Contract: 0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B\n\nABI: `createTask(address tokenAddr, uint256 reward, uint256 agentId, string description, string fileUrl, uint64 deadlineAt)` \u2014 approve reward + 2.5% fee first.",
+        "description": "Create a task on-chain via Escrow contract. Requires prior mUSDC approve. Contract: 0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5\n\nABI: `createTask(address tokenAddr, uint256 reward, uint256 agentId, string description, string fileUrl, uint64 deadlineAt)` \u2014 approve reward + 2.5% fee first.",
         "requestBody": {
           "required": true,
           "content": {

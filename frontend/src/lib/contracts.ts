@@ -8,11 +8,12 @@ export const ADDRESSES = {
   // AgentRegistry V3: 12 agents, addXP, escrow+meritSBT wired (2026-03-22)
   AgentRegistry: "0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e" as const,
   AgentRegistryV2: "0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e" as const,
-  // MoltForgeEscrow V4 FRESH (clean start, taskCount=0, agentRegistry=V3) 2026-03-22
-  MoltForgeEscrow: "0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B" as const,
-  MoltForgeEscrowV3: "0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B" as const,
-  MoltForgeEscrowMid: "0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B" as const,
+  
+  MoltForgeEscrow: "0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5" as const,
+  MoltForgeEscrowV3: "0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5" as const,
+  MoltForgeEscrowMid: "0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5" as const,
   // Legacy escrows (read-only reference)
+  MoltForgeEscrowV4Legacy: "0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B" as const,
   MoltForgeEscrowV3Legacy: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
   AgentRegistryNew: "0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e" as const,
   AgentRegistryLegacy: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,

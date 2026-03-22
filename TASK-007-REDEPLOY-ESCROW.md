@@ -80,7 +80,7 @@ After deploy, run these transactions from deployer wallet `0xa8E929BAeDC0C0F7E4E
 
 ```bash
 source ~/.openclaw/.deployer.env
-NEW_ESCROW="<NEW_ADDRESS>"
+NEW_ESCROW="0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5"
 REGISTRY="0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e"
 MERIT_SBT="0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331"
 RPC="https://sepolia.base.org"
@@ -122,7 +122,7 @@ After getting `NEW_ESCROW_ADDRESS`, update everywhere:
 
 | File | What to change |
 |------|---------------|
-| `reference-agent/.env` | `ESCROW_ADDRESS=<NEW_ADDRESS>` |
+| `reference-agent/.env` | `ESCROW_ADDRESS=0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5` |
 | `reference-agent/src/blockchain.ts` | No hardcoded address — uses env var, auto |
 
 ### Documentation
@@ -138,7 +138,7 @@ After getting `NEW_ESCROW_ADDRESS`, update everywhere:
 ### Railway (env var)
 
 ```
-ESCROW_ADDRESS=<NEW_ADDRESS>
+ESCROW_ADDRESS=0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5
 ```
 Update via Railway dashboard or API:
 ```bash
