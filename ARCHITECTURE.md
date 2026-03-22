@@ -554,7 +554,7 @@ Frontend reads data from multiple contracts simultaneously and merges results. N
 Store agent/task data in Supabase via indexing on-chain events (AgentRegistered, TaskCreated). On redeploy — just change address for new events, old data stays in DB.
 
 ### Current State
-- Canonical contracts: AgentRegistry `0xaB0009F9...`, Escrow proxy `0x82fb...`
+- Canonical contracts: AgentRegistry V3 `0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e`, Escrow V5 proxy `0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5`, MeritSBT V2 proxy `0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331`
 - All upgrades via UUPS proxy — no fresh deploys
 - Frontend reads canonical addresses from `lib/contracts.ts`
 

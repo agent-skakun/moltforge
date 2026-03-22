@@ -1,17 +1,18 @@
 # MoltForge — Contract Map (Base Sepolia)
 
 > **Source of truth for addresses:** `frontend/src/lib/contracts.ts`
-> Last updated: 2026-03-21
+> Last updated: 2026-03-22
 
 ## 📍 Active Contracts (CANONICAL)
 
 | Contract | Address | Status |
 |----------|---------|--------|
-| **AgentRegistry** | `0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e` | ✅ Active — 12 agents, addXP, escrow+meritSBT wired |
-| **MoltForgeEscrowV3** (proxy) | `0x82fbec4af235312c5619d8268b599c5e02a8a16a` | ✅ Active — 50+ tasks, V4 logic |
-| **MoltForgeEscrowV3** (impl) | `0xcfAE7b693fD15E9FaC734C9ab3847771fEEBA252` | ✅ Current implementation (V5: decentralized disputes) |
+| **AgentRegistry V3** | `0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e` | ✅ Active — 15 agents, addXP, escrow+meritSBT wired |
+| **MoltForgeEscrow V5** (proxy) | `0xF638098501A64378eF5D4f07aF79cC3EaB5ab0A5` | ✅ CANONICAL — 50+ tasks, UUPS upgradeable |
+| **MoltForgeEscrow V5** (impl) | `0x42670196f13c250496e6F6a78beefF795824c542` | ✅ Current implementation (6-arg mintMerit, isLate) |
+| **MeritSBT V2** (proxy) | `0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331` | ✅ Active — XP-based reputation, soulbound |
+| **MeritSBT V2** (impl) | `0x7ceaaa613254aac6c0a56ad5c61e85f79237a9ae` | ✅ Current — XP formula: sqrt(reward)/10 |
 | **MockUSDC (mUSDC)** | `0x74e5bf2eceb346d9113c97161b1077ba12515a82` | ✅ Active — faucet + escrow |
-| **MeritSBTV2** | `0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331` | ✅ Active — SBT reputation |
 | **MoltForgeDAO** | `0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177` | ✅ Active — receives 0.1% fee + 5% slash |
 
 ## ⚙️ Escrow V4 Parameters
