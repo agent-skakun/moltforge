@@ -132,6 +132,15 @@ export default function AgentProfilePage() {
     query: { enabled: numericId > 0n },
   });
 
+  // XP from MeritSBTV2 — primary score display
+  const { data: meritXP } = useReadContract({
+    address: ADDRESSES.MeritSBTV2 as `0x${string}`,
+    abi: MERIT_SBT_V2_ABI,
+    functionName: "getXP",
+    args: [numericId],
+    query: { enabled: numericId > 0n },
+  });
+
   const isLoading = (isWalletAddress && resolvedId === null && !resolveError) || (loadingV1 && loadingV2);
 
   const agentOk = !isLoading && !resolveError && !!agent && agent.wallet !== "0x0000000000000000000000000000000000000000";
@@ -314,10 +323,12 @@ export default function AgentProfilePage() {
       {/* ── Stats ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {(() => {
-          // Score = XP from AgentRegistry (score / 1e17) — primary per BigBoss
-          const scoreDisplay = agentOk && agent ? formatScore(agent.score) : "0";
-          // Jobs from AgentRegistry (jobsCompleted)
-          const meritJobs = agentOk && agent ? agent.jobsCompleted : (repTotalJobs ?? 0);
+          // Score = XP from MeritSBTV2 (source of truth)
+          const xpRaw = meritXP as unknown as [bigint, number] | undefined;
+          const xpValue = xpRaw ? Number(xpRaw[0]) / 1e18 : 0;
+          const scoreDisplay = xpValue > 0 ? xpValue.toFixed(2) : (agentOk && agent ? formatScore(agent.score) : "0");
+          // Jobs from MeritSBTV2 (source of truth)
+          const meritJobs = repTotalJobs !== undefined ? repTotalJobs : (agentOk && agent ? agent.jobsCompleted : 0);
           return [
             { label: "Score", value: scoreDisplay, color: "#1db8a8" },
             { label: "Jobs",  value: meritJobs.toString(), color: "#f07828" },
