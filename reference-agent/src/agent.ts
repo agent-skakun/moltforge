@@ -76,11 +76,86 @@ function parseHtmlDDG(html: string): ResearchResult[] {
   return results;
 }
 
+// Detect if query is generative (write/translate/create) vs research (find/explain/compare)
+function isGenerativeTask(query: string): boolean {
+  const q = query.toLowerCase().trim();
+  return /^(write|create|generate|translate|make|draft|compose|give me|list|produce|output|convert|rewrite|summarize this text|summarize the following)\b/.test(q)
+    || /\b(translate (this|the following|to|into)|write (a |an |the )?(tweet|thread|post|article|email|letter|blog|caption|copy|script|ad|slogan|description)s?|create (a |an |the )?(tweet|thread|post|article|email|letter|blog|list)|generate (a |an |the )?(tweet|thread|post|list))\b/.test(q);
+}
+
+// Direct LLM call for generative tasks (no search needed)
+async function executeGenerative(
+  query: string,
+  llm: LLMConfig,
+  systemPrompt?: string,
+): Promise<string | null> {
+  const sysMsg = systemPrompt || "You are a helpful AI assistant. Complete the user's task directly and precisely. Follow the requested format exactly.";
+  const openaiKey = llm.openaiApiKey || llm.groqApiKey;
+  const isGroq = !llm.openaiApiKey && !!llm.groqApiKey;
+  if (openaiKey) {
+    const baseUrl = isGroq ? "https://api.groq.com/openai/v1" : "https://api.openai.com/v1";
+    const model = llm.model || (isGroq ? "llama-3.3-70b-versatile" : "gpt-4o-mini");
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "system", content: sysMsg }, { role: "user", content: query }],
+        temperature: llm.temperature ?? 0.8,
+        max_tokens: Math.min(llm.maxTokens ?? 1000, 1000),
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
+      const text = data.choices?.[0]?.message?.content?.trim();
+      if (text) { console.log(`[agent] Generative response via ${isGroq ? "Groq" : "OpenAI"}`); return text; }
+    }
+  }
+  if (llm.anthropicApiKey) {
+    const model = llm.model || "claude-3-5-sonnet-20241022";
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": llm.anthropicApiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({
+        model, max_tokens: Math.min(llm.maxTokens ?? 1000, 1000),
+        system: sysMsg,
+        messages: [{ role: "user", content: query }],
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { content?: Array<{ text?: string }> };
+      const text = data.content?.[0]?.text?.trim();
+      if (text) { console.log("[agent] Generative response via Anthropic"); return text; }
+    }
+  }
+  return null;
+}
+
 export async function executeResearch(
   query: string,
   options?: { systemPrompt?: string; skillsContext?: string; llmConfig?: LLMConfig },
 ): Promise<ResearchReport> {
   console.log(`[agent] Researching: "${query}"`);
+
+  // Generative tasks (write/translate/create) → direct LLM, no search
+  if (options?.llmConfig && isGenerativeTask(query)) {
+    console.log(`[agent] Detected generative task, routing to LLM directly`);
+    try {
+      const generativeResult = await executeGenerative(query, options.llmConfig, options.systemPrompt);
+      if (generativeResult) {
+        return {
+          query,
+          results: [],
+          summary: generativeResult,
+          timestamp: new Date().toISOString(),
+        };
+      }
+    } catch (e) {
+      console.warn("[agent] Generative LLM failed, falling back to search:", (e as Error).message);
+    }
+  }
 
   let results: ResearchResult[] = [];
 
@@ -165,7 +240,7 @@ async function summarizeWithLLM(
     `[${i + 1}] ${r.title}\n${r.url}\n${r.snippet}`
   ).join("\n\n");
 
-  const userMessage = `Research query: "${query}"\n\nSearch results:\n${context}\n\nProvide a concise, accurate summary (2-4 sentences) answering the query based on these results.`;
+  const userMessage = `Research query: "${query}"\n\nSearch results:\n${context}\n\nProvide a thorough, accurate answer to the query based on these results. If the query asks for a comparison or list, use a structured format (table or bullet points). Be specific and include relevant data points.`;
 
   const sysMsg = systemPrompt || "You are a research assistant. Summarize search results concisely and accurately.";
 
@@ -182,7 +257,7 @@ async function summarizeWithLLM(
         model,
         messages: [{ role: "system", content: sysMsg }, { role: "user", content: userMessage }],
         temperature: llm.temperature ?? 0.7,
-        max_tokens: Math.min(llm.maxTokens ?? 500, 500),
+        max_tokens: Math.min(llm.maxTokens ?? 1000, 1000),
       }),
       signal: AbortSignal.timeout(15000),
     });
