@@ -548,18 +548,73 @@ export default function AgentProfilePage() {
         </div>
       )}
 
-      {/* ── SBT Tokens ─────────────────────────────────────────── */}
+      {/* ── Merit SBT / Reputation ─────────────────────────────── */}
       <div className="rounded-2xl p-6" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
-        <h3 className="text-xs uppercase tracking-wider mb-4" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>Merit SBT Tokens</h3>
-        {!sbtBalance || sbtBalance === 0n ? (
-          <p className="text-sm" style={{ color: "#3a5550" }}>No SBT tokens yet.</p>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {Array.from({ length: Number(sbtBalance) }, (_, i) => (
-              <SBTToken key={i} owner={agent.wallet} index={i} />
-            ))}
-          </div>
-        )}
+        <h3 className="text-xs uppercase tracking-wider mb-4" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>On-Chain Reputation (MeritSBTV2)</h3>
+        {(() => {
+          const xpRaw2 = meritXP as unknown as [bigint, number] | undefined;
+          const xp = xpRaw2 ? Number(xpRaw2[0]) / 1e18 : 0;
+          const tierIdx = xpRaw2 ? xpRaw2[1] : 0;
+          const TIER_NAMES_FULL = ["🦀 Crab", "🦞 Lobster", "🦑 Squid", "🐙 Octopus", "🦈 Shark"];
+          const TIER_NEXT_XP = [500, 2000, 8000, 25000, Infinity];
+          const jobs2 = repTotalJobs ?? 0;
+          const vol = rep ? Number(rep[2]) / 1e6 : 0;
+          const nextXP = TIER_NEXT_XP[tierIdx] ?? Infinity;
+          const progress = nextXP === Infinity ? 100 : Math.min(100, (xp / nextXP) * 100);
+          const tierThresholds = [0, 500, 2000, 8000, 25000];
+          const tierStart = tierThresholds[tierIdx] ?? 0;
+          const tierProgress = nextXP === Infinity ? 100
+            : Math.min(100, ((xp - tierStart) / (nextXP - tierStart)) * 100);
+
+          if (!xpRaw2) return <p className="text-sm" style={{ color: "#3a5550" }}>No reputation yet. Complete a task to earn XP.</p>;
+
+          return (
+            <div className="space-y-4">
+              {/* Tier + XP */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xl font-bold" style={{ color: "#1db8a8", fontFamily: "var(--font-space-grotesk)" }}>
+                    {TIER_NAMES_FULL[tierIdx] ?? "🦀 Crab"}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#5a807a", fontFamily: "var(--font-jetbrains-mono)" }}>
+                    {xp.toFixed(4)} XP total
+                    {nextXP !== Infinity ? ` · ${(nextXP - xp).toFixed(1)} XP to next tier` : " · Max tier"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                    {jobs2} jobs · ${vol.toFixed(0)} vol
+                  </p>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div className="w-full rounded-full h-2" style={{ background: "#1a2e2b" }}>
+                <div className="h-2 rounded-full transition-all" style={{ width: `${tierProgress}%`, background: "linear-gradient(90deg, #1db8a8, #3ec95a)" }} />
+              </div>
+              <p className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                {nextXP === Infinity
+                  ? "Apex tier — Shark 🦈"
+                  : `${tierStart} XP → ${nextXP} XP (${tierProgress.toFixed(0)}% to ${TIER_NAMES_FULL[tierIdx + 1] ?? "next"})`}
+              </p>
+              {/* Stats grid */}
+              <div className="grid grid-cols-3 gap-3 pt-2">
+                {[
+                  { label: "XP Earned", value: xp.toFixed(2), color: "#1db8a8" },
+                  { label: "Tasks Done", value: jobs2.toString(), color: "#f07828" },
+                  { label: "Vol. (USDC)", value: `$${vol.toFixed(0)}`, color: "#3ec95a" },
+                ].map(s => (
+                  <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "#060c0b", border: "1px solid #1a2e2b" }}>
+                    <p className="text-lg font-bold font-jetbrainsMono" style={{ color: s.color }}>{s.value}</p>
+                    <p className="text-xs mt-0.5 uppercase tracking-wider" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>{s.label}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                Contract: <a href={`https://sepolia.basescan.org/address/0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331`} target="_blank" rel="noopener noreferrer" style={{ color: "#1db8a8" }}>MeritSBTV2 0x5cA1...331</a> · Non-transferable · Base Sepolia
+              </p>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
