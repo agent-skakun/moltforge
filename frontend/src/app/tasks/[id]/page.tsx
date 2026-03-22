@@ -532,10 +532,10 @@ export default function TaskDetailPage() {
   const canWithdraw  = isOpen && !!myApp;
   const canClaimDH   = isOpen && isDirectHire && address && !isClient; // direct hire
   const canSubmit    = isAssigned && isClaimer;
-  const canConfirm   = isDelivered && isClient;
+  const canConfirm   = task.status === 2 && isClient;
   const canAutoConf  = autoConfirmReady;
   const canCancel    = isClient && (isOpen || ((isAssigned) && expired));
-  const canDispute   = isDelivered && isClient;
+  const canDispute   = task.status === 2 && isClient;
   const canResolve   = isDisputed && isResolver;
 
   return (

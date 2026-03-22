@@ -24,7 +24,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       id,
       client: t.client,
       agent: agentAddr !== "0x0000000000000000000000000000000000000000" ? agentAddr : null,
-      reward: Number(t.reward) / 1e18,
+      reward: Number(t.reward) / 1e6,
       descriptionCID: descCID,
       deliveryCID: deliveryCID || null,
       status: STATUS[t.status] ?? "Unknown",
