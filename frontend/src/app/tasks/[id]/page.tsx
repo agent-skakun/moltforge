@@ -327,6 +327,13 @@ function parseDescription(raw: string): ParsedDescription {
         if (parsed.requirements.requiredRating) parsed.requiredRating = parsed.requirements.requiredRating;
         if (parsed.requirements.requiredSkills) parsed.requiredSkills = parsed.requirements.requiredSkills;
       }
+      // Fallback: parse DELIVERABLES/ACCEPTANCE CRITERIA from plain-text description field
+      if (!parsed.deliverables && parsed.description) {
+        const dMatch = String(parsed.description).match(/DELIVERABLES:\s*([\s\S]+?)(?=ACCEPTANCE CRITERIA:|EVALUATION:|$)/i);
+        if (dMatch) parsed.deliverables = dMatch[1].trim();
+        const aMatch = String(parsed.description).match(/ACCEPTANCE CRITERIA:\s*([\s\S]+?)(?=DELIVERABLES:|EVALUATION:|$)/i);
+        if (aMatch) parsed.acceptanceCriteria = aMatch[1].trim();
+      }
       return parsed;
     }
     if (raw.startsWith("{")) {
@@ -340,10 +347,23 @@ function parseDescription(raw: string): ParsedDescription {
         if (parsed.requirements.requiredRating) parsed.requiredRating = parsed.requirements.requiredRating;
         if (parsed.requirements.requiredSkills) parsed.requiredSkills = parsed.requirements.requiredSkills;
       }
+      // Fallback: parse DELIVERABLES/ACCEPTANCE CRITERIA from plain-text description field
+      if (!parsed.deliverables && parsed.description) {
+        const dMatch = String(parsed.description).match(/DELIVERABLES:\s*([\s\S]+?)(?=ACCEPTANCE CRITERIA:|EVALUATION:|$)/i);
+        if (dMatch) parsed.deliverables = dMatch[1].trim();
+        const aMatch = String(parsed.description).match(/ACCEPTANCE CRITERIA:\s*([\s\S]+?)(?=DELIVERABLES:|EVALUATION:|$)/i);
+        if (aMatch) parsed.acceptanceCriteria = aMatch[1].trim();
+      }
       return parsed;
     }
   } catch { /* ignore */ }
-  return { description: raw };
+  // Plain text — try regex directly on raw string
+  const result: ParsedDescription = { description: raw };
+  const dMatch = raw.match(/DELIVERABLES:\s*([\s\S]+?)(?=ACCEPTANCE CRITERIA:|EVALUATION:|$)/i);
+  if (dMatch) result.deliverables = dMatch[1].trim();
+  const aMatch = raw.match(/ACCEPTANCE CRITERIA:\s*([\s\S]+?)(?=DELIVERABLES:|EVALUATION:|$)/i);
+  if (aMatch) result.acceptanceCriteria = aMatch[1].trim();
+  return result;
 }
 
 function renderResult(resultUrl: string): React.ReactNode {
@@ -579,9 +599,7 @@ export default function TaskDetailPage() {
           {parsed.deliverables ? (
             <p className="text-sm" style={{ color: "#8ab0a8", lineHeight: 1.6 }}>{parsed.deliverables}</p>
           ) : (
-            <div className="rounded-xl p-3" style={{ background: "#f0782810", border: "1px solid #f0782830" }}>
-              <p className="text-sm" style={{ color: "#f07828", lineHeight: 1.6 }}>⚠️ No deliverables specified — ask the client before committing</p>
-            </div>
+            <p className="text-sm" style={{ color: "#3a5550", lineHeight: 1.6 }}>See description above</p>
           )}
         </div>
         <div className="rounded-2xl p-5" style={{ background: "#0a1a17", border: "1px solid #1a2e2b" }}>
@@ -589,9 +607,7 @@ export default function TaskDetailPage() {
           {parsed.acceptanceCriteria ? (
             <p className="text-sm" style={{ color: "#8ab0a8", lineHeight: 1.6 }}>{parsed.acceptanceCriteria}</p>
           ) : (
-            <div className="rounded-xl p-3" style={{ background: "#f0782810", border: "1px solid #f0782830" }}>
-              <p className="text-sm" style={{ color: "#f07828", lineHeight: 1.6 }}>⚠️ No acceptance criteria — resolution conditions unclear</p>
-            </div>
+            <p className="text-sm" style={{ color: "#3a5550", lineHeight: 1.6 }}>See description above</p>
           )}
         </div>
       </div>

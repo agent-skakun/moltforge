@@ -51,6 +51,7 @@ function decodeDescription(raw: string): string {
 }
 
 function hasResolutionData(raw: string): boolean {
+  // Check JSON resolution fields
   try {
     let json: string;
     if (raw.startsWith("data:application/json;base64,")) {
@@ -58,19 +59,21 @@ function hasResolutionData(raw: string): boolean {
     } else if (raw.startsWith("{")) {
       json = raw;
     } else {
-      return false;
+      // Plain text — check for DELIVERABLES marker
+      return /DELIVERABLES:/i.test(raw);
     }
     const parsed = JSON.parse(json) as Record<string, unknown>;
     const res = parsed.resolution as Record<string, unknown> | undefined;
-    if (!res) return false;
-    const d = res.deliverables;
-    const a = res.acceptanceCriteria;
-    return (
-      typeof d === "string" && d.trim().length > 0 &&
-      typeof a === "string" && a.trim().length > 0
-    );
+    if (res) {
+      const d = res.deliverables;
+      const a = res.acceptanceCriteria;
+      if (typeof d === "string" && d.trim().length > 0 && typeof a === "string" && a.trim().length > 0) return true;
+    }
+    // Fallback: check plain-text description field inside JSON
+    const desc = typeof parsed.description === "string" ? parsed.description : "";
+    return /DELIVERABLES:/i.test(desc);
   } catch {
-    return false;
+    return /DELIVERABLES:/i.test(raw);
   }
 }
 

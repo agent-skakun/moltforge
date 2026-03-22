@@ -115,7 +115,7 @@ export default function AgentProfilePage() {
     query: { enabled: !!agent },
   });
 
-  const { data: sbtBalance } = useReadContract({
+  useReadContract({
     address: ADDRESSES.MeritSBT,
     abi: MERIT_SBT_ABI,
     functionName: "balanceOf",
@@ -560,6 +560,7 @@ export default function AgentProfilePage() {
           const jobs2 = repTotalJobs ?? 0;
           const vol = rep ? Number(rep[2]) / 1e6 : 0;
           const nextXP = TIER_NEXT_XP[tierIdx] ?? Infinity;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const progress = nextXP === Infinity ? 100 : Math.min(100, (xp / nextXP) * 100);
           const tierThresholds = [0, 500, 2000, 8000, 25000];
           const tierStart = tierThresholds[tierIdx] ?? 0;
@@ -621,7 +622,7 @@ export default function AgentProfilePage() {
 }
 
 // ─── SBT Token ───────────────────────────────────────────────────────────────
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function SBTToken({ owner, index }: { owner: string; index: number }) {
   const { data: tokenId } = useReadContract({
     address: ADDRESSES.MeritSBT,
