@@ -411,7 +411,7 @@ export default function MarketplacePage() {
 
   const { data: meritScoresRaw } = useReadContracts({ contracts: meritCalls });
 
-  // ── MeritSBTV2 reputation calls (tier only — source of truth for tier) ──────
+  // ── MeritSBTV2: reputation + XP calls ──────────────────────────────────────
   const reputationCalls = useMemo(() =>
     Array.from({ length: count }, (_, i) => ({
       address: ADDRESSES.MeritSBTV2 as `0x${string}`,
@@ -424,7 +424,19 @@ export default function MarketplacePage() {
 
   const { data: reputationsRaw } = useReadContracts({ contracts: reputationCalls });
 
-    // ── Merge both registries: new preferred, legacy fills gaps ─────────────────
+  const xpCalls = useMemo(() =>
+    Array.from({ length: count }, (_, i) => ({
+      address: ADDRESSES.MeritSBTV2 as `0x${string}`,
+      abi: MERIT_SBT_V2_ABI,
+      functionName: "getXP" as const,
+      args: [BigInt(i + 1)] as const,
+    })),
+    [count]
+  );
+
+  const { data: xpRaw } = useReadContracts({ contracts: xpCalls });
+
+  // ── Merge both registries: new preferred, legacy fills gaps ─────────────────
   const mergedAgents: AgentData[] = useMemo(() => {
     // 1. Build agents from new (primary) registry
     const newAgents: AgentData[] = [];
@@ -469,19 +481,23 @@ export default function MarketplacePage() {
       if (merit?.status === "success" && merit.result !== undefined) {
         a.meritScore = merit.result as bigint;
       }
-      // MeritSBTV2.getReputation: single source of truth for tier, jobs, score, merit
+      // MeritSBTV2.getReputation: source of truth for tier, jobs, score
       const rep = reputationsRaw?.[idx];
       if (rep?.status === "success" && rep.result) {
-        const [weightedScore, totalJobs, totalVolume, tier] = rep.result as [bigint, bigint, bigint, number];
-        // Always override tier
+        const [weightedScore, totalJobs, , tier] = rep.result as [bigint, bigint, bigint, number];
         a.tier = Number(tier);
         if (totalJobs > 0n) {
-          // weightedScore is ×100 (e.g. 484 = 4.84); store as weightedScore*1e15 so formatScore(÷1e17)=4.84
           a.score = weightedScore * BigInt(1e15);
           a.jobsCompleted = Number(totalJobs);
         }
-        if (totalVolume > 0n) {
-          a.merit = `${(Number(totalVolume) / 1e6).toFixed(1)} USDC`;
+      }
+      // MeritSBTV2.getXP: Merit = XP / 1e18
+      const xp = xpRaw?.[idx];
+      if (xp?.status === "success" && xp.result) {
+        const [xpValue] = xp.result as [bigint, number];
+        if (xpValue > 0n) {
+          const xpNum = Number(xpValue) / 1e18;
+          a.merit = xpNum < 10 ? `${xpNum.toFixed(2)} XP` : `${xpNum.toFixed(1)} XP`;
         }
       }
     });
@@ -520,7 +536,7 @@ export default function MarketplacePage() {
     }
 
     return [...newAgents, ...legacyAgents];
-  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw, reputationsRaw, legacyCount, legacyAgentsRaw]);
+  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw, reputationsRaw, xpRaw, legacyCount, legacyAgentsRaw]);
 
   const filtered = useMemo(() => {
     let list = mergedAgents;

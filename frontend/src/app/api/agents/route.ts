@@ -8,20 +8,20 @@ const client = createPublicClient({ chain: baseSepolia, transport: http("https:/
 const TIERS = ["Crab", "Lobster", "Squid", "Octopus", "Shark"];
 
 type RawAgent = { wallet: string; agentId: string; metadataURI: string; webhookUrl: string; registeredAt: bigint; status: number; score: bigint; jobsCompleted: number; rating: number; tier: number };
-type Reputation = { weightedScore: bigint; totalJobs: bigint; totalVolume: bigint; tier: number };
+type Reputation = { weightedScore: bigint; totalJobs: bigint; tier: number };
 
-function formatAgent(i: number, a: RawAgent, rep?: Reputation) {
-  // MeritSBTV2 is source of truth for jobs/tier/score; fall back to AgentRegistry
+function formatAgent(i: number, a: RawAgent, rep?: Reputation, xpWei?: bigint) {
   const jobs = rep && rep.totalJobs > 0n ? Number(rep.totalJobs) : a.jobsCompleted;
   const tier = rep !== undefined ? (TIERS[rep.tier] ?? "Crab") : (TIERS[a.tier] ?? "Crab");
-  // weightedScore from MeritSBTV2 is ×100 (e.g. 484 = 4.84 avg)
   const score = rep && rep.weightedScore > 0n
     ? Number(rep.weightedScore) / 100
     : Number(a.score) / 1e18;
-  // merit: volume in USDC (6 decimals)
-  const meritVolume = rep && rep.totalVolume > 0n
-    ? `${(Number(rep.totalVolume) / 1e6).toFixed(2)} USDC`
-    : null;
+  // merit = XP from getXP() / 1e18
+  let merit: string | null = null;
+  if (xpWei && xpWei > 0n) {
+    const xpNum = Number(xpWei) / 1e18;
+    merit = xpNum < 10 ? `${xpNum.toFixed(2)} XP` : `${xpNum.toFixed(1)} XP`;
+  }
 
   return {
     id: i,
@@ -36,7 +36,7 @@ function formatAgent(i: number, a: RawAgent, rep?: Reputation) {
     jobs,
     rating: a.rating / 100,
     tier,
-    merit: meritVolume,
+    merit,
     profileUrl: `https://moltforge.cloud/agent/${a.wallet}`,
   };
 }
@@ -52,7 +52,6 @@ export async function GET(req: Request) {
 
     const total = Number(count);
 
-    // Fetch all agents + reputations in parallel via multicall
     const agentCalls = Array.from({ length: total }, (_, i) => ({
       address: ADDRESSES.AgentRegistry as `0x${string}`,
       abi: AGENT_REGISTRY_ABI,
@@ -67,9 +66,17 @@ export async function GET(req: Request) {
       args: [BigInt(i + 1)] as const,
     }));
 
-    const [agentsRaw, repsRaw] = await Promise.all([
+    const xpCalls = Array.from({ length: total }, (_, i) => ({
+      address: ADDRESSES.MeritSBTV2 as `0x${string}`,
+      abi: MERIT_SBT_V2_ABI,
+      functionName: "getXP" as const,
+      args: [BigInt(i + 1)] as const,
+    }));
+
+    const [agentsRaw, repsRaw, xpsRaw] = await Promise.all([
       client.multicall({ contracts: agentCalls }),
       client.multicall({ contracts: repCalls }),
+      client.multicall({ contracts: xpCalls }),
     ]);
 
     const agents = [];
@@ -86,11 +93,18 @@ export async function GET(req: Request) {
         let rep: Reputation | undefined;
         const rr = repsRaw[i];
         if (rr?.status === "success" && rr.result) {
-          const [ws, tj, tv, t] = rr.result as [bigint, bigint, bigint, number];
-          rep = { weightedScore: ws, totalJobs: tj, totalVolume: tv, tier: Number(t) };
+          const [ws, tj, , t] = rr.result as [bigint, bigint, bigint, number];
+          rep = { weightedScore: ws, totalJobs: tj, tier: Number(t) };
         }
 
-        agents.push(formatAgent(i + 1, a, rep));
+        let xpWei: bigint | undefined;
+        const xr = xpsRaw[i];
+        if (xr?.status === "success" && xr.result) {
+          const [xp] = xr.result as [bigint, number];
+          xpWei = xp;
+        }
+
+        agents.push(formatAgent(i + 1, a, rep, xpWei));
       } catch { /* skip */ }
     }
 
