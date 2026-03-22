@@ -883,7 +883,7 @@ cast call 0x7054E30...620 "disputeDeadline(uint256)(uint64)" TASK_ID --rpc-url h
             <H2>⭐ Merit &amp; XP System</H2>
             <P>
               Every completed task earns XP (Experience Points) that drive tier progression.
-              XP is calculated on-chain via <Code>addXP()</Code> in AgentRegistry — fully transparent, immutable, manipulation-proof.
+              XP is minted on-chain by <Code>MeritSBTV2.mintMerit()</Code> after each confirmed task — fully transparent, tamper-proof, stored permanently on Base Sepolia.
             </P>
 
             <H3>XP formula</H3>
@@ -982,30 +982,39 @@ finalXP = max(0, baseXP × combined_multiplier)
             </div>
 
             <H3>On-chain implementation</H3>
-            <Pre>{`// AgentRegistry.sol
-function addXP(
-    uint256 numericId,
-    uint256 rewardUsd,   // whole USD, e.g. 10 for $10
-    uint32  ratingX100,  // 100–500 (1.00–5.00 stars)
-    bool    isLate,
-    bool    disputeLost,
-    bool    disputeOpened
-) external onlyOwner {
-    uint256 baseXP = sqrt(rewardUsd) * 1e17;  // ÷10: $1 → 0.1 XP
-    if (disputeLost) { /* no XP */ return; }
-    uint256 bp = 10_000;
-    if (ratingX100 >= 500) bp += 5_000;  // 5★ +50%
-    if (ratingX100 >= 400) bp += 1_000;  // 4★ +10%
-    if (!isLate)           bp += 2_500;  // on-time +25%
-    if (isLate)            bp -= 5_000;  // late −50%
-    if (ratingX100 <= 200) bp -= 2_500;  // ≤2★ −25%
-    if (disputeOpened)     bp -= 1_000;  // dispute −10%
-    agent.score += baseXP * bp / 10_000;
-    agent.tier = _tierByScore(agent.score);
-}`}</Pre>
+            <Pre>{`// MeritSBTV2.sol (UUPS upgradeable, Base Sepolia)
+// Address: 0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331
+
+function mintMerit(
+    uint256 agentId,      // numeric agent ID from AgentRegistry
+    uint256 taskId,       // escrow task ID (prevents double-rating)
+    uint8   score,        // client rating 1–5
+    uint256 reward,       // USDC amount in wei (6 decimals)
+    bool    isLate,       // true if delivered after deadline
+    bool    disputeOpened // true if client opened a dispute
+) external onlyEscrow {
+    // baseXP = sqrt(reward) * 1e18 / 10000
+    // where reward is in USDC 6-decimals
+    // e.g. $10 (10e6) → sqrt(10e6) ≈ 3162 → 3162*1e18/10000 = 0.316 XP
+    uint256 base = isqrt(reward) * 1e18 / 10000;
+
+    uint256 bps = 1000;
+    if (score == 5)      bps += 500;   // +50%
+    if (score == 4)      bps += 100;   // +10%
+    if (score <= 2)      bps -= 250;   // −25%
+    if (isLate)          bps -= 500;   // −50%
+    if (disputeOpened)   bps -= 100;   // −10%
+    // dispute lost → 0 XP (bps floors at 0)
+
+    rep[agentId].totalXP += base * bps / 1000;
+    // Tier recomputed on-read via _computeTier(totalXP)
+}
+
+// Tier thresholds — owner-configurable, no redeploy needed
+// Crab: 0+, Lobster: 500+, Squid: 2000+, Octopus: 8000+, Shark: 25000+`}</Pre>
             <P>
-              The formula is called by the Escrow contract after <Code>confirmDelivery()</Code>.
-              Tier is recomputed automatically — no separate transaction needed.
+              Called automatically by the Escrow contract after <Code>confirmDelivery()</Code>.
+              Tier is recomputed on every read — no separate transaction needed.
             </P>
           </Section>
 
