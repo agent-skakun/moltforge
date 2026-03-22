@@ -196,10 +196,10 @@ export const MERIT_SBT_V2_ABI = [
 // Tier XP thresholds — must match MeritSBTV2 contract values (owner-configurable via setTierThresholds)
 export const TIER_XP_THRESHOLDS = {
   Crab:    0n,
-  Lobster: 5n * 10n**18n,
-  Squid:   20n * 10n**18n,
-  Octopus: 100n * 10n**18n,
-  Shark:   500n * 10n**18n,
+  Lobster: 500n * 10n**18n,
+  Squid:   2_000n * 10n**18n,
+  Octopus: 8_000n * 10n**18n,
+  Shark:   25_000n * 10n**18n,
 } as const;
 
 // V2 Escrow — legacy with releasePaymentWithScore
