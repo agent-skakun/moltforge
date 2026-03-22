@@ -272,8 +272,10 @@ app.post("/tasks", async (req, res) => {
   };
 
   // Resolve query: prefer explicit "query", fallback to "description" (Escrow webhook)
-  // description may be JSON: {"title":"...","description":"..."}
+  // description may be JSON: {"title":"...","description":"...","resolution":{...}}
   let resolvedQuery = query ?? description ?? "";
+  let resolvedDeliverables = "";
+  let resolvedCriteria = "";
   if (!resolvedQuery && taskId) {
     // Try to fetch description from on-chain
     try {
@@ -283,8 +285,20 @@ app.post("/tasks", async (req, res) => {
   }
   try {
     const parsed = JSON.parse(resolvedQuery);
+    const resolution = parsed.resolution ?? {};
+    resolvedDeliverables = resolution.deliverables ?? "";
+    resolvedCriteria = resolution.acceptanceCriteria ?? "";
     resolvedQuery = parsed.description ?? parsed.title ?? resolvedQuery;
   } catch { /* raw string — keep as is */ }
+
+  // Build full task prompt with acceptance criteria if available
+  let fullQuery = resolvedQuery;
+  if (resolvedDeliverables || resolvedCriteria) {
+    fullQuery = `Task: ${resolvedQuery}`;
+    if (resolvedDeliverables) fullQuery += `\n\nDeliverables (what must be produced): ${resolvedDeliverables}`;
+    if (resolvedCriteria) fullQuery += `\n\nAcceptance criteria (how success is judged): ${resolvedCriteria}`;
+    fullQuery += `\n\nComplete the task exactly as specified above.`;
+  }
 
   if (!resolvedQuery || typeof resolvedQuery !== "string" || resolvedQuery.trim().length < 3) {
     res.status(400).json({ error: "query or description (string) is required" });
@@ -344,7 +358,7 @@ app.post("/tasks", async (req, res) => {
       if (fetched) combinedSkills = combinedSkills ? `${combinedSkills}\n\n${fetched}` : fetched;
     }
 
-    const report = await executeResearch(resolvedQuery, {
+    const report = await executeResearch(fullQuery, {
       systemPrompt: systemPrompt ?? config.systemPrompt,
       skillsContext: combinedSkills || undefined,
       llmConfig: {
@@ -770,11 +784,28 @@ app.listen(config.port, () => {
       executeTask: async (task) => {
         // Parse description — JSON or raw string
         let query = task.description;
-        try { const p = JSON.parse(task.description); query = p.description ?? p.title ?? query; } catch { /* raw */ }
+        let deliverables = "";
+        let acceptanceCriteria = "";
+        try {
+          const p = JSON.parse(task.description);
+          query = p.description ?? p.title ?? query;
+          const resolution = p.resolution ?? {};
+          deliverables = resolution.deliverables ?? "";
+          acceptanceCriteria = resolution.acceptanceCriteria ?? "";
+        } catch { /* raw */ }
+
+        // Build full task prompt with conditions if available
+        let fullQuery = query;
+        if (deliverables || acceptanceCriteria) {
+          fullQuery = `Task: ${query}`;
+          if (deliverables) fullQuery += `\n\nDeliverables (what must be produced): ${deliverables}`;
+          if (acceptanceCriteria) fullQuery += `\n\nAcceptance criteria (how success is judged): ${acceptanceCriteria}`;
+          fullQuery += `\n\nComplete the task exactly as specified above.`;
+        }
 
         // Build combined skills context
         let combinedSkills = skillsContext;
-        const report = await executeResearch(query, {
+        const report = await executeResearch(fullQuery, {
           systemPrompt: config.systemPrompt,
           skillsContext: combinedSkills || undefined,
           llmConfig: {
