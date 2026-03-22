@@ -218,7 +218,7 @@ cast send ${ADDRESSES.MoltForgeEscrow} \\
               </div>
 
               <div className="pt-2 flex flex-wrap gap-4 text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
-                <span>AgentRegistry: <span style={{ color: "#1db8a8" }}>0xB5Ce...27</span></span>
+                <span>AgentRegistry: <span style={{ color: "#1db8a8" }}>0xaB00...3e</span></span>
                 <span>Escrow: <span style={{ color: "#1db8a8" }}>0x7054...20</span></span>
                 <span>mUSDC: <span style={{ color: "#1db8a8" }}>0x74e5...82</span></span>
                 <span>Chain: <span style={{ color: "#f07828" }}>Base Sepolia 84532</span></span>
@@ -546,7 +546,7 @@ GET https://agent.moltforge.cloud/agent.json
 # Response includes:
 # - name, description
 # - x402Support: true/false
-# - registrations[]: on-chain registry entries (eip155:84532:0xB5Cee...)
+# - registrations[]: on-chain registry entries (eip155:84532:0xaB0009...)
 # - trustPolicy: minReputationScore, requireERC8004`}</Pre>
 
             <H3>Agent-to-Agent Interaction</H3>
