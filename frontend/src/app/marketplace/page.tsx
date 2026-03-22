@@ -26,6 +26,7 @@ interface AgentData {
   tools: readonly string[];
   agentUrl: string;
   meritScore?: bigint;
+  merit?: string;  // totalVolume from MeritSBTV2 formatted as "X.XX USDC"
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -219,8 +220,8 @@ function AgentCard({ agent }: { agent: AgentData }) {
       <div className="grid grid-cols-4 gap-0" style={{ borderBottom: "1px solid #1a2e2b" }}>
         {[
           { label: "Score", value: formatScore(agent.score), color: "#1db8a8" },
-          { label: "Jobs", value: agent.jobsCompleted.toString(), color: "#f07828" },
-          { label: "Merit", value: agent.meritScore !== undefined ? agent.meritScore.toString() : "—", color: "#3ec95a" },
+          { label: "Jobs",  value: agent.jobsCompleted.toString(), color: "#f07828" },
+          { label: "Merit", value: agent.merit ?? "—", color: "#3ec95a" },
           { label: "Rating", value: agent.rating > 0 ? (agent.rating / 100).toFixed(1) + "\u2605" : "\u2014", color: "#e8c842" },
         ].map((stat, i) => (
           <div key={i} className="flex flex-col items-center py-2"
@@ -423,20 +424,7 @@ export default function MarketplacePage() {
 
   const { data: reputationsRaw } = useReadContracts({ contracts: reputationCalls });
 
-  // ── AgentRegistry V3 profile calls (jobsCompleted + score — source of truth) ─
-  const profileCalls = useMemo(() =>
-    Array.from({ length: count }, (_, i) => ({
-      address: ADDRESSES.AgentRegistry as `0x${string}`,
-      abi: AGENT_REGISTRY_ABI,
-      functionName: "getAgentProfile" as const,
-      args: [BigInt(i + 1)] as const,
-    })),
-    [count]
-  );
-
-  const { data: profilesRaw } = useReadContracts({ contracts: profileCalls });
-
-  // ── Merge both registries: new preferred, legacy fills gaps ─────────────────
+    // ── Merge both registries: new preferred, legacy fills gaps ─────────────────
   const mergedAgents: AgentData[] = useMemo(() => {
     // 1. Build agents from new (primary) registry
     const newAgents: AgentData[] = [];
@@ -475,24 +463,26 @@ export default function MarketplacePage() {
       }
     }
 
-    // Attach merit scores + override tier/jobs/score from canonical sources
+    // Attach merit scores + override tier/jobs/score from MeritSBTV2 (source of truth)
     newAgents.forEach((a, idx) => {
       const merit = meritScoresRaw?.[idx];
       if (merit?.status === "success" && merit.result !== undefined) {
         a.meritScore = merit.result as bigint;
       }
-      // Tier: MeritSBTV2 (source of truth for tier)
+      // MeritSBTV2.getReputation: single source of truth for tier, jobs, score, merit
       const rep = reputationsRaw?.[idx];
       if (rep?.status === "success" && rep.result) {
-        const [, , , tier] = rep.result as [bigint, bigint, bigint, number];
+        const [weightedScore, totalJobs, totalVolume, tier] = rep.result as [bigint, bigint, bigint, number];
+        // Always override tier
         a.tier = Number(tier);
-      }
-      // Jobs + Score: AgentRegistry V3 getAgentProfile (source of truth)
-      const profile = profilesRaw?.[idx];
-      if (profile?.status === "success" && profile.result) {
-        const [, jobsCompleted, , score] = profile.result as [number, number, number, bigint, number];
-        a.jobsCompleted = Number(jobsCompleted);
-        a.score = score; // raw bigint, formatScore divides by 1e18
+        if (totalJobs > 0n) {
+          // weightedScore is ×100 (e.g. 484 = 4.84); store as weightedScore*1e15 so formatScore(÷1e17)=4.84
+          a.score = weightedScore * BigInt(1e15);
+          a.jobsCompleted = Number(totalJobs);
+        }
+        if (totalVolume > 0n) {
+          a.merit = `${(Number(totalVolume) / 1e6).toFixed(1)} USDC`;
+        }
       }
     });
 
@@ -530,7 +520,7 @@ export default function MarketplacePage() {
     }
 
     return [...newAgents, ...legacyAgents];
-  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw, reputationsRaw, profilesRaw, legacyCount, legacyAgentsRaw]);
+  }, [count, agentsRaw, agentsV1Raw, meritScoresRaw, reputationsRaw, legacyCount, legacyAgentsRaw]);
 
   const filtered = useMemo(() => {
     let list = mergedAgents;
