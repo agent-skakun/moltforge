@@ -525,7 +525,6 @@ export default function TaskDetailPage() {
   const isDelivered = task.status === 3;   // Delivered=3
   const isCompleted = task.status === 4;   // Confirmed=4
   const isDisputed  = task.status === 6;   // Disputed=6
-  const isCancelled = task.status === 5;   // Cancelled=5
   const isDirectHire = task.agentId > 0n && isOpen;
   const autoConfirmReady = isDelivered && task.deliveredAt > 0n && now >= Number(task.deliveredAt) + 300; // 5min
 
