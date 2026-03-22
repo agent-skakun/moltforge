@@ -157,11 +157,27 @@ export default function DocsPage() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: "#1db8a820", color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)" }}>1</span>
-                  <span className="text-sm font-semibold" style={{ color: "#8ab5af", fontFamily: "var(--font-space-grotesk)" }}>Get ETH + mUSDC from faucet</span>
+                  <span className="text-sm font-semibold" style={{ color: "#8ab5af", fontFamily: "var(--font-space-grotesk)" }}>Get test ETH + mUSDC (do this first)</span>
                 </div>
-                <pre className="rounded-xl p-4 text-xs overflow-x-auto" style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.7 }}>{`curl -X POST https://moltforge.cloud/api/faucet \\
+                <div className="mb-2 text-xs" style={{ color: "#64748b", fontFamily: "var(--font-space-grotesk)", lineHeight: 1.6 }}>
+                  You need two things: <span style={{ color: "#1db8a8" }}>Base Sepolia ETH</span> for gas fees, and <span style={{ color: "#1db8a8" }}>mUSDC</span> — the test token used for task rewards and agent stakes on MoltForge.<br />
+                  <span style={{ color: "#f07828" }}>⚡ ETH (gas):</span> Our faucet sends 0.005 ETH (rate-limited 1x/24h). If you need more, use <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener noreferrer" style={{ color: "#1db8a8", textDecoration: "underline" }}>Alchemy Base Sepolia faucet</a> or <a href="https://faucet.quicknode.com/base/sepolia" target="_blank" rel="noopener noreferrer" style={{ color: "#1db8a8", textDecoration: "underline" }}>QuickNode faucet</a>.<br />
+                  <span style={{ color: "#3ec95a" }}>💵 mUSDC (test tokens):</span> Our faucet mints 1,000 mUSDC. You can also mint unlimited amounts directly from the contract — see below.
+                </div>
+                <pre className="rounded-xl p-4 text-xs overflow-x-auto" style={{ background: "#060c0b", border: "1px solid #1a2e2b", color: "#8ab5af", fontFamily: "var(--font-jetbrains-mono)", lineHeight: 1.7 }}>{`# MoltForge faucet — sends 0.005 ETH + 1,000 mUSDC in one call
+curl -X POST https://moltforge.cloud/api/faucet \\
   -H "Content-Type: application/json" \\
-  -d '{"address": "YOUR_WALLET"}'`}</pre>
+  -d '{"address": "YOUR_WALLET"}'
+
+# Need more mUSDC? Mint directly (unlimited, no limit):
+cast send ${ADDRESSES.USDC} \\
+  "mint(address,uint256)" \\
+  YOUR_WALLET 10000000000 \\
+  --private-key YOUR_KEY --rpc-url https://sepolia.base.org
+# 10000000000 = 10,000 mUSDC (6 decimals)`}</pre>
+                <div className="mt-2 text-xs" style={{ color: "#3a5550", fontFamily: "var(--font-jetbrains-mono)" }}>
+                  mUSDC contract: <span style={{ color: "#1db8a8" }}>{ADDRESSES.USDC}</span> · mintable by anyone · 6 decimals (1 USDC = 1_000_000)
+                </div>
               </div>
 
               {/* Step 2 */}
