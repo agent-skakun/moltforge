@@ -278,6 +278,17 @@ const TOOLS = [
       required: ["agentUrl", "query"],
     },
   },
+  {
+    name: "list_my_tasks",
+    description: "List all tasks created by a specific wallet address (your tasks as a client). Returns tasks where the client field matches the given address.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        address: { type: "string", description: "Wallet address (0x...)" },
+      },
+      required: ["address"],
+    },
+  },
 ];
 
 // ── Tool handlers ─────────────────────────────────────────────────────────────
@@ -715,6 +726,102 @@ async function handleAgentInteract(args: Record<string, unknown>) {
   return data;
 }
 
+async function handleListMyTasks(args: Record<string, unknown>) {
+  const address = args.address as string;
+  if (!address || !isAddress(address)) throw new Error("Invalid address. Must be a valid 0x... wallet address.");
+
+  const statusNames = ["Open", "Claimed", "InProgress", "Delivered", "Confirmed", "Cancelled", "Disputed"];
+
+  // Get total task count
+  const taskCount = await publicClient.readContract({
+    address: ESCROW,
+    abi: ESCROW_ABI,
+    functionName: "taskCount",
+  }) as bigint;
+
+  const count = Number(taskCount);
+  if (count === 0) return { tasks: [], total: 0 };
+
+  // Batch read all tasks in parallel
+  const BATCH_SIZE = 20;
+  const myTasks: {
+    id: number;
+    title: string;
+    status: string;
+    agentId: number;
+    reward: string;
+    applicationCount: number;
+    resultUrl: string;
+  }[] = [];
+
+  for (let batchStart = 1; batchStart <= count; batchStart += BATCH_SIZE) {
+    const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, count);
+    const promises: Promise<void>[] = [];
+
+    for (let i = batchStart; i <= batchEnd; i++) {
+      const taskId = i;
+      promises.push(
+        (async () => {
+          try {
+            const task = await publicClient.readContract({
+              address: ESCROW,
+              abi: ESCROW_ABI,
+              functionName: "getTask",
+              args: [BigInt(taskId)],
+            }) as {
+              id: bigint;
+              client: string;
+              agentId: bigint;
+              reward: bigint;
+              description: string;
+              status: number;
+              resultUrl: string;
+            };
+
+            if (task.client.toLowerCase() !== address.toLowerCase()) return;
+
+            // Parse title from description JSON
+            let title = "";
+            try {
+              const desc = JSON.parse(task.description) as { title?: string };
+              title = desc.title || "";
+            } catch {
+              title = task.description?.slice(0, 80) || "";
+            }
+
+            // Get application count
+            const appCount = await publicClient.readContract({
+              address: ESCROW,
+              abi: ESCROW_ABI,
+              functionName: "getApplicationCount",
+              args: [BigInt(taskId)],
+            }) as bigint;
+
+            myTasks.push({
+              id: taskId,
+              title,
+              status: statusNames[task.status] ?? `Unknown(${task.status})`,
+              agentId: Number(task.agentId),
+              reward: (Number(task.reward) / 1e6).toFixed(2) + " USDC",
+              applicationCount: Number(appCount),
+              resultUrl: task.resultUrl || "",
+            });
+          } catch {
+            // skip unreadable tasks
+          }
+        })()
+      );
+    }
+
+    await Promise.all(promises);
+  }
+
+  // Sort by id ascending
+  myTasks.sort((a, b) => a.id - b.id);
+
+  return { tasks: myTasks, total: myTasks.length };
+}
+
 // ── Route handlers ────────────────────────────────────────────────────────────
 
 export async function GET() {
@@ -807,6 +914,7 @@ export async function POST(req: Request) {
         case "get_agent":               result = await handleGetAgent(toolArgs); break;
         case "fetch_agent_card":        result = await handleFetchAgentCard(toolArgs); break;
         case "agent_interact":          result = await handleAgentInteract(toolArgs); break;
+        case "list_my_tasks":           result = await handleListMyTasks(toolArgs); break;
         default:
           return NextResponse.json({ jsonrpc: "2.0", error: { code: -32601, message: `Unknown tool: ${toolName}` }, id }, { status: 404, headers: cors });
       }
