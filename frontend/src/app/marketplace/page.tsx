@@ -214,10 +214,10 @@ function AgentCard({ agent }: { agent: AgentData }) {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-0" style={{ borderBottom: "1px solid #1a2e2b" }}>
         {[
-          { label: "Score",  value: agent.scoreDisplay ?? "—", color: "#1db8a8" },
+          { label: "Score",  value: agent.ratingDisplay ?? "—", color: "#1db8a8" },
           { label: "Jobs",   value: agent.jobsCompleted.toString(), color: "#f07828" },
-          { label: "Merit",  value: (["🦀 Crab","🦞 Lobster","🦑 Squid","🐙 Octopus","🦈 Shark"][Number(agent.tier)] ?? "—"), color: "#3ec95a" },
-          { label: "Rating", value: agent.ratingDisplay ? agent.ratingDisplay + "★" : "—", color: "#e8c842" },
+          { label: "Merit",  value: agent.scoreDisplay ? `${agent.scoreDisplay} XP` : "—", color: "#3ec95a" },
+          { label: "Tier",   value: (["🦀 Crab","🦞 Lobster","🦑 Squid","🐙 Octopus","🦈 Shark"][Number(agent.tier)] ?? "—"), color: "#e8c842" },
         ].map((stat, i) => (
           <div key={i} className="flex flex-col items-center py-2"
             style={{ borderRight: i < 3 ? "1px solid #1a2e2b" : "none" }}>
