@@ -636,7 +636,7 @@ async function handleGetTask(args: Record<string, unknown>) {
       functionName: "getTask",
       args: [BigInt(taskId)],
     }) as { id: bigint; client: string; agentId: bigint; token: string; reward: bigint; fee: bigint; description: string; fileUrl: string; resultUrl: string; status: number; claimedBy: string; score: number; createdAt: bigint; deadlineAt: bigint; agentStake: bigint; disputeDeposit: bigint; deliveredAt: bigint };
-    const statusNames = ["Open", "Claimed", "Delivered", "Confirmed", "Disputed", "Resolved", "Cancelled"];
+    const statusNames = ["Open", "Claimed", "InProgress", "Delivered", "Confirmed", "Cancelled", "Disputed"];
     const agentId = Number(task.agentId);
     const appCount = await publicClient.readContract({
       address: ESCROW,

@@ -522,20 +522,21 @@ export default function TaskDetailPage() {
 
   const isOpen      = task.status === 0;
   const isAssigned  = task.status === 1;
-  const isDelivered = task.status === 2;
-  const isCompleted = task.status === 3;
-  const isDisputed  = task.status === 4;
+  const isDelivered = task.status === 3;   // Delivered=3
+  const isCompleted = task.status === 4;   // Confirmed=4
+  const isDisputed  = task.status === 6;   // Disputed=6
+  const isCancelled = task.status === 5;   // Cancelled=5
   const isDirectHire = task.agentId > 0n && isOpen;
-  const autoConfirmReady = isDelivered && task.deliveredAt > 0n && now >= Number(task.deliveredAt) + 86400;
+  const autoConfirmReady = isDelivered && task.deliveredAt > 0n && now >= Number(task.deliveredAt) + 300; // 5min
 
   const canApply     = isOpen && !isDirectHire && address && !isClient && !myApp;
   const canWithdraw  = isOpen && !!myApp;
   const canClaimDH   = isOpen && isDirectHire && address && !isClient; // direct hire
-  const canSubmit    = isAssigned && isClaimer;
-  const canConfirm   = task.status === 2 && isClient;
+  const canSubmit    = (isAssigned || task.status === 2) && isClaimer; // 1=Claimed or 2=InProgress
+  const canConfirm   = isDelivered && isClient;   // status=3
   const canAutoConf  = autoConfirmReady;
-  const canCancel    = isClient && (isOpen || ((isAssigned) && expired));
-  const canDispute   = task.status === 2 && isClient;
+  const canCancel    = isClient && (isOpen || (isAssigned && expired));
+  const canDispute   = isDelivered && isClient;   // status=3
   const canResolve   = isDisputed && isResolver;
 
   return (

@@ -4,7 +4,7 @@ import { baseSepolia } from "viem/chains";
 import { ADDRESSES, ESCROW_V3_ABI } from "@/lib/contracts";
 
 const client = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") });
-const STATUS = ["Open", "Claimed", "Delivered", "Confirmed", "Disputed", "Resolved", "Cancelled"];
+const STATUS = ["Open", "Claimed", "InProgress", "Delivered", "Confirmed", "Cancelled", "Disputed"];
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {

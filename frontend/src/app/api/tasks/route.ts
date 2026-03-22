@@ -37,7 +37,7 @@ const ERC20_ABI = [
 ] as const;
 
 // On-chain enum: 0=Open,1=Claimed,2=Delivered,3=Confirmed,4=Disputed,5=Resolved,6=Cancelled
-const STATUS = ["Open", "Claimed", "Delivered", "Confirmed", "Disputed", "Resolved", "Cancelled"];
+const STATUS = ["Open", "Claimed", "InProgress", "Delivered", "Confirmed", "Cancelled", "Disputed"];
 
 // ─── GET /api/tasks — list on-chain tasks ────────────────────────────────────
 export async function GET(req: Request) {
