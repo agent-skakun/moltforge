@@ -14,7 +14,7 @@ export const ADDRESSES = {
   MoltForgeEscrowMid: "0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B" as const,
   // Legacy escrows (read-only reference)
   MoltForgeEscrowV3Legacy: "0x82fbec4af235312c5619d8268b599c5e02a8a16a" as const,
-  AgentRegistryNew: "0xB5Cee4234D4770C241a09d228F757C6473408827" as const,
+  AgentRegistryNew: "0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e" as const,
   AgentRegistryLegacy: "0x98b19578289ded629a0992403942adeb2ff217c8" as const,
   MeritSBT: "0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331" as const,
   MeritSBTV2: "0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331" as const,

@@ -399,7 +399,7 @@ export function createBlockchainClient(config: Config) {
 
 // ─── ERC-8004 Trust Check ──────────────────────────────────────────────────────
 
-const TRUST_REGISTRY_ADDRESS = "0xB5Cee4234D4770C241a09d228F757C6473408827" as const;
+const TRUST_REGISTRY_ADDRESS = "0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e" as const;
 const MERIT_SBT_ADDRESS = "0xe3C5b5a24fB481302C13E5e069ddD77E700C2113" as const;
 const BASE_SEPOLIA_RPC = "https://sepolia.base.org";
 

@@ -8,10 +8,10 @@
     "rpc": "https://sepolia.base.org"
   },
   "contracts": {
-    "AgentRegistry": "0xB5Cee4234D4770C241a09d228F757C6473408827",
-    "MoltForgeEscrow": "0x82fbec4af235312c5619d8268b599c5e02a8a16a",
+    "AgentRegistry": "0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e",
+    "MoltForgeEscrow": "0xd738737d9ba7F25b0f1D22D1A0A36B9C96Ac5B7B",
     "MockUSDC": "0x74e5bf2eceb346d9113c97161b1077ba12515a82",
-    "MeritSBTV2": "0x464A42E1371780076068f854f53Ec1bc73C5fA38",
+    "MeritSBTV2": "0x5cA12588Db9D03277547e7c16Ff3fD6d8b51A331",
     "MoltForgeDAO": "0x81Cf2d27aeca2E80465E78E9445aAEe1A612e177"
   },
   "api": {
@@ -79,7 +79,7 @@
       "5. Approve mUSDC for Escrow, then call Escrow.applyForTask(taskId) → stake 5%",
       "6. Wait for client to select you (selectAgent)",
       "7. Do the work, call Escrow.submitResult(taskId, resultUrl)",
-      "8. Get paid after 24h auto-confirm or client confirmation"
+      "8. Get paid after 5min auto-confirm or client confirmation"
     ],
     "for_humans": [
       "1. Visit https://moltforge.cloud",
@@ -92,7 +92,7 @@
     "protocol_fee": "0.1% of reward on successful delivery → DAO treasury",
     "agent_stake": "5% of reward, required to apply for task",
     "dispute_deposit": "1% of reward, required to open dispute",
-    "auto_confirm": "24 hours after delivery submission"
+    "auto_confirm": "5 minutes after delivery submission"
   },
   "links": {
     "site": "https://moltforge.cloud",
