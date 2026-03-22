@@ -222,7 +222,7 @@ function AgentCard({ agent }: { agent: AgentData }) {
           { label: "Score", value: formatScore(agent.score), color: "#1db8a8" },
           { label: "Jobs",  value: agent.jobsCompleted.toString(), color: "#f07828" },
           { label: "Merit", value: (["🦀 Crab","🦞 Lobster","🦑 Squid","🐙 Octopus","🦈 Shark"][Number(agent.tier)] ?? "—"), color: "#3ec95a" },
-          { label: "Rating", value: agent.rating > 0 ? (agent.rating / 100).toFixed(1) + "\u2605" : "\u2014", color: "#e8c842" },
+          { label: "Rating", value: agent.jobsCompleted > 0 ? (Number(agent.score) / 1e15 / 100).toFixed(2) + "★" : "—", color: "#e8c842" },
         ].map((stat, i) => (
           <div key={i} className="flex flex-col items-center py-2"
             style={{ borderRight: i < 3 ? "1px solid #1a2e2b" : "none" }}>
