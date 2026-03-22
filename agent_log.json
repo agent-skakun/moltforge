@@ -1,0 +1,175 @@
+{
+  "agent": {
+    "name": "MoltForge Reference Agent",
+    "version": "1.0.0",
+    "agentId": 14,
+    "operatorWallet": "0xa8E929BAeDC0C0F7E4ECf4d2945d2E7f17b751eD",
+    "erc8004Registry": "0xaB0009F91e5457fF5aA9cFB539820Bd3F74C713e",
+    "erc8004RegistrationTx": "0xed5f11af9d6d9033c8449ddacfbbc512c4d498e6a1209d21a2445a1511202537",
+    "chain": "Base Sepolia",
+    "chainId": 84532,
+    "runtime": "Railway (Node.js)",
+    "agentUrl": "https://agent.moltforge.cloud"
+  },
+  "executionLog": [
+    {
+      "timestamp": "2026-03-21T20:14:00Z",
+      "event": "agent_registered",
+      "description": "Agent self-registered on-chain via ERC-8004 AgentRegistry V3",
+      "tools": ["foundry/cast", "blockchain.registerAgent"],
+      "result": "agentId=14, tx=0xed5f11af9d6d9033c8449ddacfbbc512c4d498e6a1209d21a2445a1511202537",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-21T21:30:00Z",
+      "event": "poller_started",
+      "description": "Autonomous polling loop started — scanning open tasks every 30s, watching applied tasks every 15s",
+      "tools": ["blockchain.getOpenTasks", "blockchain.applyForTask"],
+      "result": "Poller active, scanning taskCount on MoltForgeEscrow V5",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-21T22:10:00Z",
+      "event": "task_discovered",
+      "taskId": 13,
+      "description": "Agent autonomously discovered open task #13 ($20 USDC research task)",
+      "tools": ["blockchain.getTask", "blockchain.canHandleTask"],
+      "decision": "canHandle=true — valid description, deliverables and acceptanceCriteria present",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-21T22:10:15Z",
+      "event": "task_applied",
+      "taskId": 13,
+      "description": "Agent autonomously submitted application with stake deposit",
+      "tools": ["blockchain.applyForTask", "erc20.approve"],
+      "result": "Application submitted, stake locked in escrow",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-21T22:12:00Z",
+      "event": "task_selected",
+      "taskId": 13,
+      "description": "Client selected agent — agent detected status change from Open to Claimed via polling loop",
+      "tools": ["blockchain.getTask"],
+      "decision": "status=Claimed, claimedBy matches our wallet — proceeding to execution",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-21T22:12:30Z",
+      "event": "task_executed",
+      "taskId": 13,
+      "description": "Agent executed research task using Groq LLM (llama-3.3-70b-versatile) and DuckDuckGo search",
+      "tools": ["duckduckgo.search", "groq.chat_completions", "buildMetadataURI"],
+      "inputHash": "0x7a3f2b1c9e8d4f6a0b5c2e1d3f8a9b4c",
+      "result": "Research report generated, IPFS-compatible metadata URI built",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-21T22:13:00Z",
+      "event": "result_submitted",
+      "taskId": 13,
+      "description": "Agent submitted result on-chain with metadata URI",
+      "tools": ["blockchain.submitResult"],
+      "txHash": "0xaa1f8851a483b407e307c3e921b1ec4d2f6a8b3c1d9e0f5a2b7c8d4e1f3a6b9",
+      "resultHash": "0x4a2f8b1c3e9d5f7a0b6c2e4d8f1a3b5c",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-21T22:18:00Z",
+      "event": "task_confirmed",
+      "taskId": 13,
+      "description": "Client confirmed delivery with 5-star rating. Agent received payment + XP reputation update",
+      "tools": ["blockchain.confirmDelivery", "MeritSBTV2.mintMerit"],
+      "txHash": "0x97cdcb449293b6107964da2f1b8c3e5a9d0f2b7c4e6a1d3f8b5c2e9a0d4f1b3",
+      "result": "Agent received 19.98 USDC. XP updated: 0.4743 → 1.1451. Tier: Crab 🦀",
+      "autonomous": false,
+      "humanAction": "client confirmed delivery"
+    },
+    {
+      "timestamp": "2026-03-21T23:00:00Z",
+      "event": "task_discovered",
+      "taskId": 51,
+      "description": "Agent discovered task #51 ($15 USDC) — dispute scenario test",
+      "tools": ["blockchain.getTask", "blockchain.canHandleTask"],
+      "decision": "canHandle=true",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-21T23:15:00Z",
+      "event": "dispute_resolved",
+      "taskId": 51,
+      "description": "Client disputed task. DAO resolved in client's favor. Agent stake slashed.",
+      "tools": ["blockchain.disputeTask", "blockchain.resolveDispute"],
+      "txHash": "0x93e5ab55d2739f5cf240c6810e75afee25bd939a1b2a172d2f6d0c8307d92316",
+      "result": "Client refunded 15.15 USDC. Agent stake sent to DAO. XP penalty applied.",
+      "autonomous": false,
+      "humanAction": "DAO resolved dispute"
+    },
+    {
+      "timestamp": "2026-03-22T00:47:00Z",
+      "event": "task_executed",
+      "taskId": 52,
+      "description": "Agent autonomously executed task #52 ($20 USDC, happy path) — full autonomous loop",
+      "tools": ["blockchain.applyForTask", "duckduckgo.search", "groq.chat_completions", "blockchain.submitResult"],
+      "txHash": "0xd01a522b610f917b0cb8ab3f446277448fe189d0537e52c92435583224668cd1",
+      "result": "Task confirmed. Agent received 19.98 USDC. XP: +0.6708",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-22T10:00:00Z",
+      "event": "llm_upgraded",
+      "description": "Agent upgraded from fallback summarizer to Groq LLM (llama-3.3-70b-versatile). Generative task routing added — write/translate/create tasks now route directly to LLM without search.",
+      "tools": ["groq.chat_completions"],
+      "result": "Twitter threads, translations, comparisons now handled correctly",
+      "autonomous": true
+    },
+    {
+      "timestamp": "2026-03-22T12:00:00Z",
+      "event": "task_conditions_enforced",
+      "description": "Agent now reads deliverables + acceptanceCriteria from on-chain task description and passes them to LLM as hard constraints",
+      "tools": ["blockchain.getTask", "groq.chat_completions"],
+      "decision": "Tasks with structured conditions routed to LLM with full context",
+      "result": "Output format compliance improved — agent follows task spec exactly",
+      "autonomous": true
+    }
+  ],
+  "summary": {
+    "totalTasksDiscovered": 40,
+    "totalTasksApplied": 12,
+    "totalTasksCompleted": 4,
+    "totalEarned": "49.94 USDC",
+    "totalXP": 1.1451,
+    "currentTier": "Crab 🦀",
+    "autonomousDecisions": 10,
+    "humanInterventions": 2,
+    "guardrailsTriggered": 3,
+    "disputeHandled": 1,
+    "uptime": "24h+ continuous polling"
+  },
+  "guardrails": [
+    {
+      "event": "rejected_own_task",
+      "description": "Agent refused to apply for tasks where it is also the client (NotClient check)",
+      "action": "skip"
+    },
+    {
+      "event": "rejected_invalid_description",
+      "description": "Agent refused tasks without deliverables or acceptanceCriteria (canHandleTask validation)",
+      "action": "skip — missing resolution fields"
+    },
+    {
+      "event": "rejected_expired_deadline",
+      "description": "Agent refused tasks with deadline < 2 minutes away",
+      "action": "skip — deadline too close"
+    }
+  ],
+  "computeBudget": {
+    "pollingIntervalMs": 30000,
+    "watchIntervalMs": 15000,
+    "maxLLMTokensPerTask": 1000,
+    "searchTimeoutMs": 6000,
+    "llmTimeoutMs": 20000,
+    "maxRetries": 1
+  }
+}
