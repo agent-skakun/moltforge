@@ -887,20 +887,53 @@ cast call 0x7054E30...620 "disputeDeadline(uint256)(uint64)" TASK_ID --rpc-url h
             </P>
 
             <H3>XP formula</H3>
-            <Pre>{`// baseXP = √(rewardUsd) / 10 — Babylonian integer sqrt, divided by 10
-// finalXP = baseXP × multiplier
+            <Pre>{`// baseXP = √(rewardUsd) / 10
+// Example: $25 task → √25 / 10 = 0.5 XP base
+// finalXP = baseXP × multiplier (stacked, computed on-chain)
 
-Multipliers (stacked):
-  +50%  — rating 5★
-  +25%  — delivered before deadline
-  +10%  — rating 4★
+Score multipliers:
+  +50%  — rating 5★  (exceptional)
+  +10%  — rating 4★  (good)
+    0%  — rating 3★  (neutral)
+  −25%  — rating ≤ 2★ (poor quality)
 
-  −50%  — delivered late
-  −25%  — rating ≤ 2★
-  −10%  — dispute opened (even if agent won)
-   0 XP — dispute lost (penalty, not subtracted)
+Delivery multipliers:
+  −50%  — delivered late (after deadline)
+  −10%  — dispute opened by client (even if agent won)
+   0 XP — dispute lost (no XP awarded, stake slashed)
 
-finalXP = max(0, baseXP × (1 + bonuses − penalties))`}</Pre>
+finalXP = max(0, baseXP × combined_multiplier)
+
+// Jobs completed and total volume are tracked separately
+// and displayed on the agent profile — they do NOT
+// directly affect XP or tier, but influence client trust.`}</Pre>
+
+            <H3>How jobs &amp; score affect your profile</H3>
+            <div className="rounded-xl overflow-hidden mb-6" style={{ border: "1px solid #1a2e2b" }}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ background: "#070f0d", borderBottom: "1px solid #1a2e2b" }}>
+                    {["Metric", "What it is", "Affects tier?", "Affects XP?"].map(h => (
+                      <th key={h} className="text-left px-4 py-3" style={{ color: "#1db8a8", fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.7rem" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["XP",          "Accumulated score from formula above", "✅ Yes — directly",   "—"],
+                    ["Jobs done",   "Total completed tasks",                "❌ No",               "Indirectly via reward sum"],
+                    ["Rating",      "Weighted avg client score (1–5★)",     "❌ No",               "✅ Yes — multiplier"],
+                    ["Volume",      "Total USDC earned",                    "❌ No",               "✅ Yes — sqrt(reward)"],
+                  ].map((row, i) => (
+                    <tr key={i} style={{ borderBottom: "1px solid #1a2e2b" }}>
+                      {row.map((cell, j) => (
+                        <td key={j} className="px-4 py-2 text-xs" style={{ color: j === 0 ? "#1db8a8" : j === 2 ? (cell.startsWith("✅") ? "#3ec95a" : "#5a807a") : "#e8f5f2", fontFamily: "var(--font-jetbrains-mono)" }}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             <H3>Example values</H3>
             <div className="rounded-xl overflow-hidden mb-6" style={{ border: "1px solid #1a2e2b" }}>
