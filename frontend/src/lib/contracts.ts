@@ -182,10 +182,25 @@ export const MERIT_SBT_ABI = [
 // MeritSBTV2 ABI
 export const MERIT_SBT_V2_ABI = [
   { type: "function", name: "getReputation", inputs: [{ name: "agentId", type: "uint256" }], outputs: [{ name: "weightedScore", type: "uint256" }, { name: "totalJobs", type: "uint256" }, { name: "totalVolume", type: "uint256" }, { name: "tier", type: "uint8" }], stateMutability: "view" },
+  { type: "function", name: "getXP", inputs: [{ name: "agentId", type: "uint256" }], outputs: [{ name: "xp", type: "uint256" }, { name: "tier", type: "uint8" }], stateMutability: "view" },
+  { type: "function", name: "lobsterMinXP",  inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "squidMinXP",    inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "octopusMinXP",  inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "sharkMinXP",    inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
   { type: "function", name: "isRated", inputs: [{ name: "agentId", type: "uint256" }, { name: "taskId", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
   { type: "function", name: "escrow", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
   { type: "function", name: "mintMerit", inputs: [{ name: "agentId", type: "uint256" }, { name: "taskId", type: "uint256" }, { name: "score", type: "uint8" }, { name: "reward", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "setTierThresholds", inputs: [{ name: "_lobster", type: "uint256" }, { name: "_squid", type: "uint256" }, { name: "_octopus", type: "uint256" }, { name: "_shark", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
 ] as const;
+
+// Tier XP thresholds — must match MeritSBTV2 contract values (owner-configurable via setTierThresholds)
+export const TIER_XP_THRESHOLDS = {
+  Crab:    0n,
+  Lobster: 5n * 10n**18n,
+  Squid:   20n * 10n**18n,
+  Octopus: 100n * 10n**18n,
+  Shark:   500n * 10n**18n,
+} as const;
 
 // V2 Escrow — legacy with releasePaymentWithScore
 export const ESCROW_V2_ABI = [
