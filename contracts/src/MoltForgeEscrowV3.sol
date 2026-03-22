@@ -11,6 +11,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 interface IMeritSBTV2 {
     function mintMerit(uint256 agentId, uint256 taskId, uint8 score, uint256 reward) external;
+    function mintMerit(uint256 agentId, uint256 taskId, uint8 score, uint256 reward, bool isLate, bool disputeOpened) external;
 }
 
 interface IAgentRegistry {
@@ -426,11 +427,12 @@ contract MoltForgeEscrowV3 is
 
         emit DeliveryConfirmed(taskId, t.client, score, agentPayout);
 
-        // Mint merit (non-reverting) — low-level call absorbs ALL errors including Panic and custom errors
+        // Mint merit (non-reverting) — passes isLate for XP multiplier calculation
         if (meritSBT != address(0) && agentId > 0) {
+            bool _isLate = t.deadlineAt > 0 && block.timestamp > t.deadlineAt;
             meritSBT.call(abi.encodeWithSelector(
-                IMeritSBTV2.mintMerit.selector,
-                agentId, taskId, score, reward
+                bytes4(keccak256("mintMerit(uint256,uint256,uint8,uint256,bool,bool)")),
+                agentId, taskId, score, reward, _isLate, false
             ));
         }
 

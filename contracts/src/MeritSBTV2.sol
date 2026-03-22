@@ -249,21 +249,20 @@ contract MeritSBTV2 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     // ─── Internal ─────────────────────────────────────────────────────────────
 
     /// @dev XP formula: baseXP = sqrt(rewardUsd) / 10
-    ///      Multipliers: 5star=+50%, 4star=+10%, 2star=-25%, 1star=-25%
-    ///                   late=-50%, disputeOpened=-10%
-    ///      Result in 1e18 units (1 XP = 1e18)
+    ///      reward is in USDC 6-decimals. baseXP in 1e18 units (1 XP = 1e18).
+    ///      baseXP = sqrt(reward) * 1e18 / 10000
+    ///      because: sqrt(reward/1e6) / 10 * 1e18 = sqrt(reward) * 1e18 / (10 * sqrt(1e6))
+    ///                                              = sqrt(reward) * 1e18 / 10000
+    ///      Multipliers: 5star=+50%, 4star=+10%, ≤2star=-25%, late=-50%, disputeOpened=-10%
     function _computeXP(
         uint256 reward,
         uint8   score,
         bool    isLate,
         bool    disputeOpened
     ) internal pure returns (uint256) {
-        // baseXP = sqrt(reward_usdc) / 10
-        // reward in 6 decimals: reward_usdc = reward / 1e6
-        // baseXP in 1e18: baseXP = isqrt(reward * 1e6) * 1e5
-        // because: sqrt(reward/1e6) * 1e18 / 10 = isqrt(reward) * 1e9 / 1e3 / 10 (approx)
-        // Cleaner: baseXP = isqrt(reward * 1e30) / 1e6 / 10 = isqrt(reward * 1e30) / 1e7
-        uint256 base = _isqrt(reward * 1e30) / 1e7;   // result in 1e18 units
+        // baseXP = sqrt(reward) * 1e18 / 10000
+        // Example: $10 USDC → reward=10e6 → sqrt(10e6)≈3162 → 3162*1e18/10000 = 3.162e17 = 0.316 XP
+        uint256 base = _isqrt(reward) * 1e18 / 10000;
 
         if (base == 0) return 0;
 
