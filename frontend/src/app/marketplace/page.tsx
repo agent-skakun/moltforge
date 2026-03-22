@@ -26,8 +26,9 @@ interface AgentData {
   tools: readonly string[];
   agentUrl: string;
   meritScore?: bigint;
-  merit?: string;  // totalVolume from MeritSBTV2 formatted as "X.XX USDC"
-  scoreDisplay?: string; // pre-formatted score from MeritSBTV2 (weightedScore/100)
+  merit?: string;
+  scoreDisplay?: string;  // XP from getXP()/1e18 — same as agent/[id] Score
+  ratingDisplay?: string; // weightedScore/100 — avg client rating 1.00–5.00
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -105,13 +106,6 @@ function specToPreset(spec: string): string {
   return map[spec] ?? "ai";
 }
 
-function formatScore(score: bigint): string {
-  const n = Number(score) / 1e18;
-  if (n === 0) return "0";
-  if (n < 0.1) return n.toFixed(3);
-  if (n < 1) return n.toFixed(2);
-  return n.toFixed(1);
-}
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 
 function AgentCard({ agent }: { agent: AgentData }) {
@@ -220,10 +214,10 @@ function AgentCard({ agent }: { agent: AgentData }) {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-0" style={{ borderBottom: "1px solid #1a2e2b" }}>
         {[
-          { label: "Score",  value: agent.scoreDisplay ?? formatScore(agent.score), color: "#1db8a8" },
+          { label: "Score",  value: agent.scoreDisplay ?? "—", color: "#1db8a8" },
           { label: "Jobs",   value: agent.jobsCompleted.toString(), color: "#f07828" },
           { label: "Merit",  value: (["🦀 Crab","🦞 Lobster","🦑 Squid","🐙 Octopus","🦈 Shark"][Number(agent.tier)] ?? "—"), color: "#3ec95a" },
-          { label: "Rating", value: agent.scoreDisplay ? agent.scoreDisplay + "★" : "—", color: "#e8c842" },
+          { label: "Rating", value: agent.ratingDisplay ? agent.ratingDisplay + "★" : "—", color: "#e8c842" },
         ].map((stat, i) => (
           <div key={i} className="flex flex-col items-center py-2"
             style={{ borderRight: i < 3 ? "1px solid #1a2e2b" : "none" }}>
@@ -482,7 +476,7 @@ export default function MarketplacePage() {
       if (merit?.status === "success" && merit.result !== undefined) {
         a.meritScore = merit.result as bigint;
       }
-      // MeritSBTV2.getReputation: source of truth for tier, jobs, score
+      // MeritSBTV2.getReputation: source of truth for tier, jobs, rating
       const rep = reputationsRaw?.[idx];
       if (rep?.status === "success" && rep.result) {
         const [weightedScore, totalJobs, , tier] = rep.result as [bigint, bigint, bigint, number];
@@ -490,18 +484,18 @@ export default function MarketplacePage() {
         if (totalJobs > 0n) {
           a.score = weightedScore * BigInt(1e15);
           a.jobsCompleted = Number(totalJobs);
-          // pre-format score: weightedScore/100, e.g. 484→"4.84", 500→"5.00"
-          const s = Number(weightedScore) / 100;
-          a.scoreDisplay = s % 1 === 0 ? s.toFixed(2) : (s < 10 ? s.toFixed(2) : s.toFixed(1));
+          // ratingDisplay = weighted avg client score 1–5 (e.g. 484 → "4.84")
+          const r = Number(weightedScore) / 100;
+          a.ratingDisplay = r.toFixed(2);
         }
       }
-      // MeritSBTV2.getXP: Merit = XP / 1e18
+      // MeritSBTV2.getXP: Score = XP / 1e18 (same as agent/[id] page)
       const xp = xpRaw?.[idx];
       if (xp?.status === "success" && xp.result) {
         const [xpValue] = xp.result as [bigint, number];
         if (xpValue > 0n) {
           const xpNum = Number(xpValue) / 1e18;
-          a.merit = xpNum < 10 ? `${xpNum.toFixed(2)} XP` : `${xpNum.toFixed(1)} XP`;
+          a.scoreDisplay = xpNum < 10 ? xpNum.toFixed(2) : xpNum.toFixed(1);
         }
       }
     });
